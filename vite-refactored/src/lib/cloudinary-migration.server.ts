@@ -41,7 +41,7 @@ export const uploadRemoteImageToCloudinary = async (imageUrl: string, options: a
   
   // Ensure URL is properly formatted for Cloudinary
   if (imageUrl.startsWith('/')) {
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    const baseUrl = import.meta.env.VITE_SITE_URL || 'http://localhost:3000';
     try {
       finalUrl = new URL(imageUrl, baseUrl).toString();
     } catch (urlError) {
@@ -173,7 +173,7 @@ export const migrateProductToCloudinary = async (productId: string, updateDataba
       
       // Add domain for relative URLs
       if (imageUrl.startsWith('/')) {
-        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+        const baseUrl = import.meta.env.VITE_SITE_URL || 'http://localhost:3000';
         fullUrl = new URL(imageUrl, baseUrl).toString();
       }
       

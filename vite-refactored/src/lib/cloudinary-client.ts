@@ -20,7 +20,7 @@ export const buildImageUrl = (publicId: string, options: TransformationOptions =
 
   // Raw transformation overrides everything (advanced)
   if (mergedOptions.raw) {
-    return `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/${mergedOptions.raw}/${publicId}`;
+    return `https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload/${mergedOptions.raw}/${publicId}`;
   }
 
   const map: Record<string, any> = {
@@ -38,7 +38,7 @@ export const buildImageUrl = (publicId: string, options: TransformationOptions =
     .map(([k, v]) => `${k}_${v}`)
     .join(',');
 
-  return `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/${transformations}/${publicId}`;
+  return `https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload/${transformations}/${publicId}`;
 };
 
 export const buildSrcSet = (publicId: string, widths: number[], options: TransformationOptions = {}) => {

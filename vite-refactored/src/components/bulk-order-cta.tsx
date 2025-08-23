@@ -1,6 +1,7 @@
 
 
-import Link from "next/link"
+// import Link from "next/link"
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Package2, TrendingDown, Building2, Truck } from "lucide-react"

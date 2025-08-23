@@ -1,7 +1,8 @@
 
 
 import { useState } from "react"
-import Link from "next/link"
+// import Link from "next/link"
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { ChevronDown, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {

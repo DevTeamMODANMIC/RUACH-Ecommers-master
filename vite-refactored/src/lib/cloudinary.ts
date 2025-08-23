@@ -3,18 +3,18 @@ import { updateProduct } from './firebase-products';
 
 // Configure Cloudinary
 const cloudinaryConfig = cloudinary.config({
-  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || '',
-  api_key: process.env.CLOUDINARY_API_KEY || '',
-  api_secret: process.env.CLOUDINARY_API_SECRET || '',
+  cloud_name: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || '',
+  api_key: import.meta.env.VITE_CLOUDINARY_API_KEY || '',
+  api_secret: import.meta.env.VITE_CLOUDINARY_API_SECRET || '',
   secure: true
 });
 
 // Log Cloudinary configuration for debugging
 console.log('Cloudinary Configuration:', {
-  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY ? 
-    process.env.CLOUDINARY_API_KEY.substring(0, 4) + '...' : 'MISSING',
-  upload_preset: process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET,
+  cloud_name: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME,
+  api_key: import.meta.env.VITE_CLOUDINARY_API_KEY ? 
+    import.meta.env.VITE_CLOUDINARY_API_KEY.substring(0, 4) + '...' : 'MISSING',
+  upload_preset: import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET,
   full_config: {
     cloud_name: cloudinaryConfig.cloud_name || 'UNDEFINED',
     api_key: cloudinaryConfig.api_key ? 

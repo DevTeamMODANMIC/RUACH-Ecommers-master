@@ -73,7 +73,7 @@ export const uploadRemoteImageToCloudinary = async (imageUrl: string, options: a
  */
 export const migrateProductImagesToCloudinary = async (updateDatabase = false) => {
   const results: Record<string, any> = {};
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+  const baseUrl = import.meta.env.VITE_SITE_URL || 'http://localhost:3000';
   
   for (const product of products) {
     results[product.id] = {
@@ -148,7 +148,7 @@ export const migrateProductToCloudinary = async (productId: string, updateDataba
   };
   
   const cloudinaryImages = [];
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+  const baseUrl = import.meta.env.VITE_SITE_URL || 'http://localhost:3000';
   
   for (const imageUrl of product.images) {
     let fullUrl = imageUrl;

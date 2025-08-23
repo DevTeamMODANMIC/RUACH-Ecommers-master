@@ -1,15 +1,15 @@
 import { Routes, Route } from 'react-router-dom'
-import { ThemeProvider } from "@/components/theme-provider"
-import SiteHeader from "@/components/site-header"
-import Footer from "@/components/footer"
-import { Toaster } from "@/components/ui/toaster"
-import { AuthProvider } from "@/components/auth-provider"
-import { CurrencyProvider } from "@/components/currency-provider"
-import { CartProvider } from "@/components/cart-provider"
-import { CountryProvider } from "@/components/country-provider"
-import KeyboardNavigation from "@/components/keyboard-navigation"
-import KeyboardShortcutsHelp from "@/components/keyboard-shortcuts-help"
-import { Button } from "@/components/ui/button"
+import { ThemeProvider } from "./components/theme-provider"
+import SiteHeader from "./components/site-header"
+import Footer from "./components/footer"
+import { Toaster } from "./components/ui/toaster"
+import { AuthProvider } from "./components/auth-provider"
+import { CurrencyProvider } from "./components/currency-provider"
+import { CartProvider } from "./components/cart-provider"
+import { CountryProvider } from "./components/country-provider"
+import KeyboardNavigation from "./components/keyboard-navigation"
+import KeyboardShortcutsHelp from "./components/keyboard-shortcuts-help"
+import { Button } from "./components/ui/button"
 
 // Pages
 import HomePage from './pages/HomePage'

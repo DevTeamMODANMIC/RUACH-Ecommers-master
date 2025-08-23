@@ -8,14 +8,14 @@ export const getFirebaseAdminApp = () => {
   if (!firebaseAdmin.apps.length) {
     return firebaseAdmin.initializeApp({
       credential: firebaseAdmin.credential.cert({
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL || 
-                     `firebase-adminsdk-${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.split('-')[1]}.iam.gserviceaccount.com`,
+                     `firebase-adminsdk-${import.meta.env.VITE_FIREBASE_PROJECT_ID?.split('-')[1]}.iam.gserviceaccount.com`,
         privateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY ? 
                     process.env.FIREBASE_ADMIN_PRIVATE_KEY.replace(/\\n/g, '\n') : 
                     undefined,
       }),
-      databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
+      databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
     });
   }
   return firebaseAdmin.app();

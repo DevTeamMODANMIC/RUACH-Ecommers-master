@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 ;
@@ -61,7 +61,7 @@ const mainNavItems = [
 ];
 
 export default function Header() {
-  const pathname = usePathname();
+  const { pathname } = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);

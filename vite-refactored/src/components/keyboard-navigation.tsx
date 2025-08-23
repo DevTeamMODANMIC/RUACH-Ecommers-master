@@ -1,7 +1,7 @@
 
 
 import { useEffect } from "react"
-import { useNavigate } from "next/navigation"
+import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/components/auth-provider"
 import { useVendor } from "@/hooks/use-vendor"
 

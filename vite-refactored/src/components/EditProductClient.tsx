@@ -1,7 +1,7 @@
 ;
 
 import { useState, useEffect } from "react";
-import { useNavigate } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import Link from "next/link";
 ;
 import { Button } from "@/components/ui/button";
