@@ -1,18 +1,15 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { 
   Calendar,
   Clock,
-  MapPin,
   User,
-  Phone,
-  Mail,
   CreditCard,
   Shield,
   CheckCircle,
@@ -28,9 +25,9 @@ const mockService: Service | null = null
 const mockProvider: ServiceProvider | null = null
 
 export default function ServiceBookingPage() {
-  const params = useParams()
-  const router = useRouter()
-  const serviceId = params.serviceId as string
+  // const params = useParams() // Currently unused
+  const navigate = useNavigate()
+  // const serviceId = params.serviceId as string // Currently unused
 
   const [service] = useState<Service | null>(mockService)
   const [provider] = useState<ServiceProvider | null>(mockProvider)
@@ -57,7 +54,7 @@ export default function ServiceBookingPage() {
     agreedPrice: 0
   })
 
-  const [availableSlots, setAvailableSlots] = useState<any[]>([])
+  const [availableSlots] = useState<any[]>([])
 
   useEffect(() => {
     if (service?.basePrice) {
@@ -85,15 +82,11 @@ export default function ServiceBookingPage() {
         customerName: bookingForm.customerName,
         customerEmail: bookingForm.customerEmail,
         customerPhone: bookingForm.customerPhone,
-        serviceDetails: {
-          name: service.name,
-          description: service.description,
-          pricingType: service.pricingType,
-          agreedPrice: bookingForm.agreedPrice,
-          duration: service.duration
-        },
-        scheduledDate: selectedDate,
-        scheduledTime: selectedTime,
+        serviceDate: selectedDate,
+        serviceTime: selectedTime,
+        agreedPrice: bookingForm.agreedPrice,
+        pricingType: service.pricingType || "fixed",
+        duration: service.duration,
         address: bookingForm.address,
         specialRequirements: bookingForm.specialRequirements,
         status: service.bookingRequiresApproval ? "pending" : "confirmed",
@@ -108,7 +101,7 @@ export default function ServiceBookingPage() {
       await new Promise(resolve => setTimeout(resolve, 2000))
       
       alert("Booking submitted successfully! You will receive confirmation via email.")
-      router.push("/services")
+      navigate("/services")
       
     } catch (error) {
       console.error("Booking error:", error)
@@ -150,7 +143,7 @@ export default function ServiceBookingPage() {
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <h5 className="font-medium mb-2">What's included:</h5>
                   <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-                    {service?.features?.map((feature, index) => (
+                    {service?.features?.map((feature: string, index: number) => (
                       <li key={index}>{feature}</li>
                     )) || <li>No features listed</li>}
                   </ul>
@@ -160,7 +153,7 @@ export default function ServiceBookingPage() {
                   <div className="bg-yellow-50 p-4 rounded-lg">
                     <h5 className="font-medium mb-2 text-yellow-800">Please ensure:</h5>
                     <ul className="list-disc list-inside text-sm text-yellow-700 space-y-1">
-                      {service.requirements.map((req, index) => (
+                      {service.requirements.map((req: string, index: number) => (
                         <li key={index}>{req}</li>
                       ))}
                     </ul>
@@ -530,7 +523,7 @@ export default function ServiceBookingPage() {
             <h3 className="text-lg font-medium text-gray-900 mb-2">Service Not Found</h3>
             <p className="text-gray-600">The requested service could not be found or is no longer available.</p>
           </div>
-          <Button onClick={() => router.push('/services')} variant="outline">
+          <Button onClick={() => navigate('/services')} variant="outline">
             Back to Services
           </Button>
         </div>
@@ -546,7 +539,7 @@ export default function ServiceBookingPage() {
           <div className="flex items-center">
             <Button
               variant="ghost"
-              onClick={() => router.back()}
+              onClick={() => navigate(-1)}
               className="mr-4"
             >
               <ArrowLeft className="h-4 w-4" />

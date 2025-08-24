@@ -1,10 +1,8 @@
 
 
-import { useState } from "react"
 // import Link from "next/link"
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ChevronDown, ChevronRight } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -236,7 +234,7 @@ export function DesktopMegaMenu({ pathname, onNavigate }: MegaMenuProps) {
                 )}
               >
                 <Link 
-                  href={`/shop?category=${category.title.toLowerCase().replace(/\s+/g, '-')}`}
+                  to={`/shop?category=${category.title.toLowerCase().replace(/\s+/g, '-')}`}
                   onClick={onNavigate}
                   className="block"
                 >
@@ -248,7 +246,7 @@ export function DesktopMegaMenu({ pathname, onNavigate }: MegaMenuProps) {
                   {category.subcategories.map((subcategory) => (
                     <div key={subcategory.name}>
                       <Link
-                        href={`/shop?category=${category.title.toLowerCase().replace(/\s+/g, '-')}&subcategory=${subcategory.name.toLowerCase().replace(/\s+/g, '-')}`}
+                        to={`/shop?category=${category.title.toLowerCase().replace(/\s+/g, '-')}&subcategory=${subcategory.name.toLowerCase().replace(/\s+/g, '-')}`}
                         onClick={onNavigate}
                         className="block text-sm font-medium text-gray-700 hover:text-green-600 transition-colors mb-1"
                       >
@@ -259,7 +257,7 @@ export function DesktopMegaMenu({ pathname, onNavigate }: MegaMenuProps) {
                           {subcategory.items.map((item) => (
                             <Link
                               key={item}
-                              href={`/shop?search=${encodeURIComponent(item)}`}
+                              to={`/shop?search=${encodeURIComponent(item)}`}
                               onClick={onNavigate}
                               className="block text-xs text-gray-500 hover:text-green-600 transition-colors"
                             >
@@ -320,7 +318,7 @@ export function MobileMegaMenu({ onNavigate }: { onNavigate?: () => void }) {
             {category.subcategories.map((subcategory) => (
               <div key={subcategory.name}>
                 <Link
-                  href={`/shop?category=${category.title.toLowerCase().replace(/\s+/g, '-')}&subcategory=${subcategory.name.toLowerCase().replace(/\s+/g, '-')}`}
+                  to={`/shop?category=${category.title.toLowerCase().replace(/\s+/g, '-')}&subcategory=${subcategory.name.toLowerCase().replace(/\s+/g, '-')}`}
                   onClick={onNavigate}
                   className="block text-sm text-gray-600 hover:text-green-600 py-1 transition-colors"
                 >
@@ -331,7 +329,7 @@ export function MobileMegaMenu({ onNavigate }: { onNavigate?: () => void }) {
                     {subcategory.items.map((item) => (
                       <Link
                         key={item}
-                        href={`/shop?search=${encodeURIComponent(item)}`}
+                        to={`/shop?search=${encodeURIComponent(item)}`}
                         onClick={onNavigate}
                         className="block text-xs text-gray-500 hover:text-green-600 py-0.5 transition-colors"
                       >

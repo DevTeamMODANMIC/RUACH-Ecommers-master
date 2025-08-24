@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { useSearchParams, useNavigate } from "react-router-dom"
-import { Link } from "react-router-dom"
 import ProductGrid from "@/components/product-grid"
 import { Product } from "@/types"
-import { Loader2, Filter, ChevronDown, Search as SearchIcon, X, SlidersHorizontal, Check } from "lucide-react"
+import { Loader2, ChevronDown, Search as SearchIcon, X, SlidersHorizontal } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { products } from "@/lib/product-data"
@@ -13,7 +12,6 @@ import { getProducts, ProductFilters } from "@/lib/firebase-products"
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
   DropdownMenuLabel,
@@ -43,20 +41,6 @@ const priceRanges = [
   { id: "over50000", name: "Over ₦50,000", min: 50000, max: Infinity }
 ];
 
-// Category mapping moved to centralized lib/categories.ts
-
-// Add reverse mapping for product categories to URL parameters
-const productCategoryMapping: Record<string, string> = {
-  "drinks": "drinks",
-  "beverages": "drinks",
-  "flour": "flour",
-  "rice": "rice",
-  "food": "food",
-  "spices": "spices",
-  "vegetables": "vegetables",
-  "meat": "meat"
-};
-
 // Sort options for products
 const sortOptions = [
   { id: "popularity", name: "Popular" },
@@ -66,7 +50,7 @@ const sortOptions = [
 ];
 
 export default function ShopPage() {
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   
   // Get category from URL or default to "all"
@@ -80,7 +64,6 @@ export default function ShopPage() {
   const [searchTerm, setSearchTerm] = useState(searchParam)
   const [isLoading, setIsLoading] = useState(false)
   const [filteredProducts, setFilteredProducts] = useState<Product[]>(products)
-  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false)
   const [activeFiltersCount, setActiveFiltersCount] = useState(0)
   const [resultsCount, setResultsCount] = useState(products.length)
   const [expandedSections, setExpandedSections] = useState({
@@ -302,10 +285,7 @@ export default function ShopPage() {
             } else {
               // Sort by popularity (default) or rating
               localProducts.sort((a, b) => {
-                // Safe access to reviews or rating
-                const aReviews = a.reviews || []
-                const bReviews = b.reviews || []
-                // Calculate average rating if reviews exist
+                // Calculate average rating
                 const aRating = a.rating || 0
                 const bRating = b.rating || 0
                 return bRating - aRating
@@ -423,7 +403,7 @@ export default function ShopPage() {
     <div className={`${isMobile ? 'p-0' : 'bg-white rounded-lg border border-gray-200 p-4 shadow-sm sticky top-28'}`}>
       {!isMobile && (
         <div className="flex items-center mb-4 pb-2 border-b border-gray-200">
-          <Filter className="h-4 w-4 mr-2 text-green-600" />
+          <SlidersHorizontal className="h-4 w-4 mr-2 text-green-600" />
           <h2 className="font-medium text-gray-800">Filter Products</h2>
         </div>
       )}

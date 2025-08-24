@@ -12,9 +12,7 @@ import {
   DollarSign,
   Star,
   Users,
-  CheckCircle,
   AlertCircle,
-  TrendingUp,
   Eye,
   Edit,
   Plus,
@@ -23,18 +21,12 @@ import {
   FileText,
   MessageSquare,
   BarChart3,
-  Sparkles,
-  Wrench,
-  ArrowUpRight
+  Wrench
 } from "lucide-react"
 import { ServiceProvider, Service, ServiceBooking } from "@/types"
 import { useAuth } from "@/components/auth-provider"
 import { getServiceProviderByOwnerId } from "@/lib/firebase-service-providers"
 import { getServicesByProviderId } from "@/lib/firebase-services"
-import { DashboardHeader } from "@/components/dashboard-header"
-import { DashboardStatsCard } from "@/components/dashboard-stats-card"
-import { DashboardQuickActions } from "@/components/dashboard-quick-actions"
-import { DashboardWelcome } from "@/components/dashboard-welcome"
 // import { useRouter } from "next/navigation"
 
 // Helper function to get time-based greeting
@@ -68,7 +60,7 @@ export default function ServiceProviderDashboard() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [router])
+  }, [navigate])
 
   useEffect(() => {
     // Don't do anything if auth is still loading
@@ -237,7 +229,7 @@ export default function ServiceProviderDashboard() {
               </Button>
               {process.env.NODE_ENV === 'development' && (
                 <Button variant="outline" asChild>
-                  <Link href="/debug/firebase">
+                  <Link to="/debug/firebase">
                     Debug Firebase
                   </Link>
                 </Button>
@@ -251,10 +243,19 @@ export default function ServiceProviderDashboard() {
 
   if (!provider) {
     return (
-      <DashboardWelcome 
-        userType="service-provider" 
-        userName="Service Provider"
-      />
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <Card className="max-w-md w-full text-center">
+          <CardHeader>
+            <CardTitle>Welcome to RUACH</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 mb-6">Complete your service provider profile to get started</p>
+            <Button asChild>
+              <Link to="/service-provider/register">Complete Profile</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     )
   }
 
@@ -263,10 +264,19 @@ export default function ServiceProviderDashboard() {
   
   if (isNewServiceProvider) {
     return (
-      <DashboardWelcome 
-        userType="service-provider" 
-        userName={provider.name || 'Service Provider'}
-      />
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <Card className="max-w-md w-full text-center">
+          <CardHeader>
+            <CardTitle>Welcome, {provider.name || 'Service Provider'}!</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 mb-6">Add your first service to start receiving bookings</p>
+            <Button asChild>
+              <Link to="/service-provider/dashboard/services/add">Add Your First Service</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     )
   }
 
@@ -319,29 +329,67 @@ export default function ServiceProviderDashboard() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <DashboardHeader
-        title={`${getTimeBasedGreeting()}, ${provider.name || 'Service Provider'}!`}
-        subtitle="Here's what's happening with your services today."
-        userType="service-provider"
-      />
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">
+          {getTimeBasedGreeting()}, {provider.name || 'Service Provider'}!
+        </h1>
+        <p className="text-gray-600 mt-2">Here's what's happening with your services today.</p>
+      </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statCards.map((stat, index) => (
-          <DashboardStatsCard
-            key={index}
-            title={stat.title}
-            value={stat.value}
-            change={stat.change}
-            icon={stat.icon}
-            color={stat.color}
-            bgColor={stat.bgColor}
-          />
+          <Card key={index}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">{stat.title}</p>
+                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                  <p className="text-xs text-gray-500 mt-1">{stat.change}</p>
+                </div>
+                <div className={`p-3 rounded-full ${stat.bgColor}`}>
+                  <stat.icon className={`h-6 w-6 ${stat.color}`} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
       {/* Quick Actions */}
-      <DashboardQuickActions userType="service-provider" />
+      <Card>
+        <CardHeader>
+          <CardTitle>Quick Actions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Button variant="outline" asChild>
+              <Link to="/service-provider/dashboard/services/add">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Service
+              </Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link to="/service-provider/dashboard/bookings">
+                <Calendar className="h-4 w-4 mr-2" />
+                View Bookings
+              </Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link to="/service-provider/dashboard/analytics">
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Analytics
+              </Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link to="/service-provider/dashboard/settings">
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
+              </Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column */}
@@ -351,7 +399,7 @@ export default function ServiceProviderDashboard() {
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Recent Bookings</CardTitle>
               <Button variant="outline" size="sm" asChild>
-                <Link href="/service-provider/dashboard/bookings">
+                <Link to="/service-provider/dashboard/bookings">
                   View All
                 </Link>
               </Button>
@@ -367,14 +415,14 @@ export default function ServiceProviderDashboard() {
                         </div>
                         <div>
                           <div className="font-medium">{booking.customerName}</div>
-                          <div className="text-sm text-gray-600">{booking.serviceDetails.name}</div>
+                          <div className="text-sm text-gray-600">Service Booking</div>
                           <div className="text-xs text-gray-500">
                             {booking.scheduledDate} at {booking.scheduledTime}
                           </div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-medium">₦{booking.totalAmount.toLocaleString()}</div>
+                        <div className="font-medium">₦{booking.totalAmount?.toLocaleString() || '0'}</div>
                         <Badge 
                           variant={booking.status === "confirmed" ? "default" : "secondary"}
                           className={
@@ -426,7 +474,7 @@ export default function ServiceProviderDashboard() {
                   🔄 Refresh
                 </Button>
                 <Button variant="outline" size="sm" asChild>
-                  <Link href="/service-provider/dashboard/services">
+                  <Link to="/service-provider/dashboard/services">
                     Manage All
                   </Link>
                 </Button>
@@ -511,12 +559,12 @@ export default function ServiceProviderDashboard() {
                       </div>
                       <div className="flex items-center space-x-2">
                         <Button size="sm" variant="outline" asChild>
-                          <Link href={`/service-provider/dashboard/services/${service.id}`}>
+                          <Link to={`/service-provider/dashboard/services/${service.id}`}>
                             <Eye className="h-3 w-3" />
                           </Link>
                         </Button>
                         <Button size="sm" variant="outline" asChild>
-                          <Link href={`/service-provider/dashboard/services/${service.id}/edit`}>
+                          <Link to={`/service-provider/dashboard/services/${service.id}/edit`}>
                             <Edit className="h-3 w-3" />
                           </Link>
                         </Button>
@@ -529,7 +577,7 @@ export default function ServiceProviderDashboard() {
                     <p>No services yet</p>
                     <p className="text-sm">Add your first service to start receiving bookings</p>
                     <Button className="mt-3" asChild>
-                      <Link href="/service-provider/dashboard/services/add">
+                      <Link to="/service-provider/dashboard/services/add">
                         <Plus className="h-4 w-4 mr-2" />
                         Add Service
                       </Link>
@@ -562,7 +610,7 @@ export default function ServiceProviderDashboard() {
                 <span className="text-lg font-bold">67%</span>
               </div>
               <Button variant="outline" size="sm" className="w-full" asChild>
-                <Link href="/service-provider/dashboard/analytics">
+                <Link to="/service-provider/dashboard/analytics">
                   <BarChart3 className="h-4 w-4 mr-2" />
                   View Analytics
                 </Link>
@@ -577,25 +625,25 @@ export default function ServiceProviderDashboard() {
             </CardHeader>
             <CardContent className="space-y-3">
               <Button variant="outline" size="sm" className="w-full justify-start" asChild>
-                <Link href="/service-provider/dashboard/services/add">
+                <Link to="/service-provider/dashboard/services/add">
                   <Plus className="h-4 w-4 mr-2" />
                   Add New Service
                 </Link>
               </Button>
               <Button variant="outline" size="sm" className="w-full justify-start" asChild>
-                <Link href="/service-provider/dashboard/bookings?status=pending">
+                <Link to="/service-provider/dashboard/bookings?status=pending">
                   <Clock className="h-4 w-4 mr-2" />
                   Review Pending Bookings
                 </Link>
               </Button>
               <Button variant="outline" size="sm" className="w-full justify-start" asChild>
-                <Link href="/service-provider/dashboard/reviews">
+                <Link to="/service-provider/dashboard/reviews">
                   <MessageSquare className="h-4 w-4 mr-2" />
                   View Reviews
                 </Link>
               </Button>
               <Button variant="outline" size="sm" className="w-full justify-start" asChild>
-                <Link href="/service-provider/dashboard/settings">
+                <Link to="/service-provider/dashboard/settings">
                   <Settings className="h-4 w-4 mr-2" />
                   Update Profile
                 </Link>

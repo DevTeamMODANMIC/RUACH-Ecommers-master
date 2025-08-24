@@ -180,4 +180,44 @@ export type Service = {
   isActive: boolean
   createdAt: string | number
   updatedAt: string | number
+  // Pricing options
+  pricingType?: "fixed" | "hourly" | "custom"
+  basePrice?: number
+  hourlyRate?: number
+  // Service details
+  serviceAreas?: string[]
+  features?: string[]
+  requirements?: string[]
+  images?: CloudinaryImage[]
+  // Booking configuration
+  depositRequired?: boolean
+  depositAmount?: number
+  bookingRequiresApproval?: boolean
+}
+
+export type ServiceBooking = {
+  id: string
+  serviceId: string
+  customerId: string
+  providerId: string
+  customerName: string
+  customerEmail: string
+  customerPhone: string
+  serviceDate: string
+  serviceTime: string
+  agreedPrice: number
+  pricingType: "fixed" | "hourly" | "custom"
+  duration: number
+  status: "pending" | "confirmed" | "completed" | "cancelled"
+  notes?: string
+  address?: UserAddress
+  depositAmount?: number
+  paymentStatus?: "pending" | "paid" | "refunded"
+  createdAt: string | number
+  updatedAt: string | number
+  // Additional booking details
+  scheduledDate?: string
+  scheduledTime?: string
+  specialRequirements?: string
+  totalAmount?: number
 }

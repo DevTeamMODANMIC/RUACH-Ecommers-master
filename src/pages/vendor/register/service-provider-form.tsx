@@ -62,7 +62,6 @@ export default function ServiceProviderForm() {
     handleSubmit,
     formState: { errors },
     setValue,
-    watch,
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {

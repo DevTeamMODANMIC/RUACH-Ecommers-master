@@ -39,6 +39,7 @@ import { Link } from "react-router-dom"
 export default function VendorStoresPage() {
   const { activeStore, allStores, switchStore, canCreateMoreStores, vendorOwner, refreshStores } = useVendor()
   const [switchingStore, setSwitchingStore] = useState<string | null>(null)
+  const [, setDeletingStoreId] = useState<string | null>(null)
 
   const handleStoreSwitch = async (storeId: string) => {
     if (storeId === activeStore?.id) return
@@ -62,7 +63,6 @@ export default function VendorStoresPage() {
   const handleDeleteStore = async (store: any) => {
     if (!vendorOwner || !store?.id) return
     setDeletingStoreId(store.id)
-    const optimisticId = store.id
     try {
       const { deleteVendorStore } = await import("@/lib/firebase-vendors")
       await deleteVendorStore(vendorOwner.uid, store.id)
@@ -81,7 +81,6 @@ export default function VendorStoresPage() {
 
   const [storeStats, setStoreStats] = useState<Record<string, any>>({})
   const [loadingStats, setLoadingStats] = useState<Record<string, boolean>>({})
-  const [deletingStoreId, setDeletingStoreId] = useState<string | null>(null)
 
   // Fetch stats for all stores when component loads
   useEffect(() => {

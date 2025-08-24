@@ -129,6 +129,29 @@ export async function deleteService(id: string): Promise<void> {
 }
 
 /**
+ * Toggle service status (active/inactive)
+ */
+export async function toggleServiceStatus(id: string): Promise<void> {
+  try {
+    const docRef = doc(db, COLLECTION_NAME, id)
+    const docSnap = await getDoc(docRef)
+    
+    if (!docSnap.exists()) {
+      throw new Error("Service not found")
+    }
+    
+    const currentStatus = docSnap.data().isActive
+    await updateDoc(docRef, {
+      isActive: !currentStatus,
+      updatedAt: serverTimestamp()
+    })
+  } catch (error) {
+    console.error("Error toggling service status:", error)
+    throw new Error("Failed to toggle service status")
+  }
+}
+
+/**
  * Get active services by category
  */
 export async function getServicesByCategory(category: ServiceCategory): Promise<Service[]> {

@@ -1,8 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
+import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -18,17 +17,31 @@ import {
   Clock,
   MapPin,
   Settings,
-  FileText,
-  Image as ImageIcon
+  FileText
 } from "lucide-react"
 import { Service, ServiceCategory } from "@/types"
 import { useAuth } from "@/components/auth-provider"
 import { getServiceProviderByOwnerId } from "@/lib/firebase-service-providers"
 import { createService } from "@/lib/firebase-services"
-import { serviceCategories } from "@/lib/categories"
+
+// Service categories constant
+const serviceCategories: { value: ServiceCategory; label: string }[] = [
+  { value: "plumbing", label: "Plumbing" },
+  { value: "electrical", label: "Electrical" },
+  { value: "cleaning", label: "Cleaning" },
+  { value: "event-planning", label: "Event Planning" },
+  { value: "catering", label: "Catering" },
+  { value: "beauty", label: "Beauty & Wellness" },
+  { value: "fitness", label: "Fitness" },
+  { value: "tutoring", label: "Tutoring" },
+  { value: "photography", label: "Photography" },
+  { value: "repairs", label: "Repairs" },
+  { value: "landscaping", label: "Landscaping" },
+  { value: "other", label: "Other" }
+]
 
 export default function AddServicePage() {
-  const router = useRouter()
+  const navigate = useNavigate()
   const { user } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -140,6 +153,16 @@ export default function AddServicePage() {
         description: formData.description!.trim(),
         category: formData.category!,
         providerId: serviceProvider.id,
+        // Required base properties
+        price: formData.pricingType === "fixed" ? (formData.basePrice || 0) : (formData.hourlyRate || 0),
+        availability: {
+          days: ["monday", "tuesday", "wednesday", "thursday", "friday"],
+          hours: {
+            start: "09:00",
+            end: "17:00"
+          }
+        },
+        // Extended properties
         pricingType: formData.pricingType!,
         basePrice: formData.pricingType === "fixed" ? formData.basePrice : undefined,
         hourlyRate: formData.pricingType === "hourly" ? formData.hourlyRate : undefined,
@@ -150,11 +173,8 @@ export default function AddServicePage() {
         images: formData.images || [],
         bookingRequiresApproval: formData.bookingRequiresApproval || false,
         depositRequired: formData.depositRequired || false,
-        depositAmount: formData.depositAmount,
-        // Initialize statistics
-        bookingCount: 0,
-        rating: 0,
-        reviewCount: 0
+        depositAmount: formData.depositAmount
+        // Note: Service statistics like bookingCount, rating, reviewCount are not part of the base Service type
       }
 
       // Create the service
@@ -169,7 +189,7 @@ export default function AddServicePage() {
 
       // Show success message and redirect
       alert("Service created successfully! You'll be redirected to services page.")
-      router.push("/service-provider/dashboard/services")
+      navigate("/service-provider/dashboard/services")
 
     } catch (error: any) {
       console.error("Error creating service:", error)
@@ -199,7 +219,7 @@ export default function AddServicePage() {
           <div className="flex items-center">
             <Button
               variant="ghost"
-              onClick={() => router.back()}
+              onClick={() => navigate(-1)}
               className="mr-4"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -505,7 +525,7 @@ export default function AddServicePage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => router.back()}
+                onClick={() => navigate(-1)}
                 disabled={isLoading}
               >
                 Cancel

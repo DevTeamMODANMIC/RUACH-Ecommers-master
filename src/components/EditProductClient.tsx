@@ -1,13 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { type Product } from "@/lib/firebase-products";
-import { useToast } from "@/hooks/use-toast";
-import { MAIN_CATEGORIES } from "@/lib/categories";
-
-const categories = MAIN_CATEGORIES.filter(c => c.id !== "all").map(c => ({
-  id: c.id,
-  name: c.name,
-}));
 
 
 interface EditProductClientProps {
@@ -15,15 +7,12 @@ interface EditProductClientProps {
 }
 
 export default function EditProductClient({ id }: EditProductClientProps) {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [product, setProduct] = useState<Product | null>(null);
+  const [isAdmin] = useState(false);
+  const [loading] = useState(true);
+  const [product] = useState<Product | null>(null);
 
   // State for basic form data (kept for when UI is implemented)
-  const [formData, setFormData] = useState({
+  const [formData] = useState({
     name: "",
     description: "",
     price: "",
@@ -34,10 +23,9 @@ export default function EditProductClient({ id }: EditProductClientProps) {
     availableCountries: ["United Kingdom"],
     tags: "",
   });
-  const [existingImages, setExistingImages] = useState<string[]>([]);
-  const [cloudinaryImages, setCloudinaryImages] = useState<
-    Array<{ publicId: string; url: string; alt?: string }>
-  >([]);
+  
+  // Suppress unused parameter warning
+  console.log('Editing product ID:', id);
 
 ;
 

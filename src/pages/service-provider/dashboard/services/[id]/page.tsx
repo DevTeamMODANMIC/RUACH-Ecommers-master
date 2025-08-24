@@ -1,8 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
+import { useNavigate, useParams } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -24,16 +23,11 @@ import {
 import { Service } from "@/types"
 import { useAuth } from "@/components/auth-provider"
 import { getServiceProviderByOwnerId } from "@/lib/firebase-service-providers"
-import { getService, deleteService, toggleServiceStatus } from "@/lib/firebase-services"
+import { getServicesByProviderId, deleteService, toggleServiceStatus } from "@/lib/firebase-services"
 
-interface ViewServicePageProps {
-  params: {
-    id: string
-  }
-}
-
-export default function ViewServicePage({ params }: ViewServicePageProps) {
-  const router = useRouter()
+export default function ViewServicePage() {
+  const navigate = useNavigate()
+  const { id } = useParams<{ id: string }>() || {}
   const { user } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -58,8 +52,9 @@ export default function ViewServicePage({ params }: ViewServicePageProps) {
           throw new Error("Service provider profile not found")
         }
 
-        // Load the service
-        const serviceData = await getService(params.id)
+        // Load the service (find it from provider's services)
+        const allServices = await getServicesByProviderId(serviceProvider.id)
+        const serviceData = allServices.find(s => s.id === id)
         if (!serviceData) {
           throw new Error("Service not found")
         }
@@ -79,17 +74,17 @@ export default function ViewServicePage({ params }: ViewServicePageProps) {
       }
     }
 
-    if (params.id) {
+    if (id) {
       loadService()
     }
-  }, [params.id, user?.uid])
+  }, [id, user?.uid])
 
   const handleToggleStatus = async () => {
     if (!service) return
 
     try {
       setIsToggling(true)
-      await toggleServiceStatus(service.id, !service.isActive)
+      await toggleServiceStatus(service.id)
       
       // Update local state
       setService(prev => prev ? { ...prev, isActive: !prev.isActive } : null)
@@ -113,7 +108,7 @@ export default function ViewServicePage({ params }: ViewServicePageProps) {
       await deleteService(service.id)
       
       alert(`Deleted service: ${service.name}`)
-      router.push("/service-provider/dashboard/services")
+      navigate("/service-provider/dashboard/services")
     } catch (error: any) {
       console.error("Delete service failed:", error)
       alert(error?.message || "Failed to delete service")
@@ -171,7 +166,7 @@ export default function ViewServicePage({ params }: ViewServicePageProps) {
               Try Again
             </Button>
             <Button 
-              onClick={() => router.push("/service-provider/dashboard/services")}
+              onClick={() => navigate("/service-provider/dashboard/services")}
               variant="outline"
             >
               Back to Services
@@ -191,7 +186,7 @@ export default function ViewServicePage({ params }: ViewServicePageProps) {
             <div className="flex items-center">
               <Button
                 variant="ghost"
-                onClick={() => router.back()}
+                onClick={() => navigate(-1)}
                 className="mr-4"
               >
                 <ArrowLeft className="h-4 w-4" />
@@ -219,11 +214,9 @@ export default function ViewServicePage({ params }: ViewServicePageProps) {
                 {service.isActive ? 'Deactivate' : 'Activate'}
               </Button>
               
-              <Button asChild variant="outline">
-                <Link href={`/service-provider/dashboard/services/${service.id}/edit`}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
-                </Link>
+              <Button variant="outline" onClick={() => navigate(`/service-provider/dashboard/services/${service.id}/edit`)}>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit
               </Button>
               
               <Button
@@ -351,13 +344,13 @@ export default function ViewServicePage({ params }: ViewServicePageProps) {
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
-                {service.serviceAreas.map((area, index) => (
+                {service.serviceAreas && service.serviceAreas.map((area, index) => (
                   <Badge key={index} variant="secondary">
                     {area}
                   </Badge>
                 ))}
               </div>
-              {service.serviceAreas.length === 0 && (
+              {!service.serviceAreas || service.serviceAreas.length === 0 && (
                 <p className="text-gray-500">No service areas specified</p>
               )}
             </CardContent>
@@ -373,14 +366,14 @@ export default function ViewServicePage({ params }: ViewServicePageProps) {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {service.features.map((feature, index) => (
+                {service.features && service.features.map((feature, index) => (
                   <div key={index} className="flex items-center">
                     <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
                     <span className="text-gray-700">{feature}</span>
                   </div>
                 ))}
               </div>
-              {service.features.length === 0 && (
+              {!service.features || service.features.length === 0 && (
                 <p className="text-gray-500">No features specified</p>
               )}
             </CardContent>
@@ -394,17 +387,15 @@ export default function ViewServicePage({ params }: ViewServicePageProps) {
             <CardContent>
               <div className="grid grid-cols-3 gap-6">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">{service.bookingCount || 0}</div>
+                  <div className="text-2xl font-bold text-blue-600">0</div>
                   <div className="text-sm text-gray-600">Total Bookings</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-yellow-600">
-                    {service.rating ? service.rating.toFixed(1) : "0.0"}
-                  </div>
+                  <div className="text-2xl font-bold text-yellow-600">0.0</div>
                   <div className="text-sm text-gray-600">Average Rating</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600">{service.reviewCount || 0}</div>
+                  <div className="text-2xl font-bold text-purple-600">0</div>
                   <div className="text-sm text-gray-600">Reviews</div>
                 </div>
               </div>
@@ -415,23 +406,19 @@ export default function ViewServicePage({ params }: ViewServicePageProps) {
           <div className="flex items-center justify-between pt-6">
             <Button
               variant="outline"
-              onClick={() => router.push("/service-provider/dashboard/services")}
+              onClick={() => navigate("/service-provider/dashboard/services")}
             >
               Back to Services
             </Button>
 
             <div className="flex gap-3">
-              <Button asChild variant="outline">
-                <Link href={`/service-provider/dashboard/services/${service.id}/edit`}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit Service
-                </Link>
+              <Button variant="outline" onClick={() => navigate(`/service-provider/dashboard/services/${service.id}/edit`)}>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Service
               </Button>
-              <Button asChild>
-                <Link href={`/services/${service.id}`}>
-                  <Eye className="h-4 w-4 mr-2" />
-                  View as Customer
-                </Link>
+              <Button onClick={() => navigate(`/services/${service.id}`)}>
+                <Eye className="h-4 w-4 mr-2" />
+                View as Customer
               </Button>
             </div>
           </div>

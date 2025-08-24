@@ -2,13 +2,11 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Textarea } from "@/components/ui/textarea"
 import { 
   Search,
-  Filter,
   Calendar,
   Clock,
   User,
@@ -17,11 +15,7 @@ import {
   MapPin,
   CheckCircle,
   XCircle,
-  AlertCircle,
-  Eye,
   MessageSquare,
-  DollarSign,
-  MoreVertical,
   Download
 } from "lucide-react"
 import { ServiceBooking } from "@/types"
@@ -33,9 +27,7 @@ export default function ServiceProviderBookingsPage() {
   const [filteredBookings, setFilteredBookings] = useState<ServiceBooking[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "confirmed" | "completed" | "cancelled">("all")
-  const [selectedBooking, setSelectedBooking] = useState<ServiceBooking | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!user) {
@@ -46,7 +38,6 @@ export default function ServiceProviderBookingsPage() {
     const loadBookings = async () => {
       try {
         setIsLoading(true)
-        setError(null)
         
         // TODO: Load real bookings data from Firebase
         // For now, just set empty array without delay
@@ -54,7 +45,6 @@ export default function ServiceProviderBookingsPage() {
         setFilteredBookings([])
       } catch (err: any) {
         console.error("Error loading bookings:", err)
-        setError(err.message || "Failed to load bookings")
       } finally {
         setIsLoading(false)
       }
@@ -70,7 +60,6 @@ export default function ServiceProviderBookingsPage() {
     if (searchQuery) {
       filtered = filtered.filter(booking =>
         booking.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        booking.serviceDetails.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         booking.customerEmail.toLowerCase().includes(searchQuery.toLowerCase())
       )
     }
@@ -81,7 +70,7 @@ export default function ServiceProviderBookingsPage() {
     }
 
     // Sort by date (newest first)
-    filtered.sort((a, b) => new Date(b.scheduledDate).getTime() - new Date(a.scheduledDate).getTime())
+    filtered.sort((a, b) => new Date(b.serviceDate).getTime() - new Date(a.serviceDate).getTime())
 
     setFilteredBookings(filtered)
   }, [bookings, searchQuery, statusFilter])
@@ -90,14 +79,6 @@ export default function ServiceProviderBookingsPage() {
     setBookings(bookings.map(booking =>
       booking.id === bookingId
         ? { ...booking, status: newStatus, updatedAt: Date.now() }
-        : booking
-    ))
-  }
-
-  const handleAddNote = (bookingId: string, note: string) => {
-    setBookings(bookings.map(booking =>
-      booking.id === bookingId
-        ? { ...booking, providerNotes: note, updatedAt: Date.now() }
         : booking
     ))
   }
@@ -112,11 +93,10 @@ export default function ServiceProviderBookingsPage() {
     }
   }
 
-  const getPaymentStatusColor = (status: ServiceBooking['paymentStatus']) => {
+  const getPaymentStatusColor = (status: string | undefined) => {
     switch (status) {
       case "pending": return "bg-red-100 text-red-800"
-      case "deposit_paid": return "bg-yellow-100 text-yellow-800"
-      case "fully_paid": return "bg-green-100 text-green-800"
+      case "paid": return "bg-green-100 text-green-800"
       case "refunded": return "bg-gray-100 text-gray-800"
       default: return "bg-gray-100 text-gray-800"
     }
@@ -128,8 +108,8 @@ export default function ServiceProviderBookingsPage() {
     confirmedBookings: bookings.filter(b => b.status === "confirmed").length,
     completedBookings: bookings.filter(b => b.status === "completed").length,
     totalRevenue: bookings
-      .filter(b => b.paymentStatus === "fully_paid")
-      .reduce((sum, b) => sum + b.totalAmount, 0)
+      .filter(b => b.paymentStatus === "paid")
+      .reduce((sum, b) => sum + (b.totalAmount || 0), 0)
   }
 
   if (isLoading) {
@@ -240,22 +220,22 @@ export default function ServiceProviderBookingsPage() {
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
                       <h3 className="text-lg font-semibold text-gray-900">
-                        {booking.serviceDetails.name}
+                        Service Booking
                       </h3>
                       <Badge className={getStatusColor(booking.status)}>
                         {booking.status}
                       </Badge>
                       <Badge variant="outline" className={getPaymentStatusColor(booking.paymentStatus)}>
-                        {booking.paymentStatus.replace("_", " ")}
+                        {booking.paymentStatus?.replace("_", " ") || "pending"}
                       </Badge>
                     </div>
-                    <p className="text-gray-600 mb-3">{booking.serviceDetails.description}</p>
+                    <p className="text-gray-600 mb-3">Service booking details</p>
                   </div>
                   <div className="text-right">
                     <div className="text-lg font-bold text-gray-900">
-                      ₦{booking.totalAmount.toLocaleString()}
+                      ₦{(booking.totalAmount || 0).toLocaleString()}
                     </div>
-                    {booking.depositAmount && booking.paymentStatus === "deposit_paid" && (
+                    {booking.depositAmount && booking.paymentStatus === "pending" && (
                       <div className="text-sm text-gray-600">
                         Deposit: ₦{booking.depositAmount.toLocaleString()}
                       </div>
@@ -285,18 +265,16 @@ export default function ServiceProviderBookingsPage() {
                     <div className="flex items-center text-sm">
                       <Calendar className="h-4 w-4 text-gray-400 mr-2" />
                       <span className="font-medium">
-                        {new Date(booking.scheduledDate).toLocaleDateString()}
+                        {booking.serviceDate}
                       </span>
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <Clock className="h-4 w-4 text-gray-400 mr-2" />
-                      <span>{booking.scheduledTime}</span>
+                      <span>{booking.serviceTime}</span>
                     </div>
-                    {booking.serviceDetails.duration && (
-                      <div className="text-sm text-gray-600">
-                        Duration: {Math.floor(booking.serviceDetails.duration / 60)}h {booking.serviceDetails.duration % 60}m
-                      </div>
-                    )}
+                    <div className="text-sm text-gray-600">
+                      Duration: {Math.floor((booking.duration || 60) / 60)}h {(booking.duration || 60) % 60}m
+                    </div>
                   </div>
 
                   {/* Location */}
@@ -304,8 +282,14 @@ export default function ServiceProviderBookingsPage() {
                     <div className="flex items-start text-sm">
                       <MapPin className="h-4 w-4 text-gray-400 mr-2 mt-0.5" />
                       <div>
-                        <div className="font-medium">{booking.address.city}, {booking.address.state}</div>
-                        <div className="text-gray-600">{booking.address.address1}</div>
+                        {booking.address ? (
+                          <>
+                            <div className="font-medium">{booking.address.city}, {booking.address.state}</div>
+                            <div className="text-gray-600">{booking.address.address1}</div>
+                          </>
+                        ) : (
+                          <div className="text-gray-600">Location not specified</div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -353,10 +337,10 @@ export default function ServiceProviderBookingsPage() {
                 </div>
 
                 {/* Provider Notes */}
-                {booking.providerNotes && (
+                {booking.notes && (
                   <div className="mt-4 p-3 bg-blue-50 rounded-lg">
                     <div className="text-sm font-medium text-blue-800 mb-1">Provider Notes:</div>
-                    <div className="text-sm text-blue-700">{booking.providerNotes}</div>
+                    <div className="text-sm text-blue-700">{booking.notes}</div>
                   </div>
                 )}
 

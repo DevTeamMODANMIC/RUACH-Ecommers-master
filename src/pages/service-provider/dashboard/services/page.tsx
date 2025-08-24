@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Link from "next/link"
+import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -9,22 +9,18 @@ import { Badge } from "@/components/ui/badge"
 import { 
   Plus,
   Search,
-  Filter,
   Eye,
   Edit,
   Trash2,
-  MoreVertical,
   Clock,
   DollarSign,
   MapPin,
-  Star,
-  Users,
   ToggleLeft,
   ToggleRight,
   Wrench,
   RefreshCw
 } from "lucide-react"
-import { Service, ServiceCategory } from "@/types"
+import { Service } from "@/types"
 import { useAuth } from "@/components/auth-provider"
 import { getServiceProviderByOwnerId } from "@/lib/firebase-service-providers"
 import { getServicesByProviderId, toggleServiceStatus, deleteService } from "@/lib/firebase-services"
@@ -267,7 +263,7 @@ export default function ServiceProviderServicesPage() {
       const service = services.find(s => s.id === serviceId)
       if (!service) return
       
-      await toggleServiceStatus(serviceId, !service.isActive)
+      await toggleServiceStatus(serviceId)
       
       // Update local state
       setServices(services.map(service => 
@@ -385,7 +381,7 @@ export default function ServiceProviderServicesPage() {
                 {isRefreshing ? 'Refreshing...' : 'Refresh'}
               </Button>
               <Button asChild>
-                <Link href="/service-provider/dashboard/services/add">
+                <Link to="/service-provider/dashboard/services/add">
                   <Plus className="h-4 w-4 mr-2" />
                   Add New Service
                 </Link>
@@ -609,38 +605,42 @@ export default function ServiceProviderServicesPage() {
                 )}
 
                 {/* Service Areas */}
-                <div className="flex items-center text-sm text-gray-600">
-                  <MapPin className="h-4 w-4 mr-2" />
-                  <span className="line-clamp-1">
-                    {service.serviceAreas.slice(0, 2).join(", ")}
-                    {service.serviceAreas.length > 2 && ` +${service.serviceAreas.length - 2} more`}
-                  </span>
-                </div>
+                {service.serviceAreas && service.serviceAreas.length > 0 && (
+                  <div className="flex items-center text-sm text-gray-600">
+                    <MapPin className="h-4 w-4 mr-2" />
+                    <span className="line-clamp-1">
+                      {service.serviceAreas.slice(0, 2).join(", ")}
+                      {service.serviceAreas.length > 2 && ` +${service.serviceAreas.length - 2} more`}
+                    </span>
+                  </div>
+                )}
 
                 {/* Features */}
-                <div className="flex flex-wrap gap-1">
-                  {service.features.slice(0, 3).map((feature, index) => (
-                    <Badge key={index} variant="outline" className="text-xs">
-                      {feature}
-                    </Badge>
-                  ))}
-                  {service.features.length > 3 && (
-                    <Badge variant="outline" className="text-xs">
-                      +{service.features.length - 3}
-                    </Badge>
-                  )}
-                </div>
+                {service.features && service.features.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {service.features.slice(0, 3).map((feature: string, index: number) => (
+                      <Badge key={index} variant="outline" className="text-xs">
+                        {feature}
+                      </Badge>
+                    ))}
+                    {service.features.length > 3 && (
+                      <Badge variant="outline" className="text-xs">
+                        +{service.features.length - 3}
+                      </Badge>
+                    )}
+                  </div>
+                )}
 
                 {/* Actions */}
                 <div className="flex items-center justify-between pt-3 border-t">
                   <div className="flex items-center space-x-2">
                     <Button size="sm" variant="outline" asChild>
-                      <Link href={`/service-provider/dashboard/services/${service.id}`}>
+                      <Link to={`/service-provider/dashboard/services/${service.id}`}>
                         <Eye className="h-3 w-3" />
                       </Link>
                     </Button>
                     <Button size="sm" variant="outline" asChild>
-                      <Link href={`/service-provider/dashboard/services/${service.id}/edit`}>
+                      <Link to={`/service-provider/dashboard/services/${service.id}/edit`}>
                         <Edit className="h-3 w-3" />
                       </Link>
                     </Button>
@@ -695,7 +695,7 @@ export default function ServiceProviderServicesPage() {
               </p>
               {(!searchQuery && statusFilter === "all") && (
                 <Button asChild>
-                  <Link href="/service-provider/dashboard/services/add">
+                  <Link to="/service-provider/dashboard/services/add">
                     <Plus className="h-4 w-4 mr-2" />
                     Add Your First Service
                   </Link>

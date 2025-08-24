@@ -1,8 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
+import { useNavigate, useParams } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -24,17 +23,26 @@ import {
 import { Service, ServiceCategory } from "@/types"
 import { useAuth } from "@/components/auth-provider"
 import { getServiceProviderByOwnerId } from "@/lib/firebase-service-providers"
-import { getService, updateService } from "@/lib/firebase-services"
-import { serviceCategories } from "@/lib/categories"
+import { getServicesByProviderId, updateService } from "@/lib/firebase-services"
+// Service categories constant
+const serviceCategories: { value: ServiceCategory; label: string }[] = [
+  { value: "plumbing", label: "Plumbing" },
+  { value: "electrical", label: "Electrical" },
+  { value: "cleaning", label: "Cleaning" },
+  { value: "event-planning", label: "Event Planning" },
+  { value: "catering", label: "Catering" },
+  { value: "beauty", label: "Beauty & Wellness" },
+  { value: "fitness", label: "Fitness" },
+  { value: "tutoring", label: "Tutoring" },
+  { value: "photography", label: "Photography" },
+  { value: "repairs", label: "Repairs" },
+  { value: "landscaping", label: "Landscaping" },
+  { value: "other", label: "Other" }
+]
 
-interface EditServicePageProps {
-  params: {
-    id: string
-  }
-}
-
-export default function EditServicePage({ params }: EditServicePageProps) {
-  const router = useRouter()
+export default function EditServicePage() {
+  const navigate = useNavigate()
+  const { id } = useParams<{ id: string }>() || {}
   const { user } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -77,8 +85,9 @@ export default function EditServicePage({ params }: EditServicePageProps) {
           throw new Error("Service provider profile not found")
         }
 
-        // Load the service
-        const serviceData = await getService(params.id)
+        // Load the service (find it from provider's services)
+        const allServices = await getServicesByProviderId(serviceProvider.id)
+        const serviceData = allServices.find(s => s.id === id)
         if (!serviceData) {
           throw new Error("Service not found")
         }
@@ -111,10 +120,10 @@ export default function EditServicePage({ params }: EditServicePageProps) {
       }
     }
 
-    if (params.id) {
+    if (id) {
       loadService()
     }
-  }, [params.id, user?.uid])
+  }, [id, user?.uid])
 
   const handleInputChange = (field: keyof Service, value: any) => {
     setFormData(prev => ({
@@ -210,7 +219,7 @@ export default function EditServicePage({ params }: EditServicePageProps) {
 
       // Show success message and redirect
       alert("Service updated successfully!")
-      router.push("/service-provider/dashboard/services")
+      navigate("/service-provider/dashboard/services")
 
     } catch (error: any) {
       console.error("Error updating service:", error)
@@ -259,7 +268,7 @@ export default function EditServicePage({ params }: EditServicePageProps) {
               Try Again
             </Button>
             <Button 
-              onClick={() => router.push("/service-provider/dashboard/services")}
+              onClick={() => navigate("/service-provider/dashboard/services")}
               variant="outline"
             >
               Back to Services
@@ -278,7 +287,7 @@ export default function EditServicePage({ params }: EditServicePageProps) {
           <div className="flex items-center">
             <Button
               variant="ghost"
-              onClick={() => router.back()}
+              onClick={() => navigate(-1)}
               className="mr-4"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -584,7 +593,7 @@ export default function EditServicePage({ params }: EditServicePageProps) {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => router.back()}
+                onClick={() => navigate(-1)}
                 disabled={isSaving}
               >
                 Cancel

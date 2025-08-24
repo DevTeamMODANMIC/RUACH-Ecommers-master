@@ -55,7 +55,7 @@ export default function VendorForm() {
     
     setIsSubmitting(true)
     try {
-      const storeId = await createVendorStore(user.uid, values)
+      await createVendorStore(user.uid, values)
       await refreshStores()
       
       const storeNumber = allStores.length + 1

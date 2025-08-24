@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
 import { 
   Settings, 
   Store, 
@@ -17,8 +16,7 @@ import {
   Trash2, 
   AlertTriangle,
   Eye,
-  Edit3,
-  Upload
+  Edit3
 } from "lucide-react"
 import {
   AlertDialog,
@@ -65,7 +63,7 @@ export default function StoreSettingsPage() {
     }))
   }
 
-  const handleLogoUpload = (publicId: string, url: string) => {
+  const handleLogoUpload = (url: string) => {
     setFormData(prev => ({
       ...prev,
       logoUrl: url

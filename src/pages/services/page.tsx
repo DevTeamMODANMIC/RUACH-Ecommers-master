@@ -2,30 +2,15 @@
 
 import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { 
-  Wrench,
-  Zap,
-  Sparkles,
-  Calendar,
-  UtensilsCrossed,
-  Heart,
-  Dumbbell,
-  GraduationCap,
-  Camera,
-  Hammer,
-  TreePine,
   Settings,
   ArrowRight,
   Search,
-  Star,
-  Users,
   CheckCircle,
-  Clock,
-  MapPin,
   Phone,
-  Mail,
-  MessageCircle
+  MessageCircle,
+  Mail
 } from "lucide-react"
 
 const serviceCategories: any[] = [

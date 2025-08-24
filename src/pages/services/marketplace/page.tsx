@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Link from "next/link"
+import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -10,13 +10,10 @@ import {
   MapPin,
   Star,
   Clock,
-  Filter,
-  SlidersHorizontal,
   Grid,
   List,
   User,
-  Calendar,
-  ArrowRight
+  SlidersHorizontal
 } from "lucide-react"
 import { Service, ServiceProvider, ServiceCategory } from "@/types"
 
@@ -38,7 +35,7 @@ const priceRanges = [
 const locations = ["Lagos", "Abuja", "Port Harcourt", "Kano", "Ibadan", "Benin City"]
 
 export default function ServicesMarketplace() {
-  const [services, setServices] = useState(mockServices)
+  const [services] = useState(mockServices)
   const [filteredServices, setFilteredServices] = useState(mockServices)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | "">("")
@@ -68,7 +65,7 @@ export default function ServicesMarketplace() {
     // Location filter
     if (selectedLocation) {
       filtered = filtered.filter(service => 
-        service.serviceAreas.includes(selectedLocation)
+        service.serviceAreas && service.serviceAreas.includes(selectedLocation)
       )
     }
 
@@ -119,7 +116,7 @@ export default function ServicesMarketplace() {
           <CardContent className="p-6">
             <div className="flex space-x-4">
               <img
-                src={service.images[0]?.url}
+                src={service.images?.[0]?.url || '/placeholder.jpg'}
                 alt={service.name}
                 className="w-24 h-24 rounded-lg object-cover flex-shrink-0"
               />
@@ -158,12 +155,18 @@ export default function ServicesMarketplace() {
                     </div>
                     <div className="flex items-center">
                       <MapPin className="h-4 w-4 mr-1" />
-                      {service.serviceAreas.slice(0, 2).join(", ")}
-                      {service.serviceAreas.length > 2 && " +more"}
+                      {service.serviceAreas && service.serviceAreas.length > 0 ? (
+                        <>
+                          {service.serviceAreas.slice(0, 2).join(", ")}
+                          {service.serviceAreas.length > 2 && " +more"}
+                        </>
+                      ) : (
+                        "Location not specified"
+                      )}
                     </div>
                   </div>
                   
-                  <Link href={`/services/book/${service.id}`}>
+                  <Link to={`/services/book/${service.id}`}>
                     <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
                       Book Now
                     </Button>
@@ -180,7 +183,7 @@ export default function ServicesMarketplace() {
       <Card className="hover:shadow-lg transition-shadow">
         <div className="aspect-video relative overflow-hidden rounded-t-lg">
           <img
-            src={service.images[0]?.url}
+            src={service.images?.[0]?.url || '/placeholder.jpg'}
             alt={service.name}
             className="w-full h-full object-cover"
           />
@@ -217,11 +220,17 @@ export default function ServicesMarketplace() {
 
           <div className="flex items-center text-sm text-gray-500 mb-4">
             <MapPin className="h-4 w-4 mr-1" />
-            {service.serviceAreas.slice(0, 2).join(", ")}
-            {service.serviceAreas.length > 2 && " +more"}
+            {service.serviceAreas && service.serviceAreas.length > 0 ? (
+              <>
+                {service.serviceAreas.slice(0, 2).join(", ")}
+                {service.serviceAreas.length > 2 && " +more"}
+              </>
+            ) : (
+              "Location not specified"
+            )}
           </div>
 
-          <Link href={`/services/book/${service.id}`} className="block">
+          <Link to={`/services/book/${service.id}`} className="block">
             <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700">
               Book Service
             </Button>

@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { 
@@ -52,7 +51,6 @@ const serviceCategories = [
 
 export default function VendorServiceSelection() {
   const [selectedType, setSelectedType] = useState<SelectionType>(null)
-  const navigate = useNavigate()
 
   if (selectedType === "vendor") {
     return (

@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import Image from "next/image"
-import Link from "next/link"
+// Next.js Image component not used - using regular img tags
+import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -13,12 +13,8 @@ import {
   Users, 
   Calculator, 
   CheckCircle,
-  Building,
-  Truck,
-  Clock,
   ArrowLeft,
   Phone,
-  Mail,
   FileText,
   Star,
   ChevronRight
@@ -131,7 +127,7 @@ const process = [
 ]
 
 export default function BulkOrdersServicePage() {
-  const [selectedTier, setSelectedTier] = useState(1)
+  const [, setSelectedTier] = useState(1)
   const [formData, setFormData] = useState({
     businessName: "",
     contactName: "",
@@ -159,7 +155,7 @@ export default function BulkOrdersServicePage() {
       <div className="bg-gray-50 py-4">
         <div className="container mx-auto px-4">
           <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Link href="/services" className="hover:text-green-600 flex items-center">
+            <Link to="/services" className="hover:text-green-600 flex items-center">
               <ArrowLeft className="h-4 w-4 mr-1" />
               Services
             </Link>
@@ -214,11 +210,10 @@ export default function BulkOrdersServicePage() {
             </div>
             <div className="relative">
               <div className="relative h-96 rounded-2xl overflow-hidden shadow-xl">
-                <Image
+                <img
                   src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=600&auto=format&fit=crop&q=80"
                   alt="Bulk Orders and Wholesale"
-                  fill
-                  className="object-cover"
+                  className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
               </div>
@@ -513,7 +508,7 @@ export default function BulkOrdersServicePage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" asChild className="bg-white text-green-600 hover:bg-gray-100 px-8 py-6 text-lg rounded-full">
-              <Link href="#inquiry-form">
+              <Link to="#inquiry-form">
                 Get Your Quote
                 <ChevronRight className="ml-2 h-5 w-5" />
               </Link>
