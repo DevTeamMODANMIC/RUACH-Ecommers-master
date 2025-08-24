@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react"
 import { getIdTokenResult } from "firebase/auth"
-import { useAuth } from "@/components/auth-provider"
+// import { useAuth } from "@/components/auth-provider"
+
+import { useAuth } from "../components/auth-provider" // Corrected relative path
 
 interface UseAdminResult {
   isAdmin: boolean

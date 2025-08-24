@@ -1,11 +1,11 @@
 ;
 
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "../../src/components/ui/button";
 import { Upload, X, AlertCircle, Loader2, Upload as UploadIcon } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Input } from "@/components/ui/input";
-import { auth } from "@/lib/firebase";
+import { Alert, AlertDescription } from "../../src/components/ui/alert";
+import { Input } from "../../src/components/ui/input";
+import { auth } from "../../src/lib/firebase";
 
 interface CloudinaryUploadWidgetProps {
   onUploadSuccess: (publicId: string, url: string, alt?: string) => void;

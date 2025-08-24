@@ -4,17 +4,17 @@ import { useState } from "react"
 // import Link from "next/link"
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { ChevronDown, ChevronRight } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Button } from "../../src/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
-} from "@/components/ui/dropdown-menu"
+} from "../../src/components/ui/dropdown-menu"
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+} from "../../src/components/ui/collapsible"
 import clsx from "clsx"
 
 // Define the mega menu categories structure (keep UI list here but ensure Shop filters use centralized categories)

@@ -2,9 +2,9 @@
 
 import type React from "react"
 import { createContext, useContext, useEffect, useState } from "react"
-import { useLocalStorage } from "@/hooks/use-local-storage"
-import { useToast } from "@/hooks/use-toast"
-import { Product } from "@/types"
+import { useLocalStorage } from "../../src/hooks/use-local-storage"
+import { useToast } from "../../src/hooks/use-toast"
+import { Product } from "../../src/types"
 
 interface CartItem {
   options: any

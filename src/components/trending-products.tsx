@@ -4,13 +4,13 @@ import { useState, useEffect } from "react"
 
 // import Link from "next/link"
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "../../src/components/ui/badge"
+import { Button } from "../../src/components/ui/button"
+import { Card, CardContent } from "../../src/components/ui/card"
 import { TrendingUp, Star, ShoppingCart, Eye, Flame, Store, CheckCircle } from "lucide-react"
 
-import { getProducts } from "@/lib/firebase-products"
-import { getVendor, type Vendor } from "@/lib/firebase-vendors"
+import { getProducts } from "../../src/lib/firebase-products"
+import { getVendor, type Vendor } from "../../src/lib/firebase-vendors"
 
 // Get trending products from Firebase - only show real products
 const getTrendingProducts = async () => {

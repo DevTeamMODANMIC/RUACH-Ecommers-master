@@ -4,26 +4,26 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Link from "next/link";
 ;
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from "../../src/components/ui/button";
+import { Input } from "../../src/components/ui/input";
+import { Label } from "../../src/components/ui/label";
+import { Textarea } from "../../src/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
+} from "../../src/components/ui/select";
+import { Switch } from "../../src/components/ui/switch";
 import { ArrowLeft, X, Plus } from "lucide-react";
-import { getProduct, updateProduct, type Product } from "@/lib/firebase-products";
-import { auth } from "@/lib/firebase";
+import { getProduct, updateProduct, type Product } from "../../src/lib/firebase-products";
+import { auth } from "../../src/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { useToast } from "@/hooks/use-toast";
-import { useCurrency } from "@/hooks/use-currency";
-import CloudinaryUploadWidget from "@/components/cloudinary-upload-widget";
-import { MAIN_CATEGORIES } from "@/lib/categories";
+import { useToast } from "../../src/hooks/use-toast";
+import { useCurrency } from "../../src/hooks/use-currency";
+import CloudinaryUploadWidget from "../../src/components/cloudinary-upload-widget";
+import { MAIN_CATEGORIES } from "../../src/lib/categories";
 
 const categories = MAIN_CATEGORIES.filter(c => c.id !== "all").map(c => ({
   id: c.id,

@@ -1,9 +1,9 @@
 
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { formatCurrency } from "@/lib/utils"
+import { Card, CardContent, CardHeader, CardTitle } from "../../src/components/ui/card"
+import { formatCurrency } from "../../src/lib/utils"
 import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore"
-import { db } from "@/lib/firebase"
+import { db } from "../../src/lib/firebase"
 import { useState, useEffect } from "react"
 import { Package, ShoppingCart, DollarSign } from "lucide-react"
 

@@ -1,6 +1,6 @@
 
 
-import { ProductRecommendations } from "@/components/product-recommendations"
+import { ProductRecommendations } from "../../src/components/product-recommendations"
 
 interface CartRecommendationsProps {
   cartItems: Array<{ id: number; country: string }>

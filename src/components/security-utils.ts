@@ -3,7 +3,7 @@ export class SecurityUtils {
   // Email validation with comprehensive regex
   static validateEmail(email: string): boolean {
     const emailRegex =
-      /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
+      /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+../../src[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
     return emailRegex.test(email) && email.length <= 254
   }
 
@@ -40,7 +40,7 @@ export class SecurityUtils {
       score += 1
     }
 
-    if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
+    if (!/[!../../src#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
       errors.push("Password must contain at least one special character")
     } else {
       score += 1

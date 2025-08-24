@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useCurrency } from "@/components/currency-provider"
+import { useCurrency } from "../components/currency-provider"
 
 /**
  * A safer version of useCurrency that handles SSR hydration mismatches

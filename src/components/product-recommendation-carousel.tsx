@@ -1,9 +1,9 @@
 
 
 import { useState, useRef, useEffect } from "react"
-import { Button } from "@/components/ui/button"
+import { Button } from "../../src/components/ui/button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import { ProductRecommendations } from "@/components/product-recommendations"
+import { ProductRecommendations } from "../../src/components/product-recommendations"
 
 interface ProductRecommendationCarouselProps {
   productId?: number

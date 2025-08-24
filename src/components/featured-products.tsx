@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "../../src/components/ui/button";
+import { Card, CardContent, CardFooter } from "../../src/components/ui/card";
+import { Badge } from "../../src/components/ui/badge";
 import { ShoppingCart, Star, Award, TrendingUp, ChevronRight, Heart, Sparkles, Eye, X, Store } from "lucide-react";
-import { getProducts, type Product } from "@/lib/firebase-products";
-import { getVendor, type Vendor } from "@/lib/firebase-vendors";
-import { useCart } from "@/components/cart-provider";
-import { formatCurrency } from "@/lib/utils";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
-import { useWishlist, type WishlistItem } from "@/hooks/use-wishlist";
+import { getProducts, type Product } from "../../src/lib/firebase-products";
+import { getVendor, type Vendor } from "../../src/lib/firebase-vendors";
+import { useCart } from "../../src/components/cart-provider";
+import { formatCurrency } from "../../src/lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "../../src/components/ui/dialog";
+import { useWishlist, type WishlistItem } from "../../src/hooks/use-wishlist";
 
 export default function FeaturedProducts() {
   const [products, setProducts] = useState<Product[]>([]);

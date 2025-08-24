@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 ;
-import { buildImageUrl, buildSrcSet } from "@/lib/cloudinary-client";
+import { buildImageUrl, buildSrcSet } from "../../src/lib/cloudinary-client";
 
 interface CloudinaryImageProps {
   publicId: string;

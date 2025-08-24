@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useAuth } from "@/components/auth-provider"
-import { getActiveStore, getUserStores, getVendorOwner, switchActiveStore, Vendor, VendorOwner } from "@/lib/firebase-vendors"
+import { useAuth } from "../components/auth-provider"
+import { getActiveStore, getUserStores, getVendorOwner, switchActiveStore, Vendor, VendorOwner } from "../lib/firebase-vendors"
 
 export function useVendor() {
   const { user, isLoading: authLoading } = useAuth()
@@ -23,7 +23,7 @@ export function useVendor() {
       // DEBUGGING: Also check for old data structure
       try {
         const { collection, query, where, getDocs } = await import("firebase/firestore")
-        const { db } = await import("@/lib/firebase")
+        const { db } = await import("../lib/firebase")
         const oldQuery = query(collection(db, "vendors"), where("uid", "==", userId))
         const oldSnapshot = await getDocs(oldQuery)
         const oldStores = oldSnapshot.docs.map(doc => ({id: doc.id, ...doc.data()}))
@@ -31,7 +31,7 @@ export function useVendor() {
         
         if (oldStores.length > 0 && stores.length === 0) {
           console.log("Found stores with old structure! Running migration...")
-          const { migrateOldVendorData } = await import("@/lib/vendor-migration")
+          const { migrateOldVendorData } = await import("../lib/vendor-migration")
           await migrateOldVendorData()
           // Refetch after migration
           const newStores = await getUserStores(userId)
@@ -60,7 +60,7 @@ export function useVendor() {
       // If we have stores but no owner document, create one
       if (!owner) {
         console.log("Creating missing vendor owner document")
-        const { ensureVendorOwnerExists } = await import("@/lib/vendor-migration")
+        const { ensureVendorOwnerExists } = await import("../lib/vendor-migration")
         await ensureVendorOwnerExists(userId, stores[0].id)
         // Refetch owner data
         const newOwner = await getVendorOwner(userId)

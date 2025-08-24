@@ -2,8 +2,8 @@
 
 import { useState } from "react"
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import { Button } from "../../src/components/ui/button"
+import { Card, CardContent, CardFooter } from "../../src/components/ui/card"
 
 export default function ImageTest() {
   const [showDebug, setShowDebug] = useState(false)

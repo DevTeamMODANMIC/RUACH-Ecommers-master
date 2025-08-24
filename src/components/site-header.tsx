@@ -15,28 +15,28 @@ import {
   Package,
   User,
 } from "lucide-react"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
+import { Input } from "../../src/components/ui/input"
+import { Button } from "../../src/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-} from "@/components/ui/dropdown-menu"
+} from "../../src/components/ui/dropdown-menu"
 import {
   Sheet,
   SheetTrigger,
   SheetContent,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet"
-import { Avatar } from "@/components/ui/avatar"
-import { useCart } from "@/components/cart-provider"
-import { useWishlist } from "@/hooks/use-wishlist"
-import { useAuth } from "@/components/auth-provider"
-import { useVendor } from "@/hooks/use-vendor"
-import { VendorHeaderSwitcher } from "@/components/vendor-header-switcher"
-import { DesktopMegaMenu, MobileMegaMenu } from "@/components/mega-menu"
+} from "../../src/components/ui/sheet"
+import { Avatar } from "../../src/components/ui/avatar"
+import { useCart } from "../../src/components/cart-provider"
+import { useWishlist } from "../../src/hooks/use-wishlist"
+import { useAuth } from "../../src/components/auth-provider"
+import { useVendor } from "../../src/hooks/use-vendor"
+import { VendorHeaderSwitcher } from "../../src/components/vendor-header-switcher"
+import { DesktopMegaMenu, MobileMegaMenu } from "../../src/components/mega-menu"
 import clsx from "clsx"
 
 // Legacy categories - keeping for backward compatibility if needed

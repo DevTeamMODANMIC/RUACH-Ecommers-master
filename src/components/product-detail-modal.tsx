@@ -1,69 +1,68 @@
+import { useState } from "react";
 
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import { Heart, ShoppingCart, Minus, Plus } from "lucide-react";
+import { useCart } from "../components/cart-provider";
+import { formatCurrency } from "../lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "../components/ui/dialog";
+import { useWishlist } from "../hooks/use-wishlist";
+import { Separator } from "../components/ui/separator";
+import CloudinaryImage from "../components/cloudinary-image";
 
-import { useState } from "react"
-
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Heart, ShoppingCart, Minus, Plus, Star } from "lucide-react"
-import { useCart } from "@/components/cart-provider"
-import { formatCurrency } from "@/lib/utils"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog"
-import { useWishlist, type WishlistItem } from "@/hooks/use-wishlist"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Separator } from "@/components/ui/separator"
-import { Product } from "@/types"
-import CloudinaryImage from "@/components/cloudinary-image"
-
+// Types (If using TypeScript)
 interface ProductDetailModalProps {
-  product: Product | null
-  isOpen: boolean
-  onClose: () => void
+  product: any; // Replace 'any' with your Product type
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 export default function ProductDetailModal({ product, isOpen, onClose }: ProductDetailModalProps) {
-  const [quantity, setQuantity] = useState(1)
-  const [selectedImage, setSelectedImage] = useState(0)
-  const { addToCart } = useCart()
-  const { isInWishlist, toggleWishlist } = useWishlist()
+  const [quantity, setQuantity] = useState(1);
+  const [selectedImage, setSelectedImage] = useState(0);
+  const { addToCart } = useCart();
+  const { isInWishlist, toggleWishlist } = useWishlist();
 
-  if (!product) return null
+  if (!product) return null;
 
   // Calculate discounted price if applicable
-  const discountedPrice = product.discount && product.discount > 0 
-    ? product.price * (1 - product.discount / 100) 
-    : null
+  const discountedPrice =
+    product.discount && product.discount > 0
+      ? product.price * (1 - product.discount / 100)
+      : null;
 
   const handleAddToCart = () => {
     addToCart({
       productId: product.id,
       name: product.name,
       price: discountedPrice || product.price,
-      image: product.cloudinaryImages?.[selectedImage]?.url || 
-             product.images?.[selectedImage] || 
-             product.images?.[0] || 
-             "/placeholder.jpg",
-      quantity
-    })
-  }
+      image:
+        product.cloudinaryImages?.[selectedImage]?.url ||
+        product.images?.[selectedImage] ||
+        product.images?.[0] ||
+        "/placeholder.jpg",
+      quantity,
+    });
+  };
 
   const handleToggleWishlist = () => {
-    const wishlistItem: WishlistItem = {
+    toggleWishlist({
       id: product.id,
       name: product.name,
       price: discountedPrice || product.price,
       originalPrice: discountedPrice ? product.price : undefined,
-      image: product.cloudinaryImages?.[0]?.url || 
-             product.images?.[0] || 
-             "/placeholder.jpg",
+      image:
+        product.cloudinaryImages?.[0]?.url ||
+        product.images?.[0] ||
+        "/placeholder.jpg",
       category: product.category || product.displayCategory,
-      inStock: !product.outOfStock
-    }
-    
-    toggleWishlist(wishlistItem)
-  }
+      inStock: !product.outOfStock,
+    });
+  };
 
-  const incrementQuantity = () => setQuantity(prev => prev + 1)
-  const decrementQuantity = () => setQuantity(prev => prev > 1 ? prev - 1 : 1)
+  const incrementQuantity = () => setQuantity((prev) => prev + 1);
+  const decrementQuantity = () =>
+    setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -85,24 +84,26 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
                   className="w-full h-full object-contain"
                 />
               ) : (
-                <Image
-                  src={product.images?.[selectedImage] || "/product_images/unknown-product.jpg"}
+                <img
+                  src={
+                    product.images?.[selectedImage] ||
+                    "/product_images/unknown-product.jpg"
+                  }
                   alt={product.name}
-                  fill
-                  className="object-contain p-4"
+                  className="w-full h-full object-contain p-4"
                   onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = "/product_images/unknown-product.jpg";
+                    (e.target as HTMLImageElement).src =
+                      "/product_images/unknown-product.jpg";
                   }}
                 />
               )}
-              
+
               {product.outOfStock && (
                 <div className="absolute top-4 left-0 z-10 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-r-lg shadow-md">
                   Out of Stock
                 </div>
               )}
-              
+
               {product.discount && product.discount > 0 && (
                 <div className="absolute top-12 left-0 z-10 bg-red-500 text-white text-xs font-bold px-3 py-0.5 rounded-r-lg shadow-md">
                   -{product.discount}% OFF
@@ -110,7 +111,7 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
               )}
             </div>
           </div>
-          
+
           {/* Product Info */}
           <div className="space-y-6">
             <div>
@@ -123,9 +124,11 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
                   <Badge className="bg-blue-500 hover:bg-blue-600">New Arrival</Badge>
                 )}
               </div>
-              
-              <p className="text-gray-600 mt-1">{product.displayCategory || product.category}</p>
-              
+
+              <p className="text-gray-600 mt-1">
+                {product.displayCategory || product.category}
+              </p>
+
               {/* Price */}
               <div className="mt-4">
                 {discountedPrice ? (
@@ -143,7 +146,7 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
                   </span>
                 )}
               </div>
-              
+
               {/* Description */}
               {product.description && (
                 <div className="mt-4 text-gray-600">
@@ -151,16 +154,16 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
                 </div>
               )}
             </div>
-            
+
             <Separator />
-            
+
             {/* Quantity */}
             <div className="flex items-center space-x-4">
               <span className="text-sm font-medium">Quantity:</span>
               <div className="flex items-center">
-                <Button 
-                  variant="outline" 
-                  size="icon" 
+                <Button
+                  variant="outline"
+                  size="icon"
                   onClick={decrementQuantity}
                   disabled={quantity <= 1}
                   className="h-8 w-8 rounded-r-none"
@@ -170,9 +173,9 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
                 <div className="h-8 px-3 flex items-center justify-center border-y border-gray-200 bg-white">
                   {quantity}
                 </div>
-                <Button 
-                  variant="outline" 
-                  size="icon" 
+                <Button
+                  variant="outline"
+                  size="icon"
                   onClick={incrementQuantity}
                   className="h-8 w-8 rounded-l-none"
                 >
@@ -180,10 +183,10 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
                 </Button>
               </div>
             </div>
-            
+
             {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-3">
-              <Button 
+              <Button
                 onClick={handleAddToCart}
                 className="flex-1 flex items-center justify-center gap-2"
                 disabled={product.outOfStock}
@@ -191,19 +194,19 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
                 <ShoppingCart className="h-4 w-4" />
                 Add to Cart
               </Button>
-              
+
               <Button
                 variant="outline"
                 onClick={handleToggleWishlist}
                 className="flex-1 flex items-center justify-center gap-2"
               >
                 <Heart className="h-4 w-4" />
-                Add to Wishlist
+                {isInWishlist(product.id) ? "Remove from Wishlist" : "Add to Wishlist"}
               </Button>
             </div>
           </div>
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

@@ -3,15 +3,15 @@
 import { useState, useEffect } from "react"
 
 import Link from "next/link"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "../../src/components/ui/card"
+import { Button } from "../../src/components/ui/button"
+import { Badge } from "../../src/components/ui/badge"
 import { Heart, ShoppingCart, Star, Eye, MapPin, AlertCircle } from "lucide-react"
-import { useCurrency } from "@/components/currency-provider"
-import { useCountry } from "@/components/country-provider"
-import { Skeleton } from "@/components/ui/skeleton"
-import { BulkOrderButton } from "@/components/bulk-order-button"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useCurrency } from "../../src/components/currency-provider"
+import { useCountry } from "../../src/components/country-provider"
+import { Skeleton } from "../../src/components/ui/skeleton"
+import { BulkOrderButton } from "../../src/components/bulk-order-button"
+import { Alert, AlertDescription } from "../../src/components/ui/alert"
 
 // Enhanced product data with country availability
 const productData = {

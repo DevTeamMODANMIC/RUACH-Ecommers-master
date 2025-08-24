@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback } from "react"
-import { useLocalStorage } from "@/hooks/use-local-storage"
+import { useLocalStorage } from "./use-local-storage"
 
 // Mock product data with country-specific information
 const productData = {

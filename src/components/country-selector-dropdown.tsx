@@ -1,7 +1,7 @@
 
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { Button } from "../../src/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,12 +9,12 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Badge } from "@/components/ui/badge"
+} from "../../src/components/ui/dropdown-menu"
+import { Badge } from "../../src/components/ui/badge"
 import { ChevronDown, Globe, Check } from "lucide-react"
-import { useCountry } from "@/components/country-provider"
-import { useCurrency } from "@/components/currency-provider"
-import { useToast } from "@/hooks/use-toast"
+import { useCountry } from "../../src/components/country-provider"
+import { useCurrency } from "../../src/components/currency-provider"
+import { useToast } from "../../src/hooks/use-toast"
 
 interface CountrySelectorDropdownProps {
   variant?: "header" | "footer" | "full"

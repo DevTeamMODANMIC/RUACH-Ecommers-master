@@ -3,15 +3,15 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Button } from "../../src/components/ui/button"
+import { Card, CardContent } from "../../src/components/ui/card"
+import { Badge } from "../../src/components/ui/badge"
 import { Star, ShoppingCart, ChevronRight, Eye, Heart, Store } from "lucide-react"
-import { useCart } from "@/components/cart-provider"
-import { formatCurrency } from "@/lib/utils"
-import { Dialog } from "@/components/ui/dialog"
-import { useWishlist, type WishlistItem } from "@/hooks/use-wishlist"
-import { getVendor, type Vendor } from "@/lib/firebase-vendors"
+import { useCart } from "../../src/components/cart-provider"
+import { formatCurrency } from "../../src/lib/utils"
+import { Dialog } from "../../src/components/ui/dialog"
+import { useWishlist, type WishlistItem } from "../../src/hooks/use-wishlist"
+import { getVendor, type Vendor } from "../../src/lib/firebase-vendors"
 
 interface ProductShowcaseProps {
   category?: string;
@@ -39,7 +39,7 @@ export default function ProductShowcase({
       try {
         setLoading(true)
         // Import the getProducts function
-        const { getProducts } = await import("@/lib/firebase-products")
+        const { getProducts } = await import("../../src/lib/firebase-products")
         
         // Map showcase categories to database categories
         const categoryMap: Record<string, string> = {

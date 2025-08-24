@@ -1,13 +1,13 @@
 
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Slider } from "@/components/ui/slider"
+import { Button } from "../../src/components/ui/button"
+import { Input } from "../../src/components/ui/input"
+import { Slider } from "../../src/components/ui/slider"
 import { Search, Filter, ChevronDown } from "lucide-react"
 import { useNavigate, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { MAIN_CATEGORIES } from "@/lib/categories"
+import { MAIN_CATEGORIES } from "../../src/lib/categories"
 
 export function ProductFilters() {
   const router = useNavigate()

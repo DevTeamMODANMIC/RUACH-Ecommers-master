@@ -3,15 +3,15 @@
 import { useState, useEffect } from "react"
 
 import Link from "next/link"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardFooter } from "../../src/components/ui/card"
+import { Button } from "../../src/components/ui/button"
+import { Badge } from "../../src/components/ui/badge"
 import { Star, Eye, ShoppingCart, Heart, X, Store, User } from "lucide-react"
-import { useCart } from "@/components/cart-provider"
-import { formatCurrency } from "@/lib/utils"
-import { useWishlist, type WishlistItem } from "@/hooks/use-wishlist"
-import ProductDetailModal from "@/components/product-detail-modal"
-import { getVendor, type Vendor } from "@/lib/firebase-vendors"
+import { useCart } from "../../src/components/cart-provider"
+import { formatCurrency } from "../../src/lib/utils"
+import { useWishlist, type WishlistItem } from "../../src/hooks/use-wishlist"
+import ProductDetailModal from "../../src/components/product-detail-modal"
+import { getVendor, type Vendor } from "../../src/lib/firebase-vendors"
 
 interface Product {
   id: string

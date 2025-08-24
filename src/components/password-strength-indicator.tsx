@@ -1,6 +1,6 @@
 
 
-import { Progress } from "@/components/ui/progress"
+import { Progress } from "../../src/components/ui/progress"
 import { Check, X } from "lucide-react"
 
 interface PasswordStrengthIndicatorProps {
@@ -14,7 +14,7 @@ export function PasswordStrengthIndicator({ password, showRequirements = false }
     { test: (pwd: string) => /[a-z]/.test(pwd), text: "One lowercase letter" },
     { test: (pwd: string) => /[A-Z]/.test(pwd), text: "One uppercase letter" },
     { test: (pwd: string) => /\d/.test(pwd), text: "One number" },
-    { test: (pwd: string) => /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(pwd), text: "One special character" },
+    { test: (pwd: string) => /[!../../src#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(pwd), text: "One special character" },
   ]
 
   const metRequirements = requirements.filter((req) => req.test(password)).length

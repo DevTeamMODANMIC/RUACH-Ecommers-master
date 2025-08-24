@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "../../src/components/ui/button";
+import { Input } from "../../src/components/ui/input";
 ;
 import {
   ShoppingCart,
@@ -23,13 +23,13 @@ import {
   LogOut,
   Phone,
 } from "lucide-react";
-import { useCart } from "@/components/cart-provider";
-import { useSafeCurrency } from "@/hooks/use-safe-currency";
+import { useCart } from "../../src/components/cart-provider";
+import { useSafeCurrency } from "../../src/hooks/use-safe-currency";
 import React from "react";
-import { useAuth } from "@/components/auth-provider";
-import { useWishlist } from "@/hooks/use-wishlist";
-import ClientOnly from "@/components/client-only";
-import { useVendor } from "@/hooks/use-vendor";
+import { useAuth } from "../../src/components/auth-provider";
+import { useWishlist } from "../../src/hooks/use-wishlist";
+import ClientOnly from "../../src/components/client-only";
+import { useVendor } from "../../src/hooks/use-vendor";
 
 // We'll use CSS classes instead of inline styles
 
@@ -349,7 +349,7 @@ export default function Header() {
                           : user.email?.charAt(0).toUpperCase()}
                       </div>
                       <span className="hidden lg:inline text-sm font-medium text-gray-700">
-                        {user.displayName || user.email?.split("@")[0]}
+                        {user.displayName || user.email?.split("../../src")[0]}
                       </span>
                       <ChevronDown
                         className={`ml-1 h-4 w-4 transition-transform duration-200 ${

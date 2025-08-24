@@ -4,17 +4,17 @@ import type React from "react"
 
 import { useState } from "react"
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Button } from "../../src/components/ui/button"
+import { Input } from "../../src/components/ui/input"
+import { Label } from "../../src/components/ui/label"
+import { Textarea } from "../../src/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../src/components/ui/select"
+import { Card, CardContent, CardHeader, CardTitle } from "../../src/components/ui/card"
+import { Checkbox } from "../../src/components/ui/checkbox"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../../src/components/ui/dialog"
 import { Star, Upload, X, MapPin } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
-import { useAuth } from "@/components/auth-provider"
+import { useToast } from "../../src/hooks/use-toast"
+import { useAuth } from "../../src/components/auth-provider"
 
 interface ReviewFormProps {
   productId: number

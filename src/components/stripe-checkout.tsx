@@ -7,11 +7,11 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "next/navigation";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
-import StripeProvider from "@/components/stripe-provider";
-import { PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../src/components/ui/card";
+import { useToast } from "../../src/hooks/use-toast";
+import StripeProvider from "../../src/components/stripe-provider";
+import { PaymentElement, useElements, useStripe } from "../../srcstripe/react-stripe-js";
+import { Button } from "../../src/components/ui/button";
 import { Loader2 } from "lucide-react";
 
 interface StripeCheckoutProps {

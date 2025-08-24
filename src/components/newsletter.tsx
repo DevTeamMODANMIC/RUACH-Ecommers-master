@@ -3,9 +3,9 @@
 import type React from "react"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { useToast } from "@/hooks/use-toast"
+import { Button } from "../../src/components/ui/button"
+import { Input } from "../../src/components/ui/input"
+import { useToast } from "../../src/hooks/use-toast"
 import { Check, Loader2, Mail, Gift, Bell, Tag, ArrowRight } from "lucide-react"
 import { motion } from "framer-motion"
 
@@ -154,7 +154,7 @@ export default function Newsletter() {
             <Input
                         id="email"
               type="email"
-                        placeholder="you@example.com"
+                        placeholder="you../../srcexample.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required

@@ -1,12 +1,12 @@
 
 
 import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { Slider } from "@/components/ui/slider"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "../../src/components/ui/card"
+import { Label } from "../../src/components/ui/label"
+import { Slider } from "../../src/components/ui/slider"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../src/components/ui/select"
+import { Checkbox } from "../../src/components/ui/checkbox"
+import { Button } from "../../src/components/ui/button"
 
 interface FilterProps {
   categories: string[]

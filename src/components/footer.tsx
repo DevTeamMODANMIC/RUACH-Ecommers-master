@@ -17,7 +17,7 @@ import {
   ChevronUp,
 } from "lucide-react"
 import { useState, useEffect } from "react"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "../../src/components/ui/use-toast"
 import React from "react"
 
 export default function Footer() {

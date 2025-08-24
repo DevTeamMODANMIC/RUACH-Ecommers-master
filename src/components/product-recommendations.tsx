@@ -5,13 +5,13 @@ import { useState, useEffect } from "react"
 // import Link from "next/link"
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "../../src/components/ui/card"
+import { Badge } from "../../src/components/ui/badge"
+import { Button } from "../../src/components/ui/button"
 import { ShoppingCart, Star } from "lucide-react"
-import { useCurrency } from "@/components/currency-provider"
-import { Skeleton } from "@/components/ui/skeleton"
-import { useRecommendations } from "@/hooks/use-recommendations"
+import { useCurrency } from "../../src/components/currency-provider"
+import { Skeleton } from "../../src/components/ui/skeleton"
+import { useRecommendations } from "../../src/hooks/use-recommendations"
 
 interface ProductRecommendationsProps {
   productId?: number

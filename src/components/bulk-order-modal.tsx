@@ -10,17 +10,17 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Checkbox } from "@/components/ui/checkbox"
-import { BulkPricingTiers } from "@/components/bulk-pricing-tiers"
-import { useCurrency } from "@/components/currency-provider"
-import { useToast } from "@/hooks/use-toast"
+} from "../../src/components/ui/dialog"
+import { Button } from "../../src/components/ui/button"
+import { Input } from "../../src/components/ui/input"
+import { Label } from "../../src/components/ui/label"
+import { Textarea } from "../../src/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../src/components/ui/select"
+import { RadioGroup, RadioGroupItem } from "../../src/components/ui/radio-group"
+import { Checkbox } from "../../src/components/ui/checkbox"
+import { BulkPricingTiers } from "../../src/components/bulk-pricing-tiers"
+import { useCurrency } from "../../src/components/currency-provider"
+import { useToast } from "../../src/hooks/use-toast"
 import { Package2, Building2, Truck } from "lucide-react"
 
 interface BulkOrderModalProps {

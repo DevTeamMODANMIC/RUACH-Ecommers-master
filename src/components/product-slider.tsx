@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
+import { Button } from "../../src/components/ui/button"
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react"
 
 interface SliderItem {

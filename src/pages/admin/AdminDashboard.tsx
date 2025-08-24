@@ -1,10 +1,11 @@
 
 
 import { Link } from "react-router-dom"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+// import { Button } from "../../components/ui/button"
+import { Button } from "../../components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../components/ui/card"
 import { Package, PlusCircle, ShoppingCart, Users, CloudUpload } from "lucide-react"
-import { useAdmin } from "@/hooks/use-admin"
+import { useAdmin } from "../../hooks/use-admin"
 
 export default function AdminDashboard() {
   const { isAdmin, loading } = useAdmin()

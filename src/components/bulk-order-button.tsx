@@ -1,9 +1,9 @@
 
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { Button } from "../../src/components/ui/button"
 import { Package2 } from "lucide-react"
-import { BulkOrderModal } from "@/components/bulk-order-modal"
+import { BulkOrderModal } from "../../src/components/bulk-order-modal"
 
 interface BulkOrderButtonProps {
   productId: number

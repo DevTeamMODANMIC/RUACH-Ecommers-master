@@ -1,9 +1,9 @@
 
 
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "../../src/components/ui/card"
+import { Badge } from "../../src/components/ui/badge"
 import { Star, MapPin } from "lucide-react"
-import { useReviews } from "@/hooks/use-reviews"
+import { useReviews } from "../../src/hooks/use-reviews"
 import { useEffect } from "react"
 
 interface ReviewSummaryProps {

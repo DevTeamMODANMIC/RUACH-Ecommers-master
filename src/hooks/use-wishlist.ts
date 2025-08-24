@@ -1,9 +1,10 @@
 "use client"
 
 import { useCallback, useEffect } from "react"
-import { useLocalStorage } from "@/hooks/use-local-storage"
-import { useToast } from "@/hooks/use-toast"
-
+// import { useLocalStorage } from "@/hooks/use-local-storage"
+import { useLocalStorage } from "./use-local-storage"
+// import { useToast } from "@/hooks/use-toast"
+import { useToast } from "./use-toast"
 // Define a type for wishlist items
 export interface WishlistItem {
   id: string

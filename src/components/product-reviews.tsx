@@ -2,17 +2,17 @@
 
 import { useState, useEffect } from "react"
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Progress } from "@/components/ui/progress"
-import { Separator } from "@/components/ui/separator"
+import { Button } from "../../src/components/ui/button"
+import { Card, CardContent } from "../../src/components/ui/card"
+import { Badge } from "../../src/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../src/components/ui/select"
+import { Progress } from "../../src/components/ui/progress"
+import { Separator } from "../../src/components/ui/separator"
 import { Star, ThumbsUp, ThumbsDown, Flag, MapPin, CheckCircle, Filter } from "lucide-react"
-import { ReviewForm } from "@/components/review-form"
-import { useReviews } from "@/hooks/use-reviews"
-import { useCurrency } from "@/components/currency-provider"
-import { useAuth } from "@/components/auth-provider"
+import { ReviewForm } from "../../src/components/review-form"
+import { useReviews } from "../../src/hooks/use-reviews"
+import { useCurrency } from "../../src/components/currency-provider"
+import { useAuth } from "../../src/components/auth-provider"
 
 interface ProductReviewsProps {
   productId: number

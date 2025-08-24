@@ -1,16 +1,16 @@
 
 
 import { useState } from "react"
-import { useVendor } from "@/hooks/use-vendor"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { useVendor } from "../../src/hooks/use-vendor"
+import { Button } from "../../src/components/ui/button"
+import { Badge } from "../../src/components/ui/badge"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "../../src/components/ui/dropdown-menu"
 import { 
   Store, 
   ChevronDown, 

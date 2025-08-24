@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useNavigate } from "next/navigation"
-import { useAdmin } from "@/hooks/use-admin"
+import { useAdmin } from "../../src/hooks/use-admin"
 import { useEffect } from "react"
 
 export function RequireAdmin({ children }: { children: React.ReactNode }) {

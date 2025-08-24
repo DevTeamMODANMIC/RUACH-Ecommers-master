@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { Button } from "../../src/components/ui/button";
 import { ChevronLeft, ChevronRight, Mail, ShoppingBag, ArrowRight } from "lucide-react";
 
 const slides = [

@@ -1,12 +1,12 @@
 
 
 import { useEffect } from "react"
-import { useNavigate } from "react-router-dom"
-import { useAuth } from "@/components/auth-provider"
-import { useVendor } from "@/hooks/use-vendor"
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../src/components/auth-provider"
+import { useVendor } from "../../src/hooks/use-vendor"
 
 export default function KeyboardNavigation() {
-  const router = useNavigate()
+  const navigate = useNavigate()
   const { user } = useAuth()
   const { isVendor } = useVendor()
 
@@ -86,7 +86,7 @@ export default function KeyboardNavigation() {
     return () => {
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [router, user, isVendor])
+  }, [navigate, user, isVendor])
 
   return null // This component doesn't render anything
 }

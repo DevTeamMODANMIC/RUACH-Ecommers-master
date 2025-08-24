@@ -3,11 +3,11 @@
 import { useState } from "react"
 import Link from "next/link"
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Button } from "../../src/components/ui/button"
+import { Card, CardContent } from "../../src/components/ui/card"
+import { Badge } from "../../src/components/ui/badge"
 import { Star, ShoppingCart, Plus, ChevronRight } from "lucide-react"
-import { getRandomCategoryImage } from "@/lib/utils"
+import { getRandomCategoryImage } from "../../src/lib/utils"
 
 interface ProductShowcaseProps {
   category?: string;

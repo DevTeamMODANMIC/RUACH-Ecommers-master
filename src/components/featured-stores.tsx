@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { getAllVendors, Vendor } from "@/lib/firebase-vendors";
+import { getAllVendors, Vendor } from "../../src/lib/firebase-vendors";
 import { Link } from "react-router-dom";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "../../src/components/ui/badge";
+import { Button } from "../../src/components/ui/button";
+import { Card, CardContent } from "../../src/components/ui/card";
 import { Store, ArrowRight, Users, Package } from "lucide-react";
 
 export default function FeaturedStores() {

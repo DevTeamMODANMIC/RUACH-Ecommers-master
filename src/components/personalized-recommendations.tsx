@@ -1,8 +1,8 @@
 
 
 import { useState, useEffect } from "react"
-import { ProductRecommendations } from "@/components/product-recommendations"
-import { useLocalStorage } from "@/hooks/use-local-storage"
+import { ProductRecommendations } from "../../src/components/product-recommendations"
+import { useLocalStorage } from "../../src/hooks/use-local-storage"
 
 export function PersonalizedRecommendations() {
   const [userCountry, setUserCountry] = useState("nigeria")

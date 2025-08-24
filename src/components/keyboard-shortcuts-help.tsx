@@ -1,8 +1,8 @@
 
 
 import { useState, useEffect } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Badge } from "@/components/ui/badge"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../src/components/ui/dialog"
+import { Badge } from "../../src/components/ui/badge"
 import { Keyboard, Command } from "lucide-react"
 
 interface Shortcut {
