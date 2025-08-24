@@ -356,7 +356,7 @@ export default function VendorDashboardHome() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button asChild size="lg" className="bg-green-600 hover:bg-green-700">
-              <Link to="/admin/add-product">
+              <Link to="/vendor/dashboard/products/new">
                 <Plus className="h-5 w-5 mr-2" />
                 Add Your First Product
               </Link>
@@ -378,7 +378,7 @@ export default function VendorDashboardHome() {
               <h3 className="font-semibold mb-2">Add Products</h3>
               <p className="text-sm text-gray-600 mb-4">Start by adding your first product to your store</p>
               <Button asChild variant="outline" size="sm">
-                <Link to="/admin/add-product">Get Started</Link>
+                <Link to="/vendor/dashboard/products/new">Get Started</Link>
               </Button>
             </CardContent>
           </Card>
@@ -453,7 +453,7 @@ export default function VendorDashboardHome() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Button asChild variant="outline" className="h-auto p-4">
-              <Link to="/admin/add-product">
+              <Link to="/vendor/dashboard/products/new">
                 <div className="text-center">
                   <Plus className="h-8 w-8 mx-auto mb-2" />
                   <div className="font-medium">Add Product</div>
@@ -463,7 +463,7 @@ export default function VendorDashboardHome() {
             </Button>
             
             <Button asChild variant="outline" className="h-auto p-4">
-              <Link to="/admin/products">
+              <Link to="/vendor/dashboard/products">
                 <div className="text-center">
                   <Package className="h-8 w-8 mx-auto mb-2" />
                   <div className="font-medium">Manage Products</div>
@@ -473,7 +473,7 @@ export default function VendorDashboardHome() {
             </Button>
             
             <Button asChild variant="outline" className="h-auto p-4">
-              <Link to="/admin/orders">
+              <Link to="/vendor/dashboard/orders">
                 <div className="text-center">
                   <TrendingUp className="h-8 w-8 mx-auto mb-2" />
                   <div className="font-medium">View Orders</div>

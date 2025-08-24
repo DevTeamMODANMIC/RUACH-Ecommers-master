@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Link from "next/link"
+import { Link } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -34,7 +35,7 @@ import { DashboardHeader } from "@/components/dashboard-header"
 import { DashboardStatsCard } from "@/components/dashboard-stats-card"
 import { DashboardQuickActions } from "@/components/dashboard-quick-actions"
 import { DashboardWelcome } from "@/components/dashboard-welcome"
-import { useRouter } from "next/navigation"
+// import { useRouter } from "next/navigation"
 
 // Helper function to get time-based greeting
 const getTimeBasedGreeting = () => {
@@ -46,7 +47,7 @@ const getTimeBasedGreeting = () => {
 
 export default function ServiceProviderDashboard() {
   const { user } = useAuth()
-  const router = useRouter()
+  const navigate = useNavigate()
   const [provider, setProvider] = useState<ServiceProvider | null>(null)
   const [services, setServices] = useState<Service[]>([])
   const [recentBookings, setRecentBookings] = useState<ServiceBooking[]>([])
@@ -59,7 +60,7 @@ export default function ServiceProviderDashboard() {
       // Check for Ctrl+Shift+G shortcut (only on service provider dashboard)
       if (e.ctrlKey && e.shiftKey && e.key === 'G') {
         e.preventDefault()
-        router.push('/admin/service-providers')
+        navigate('/admin/service-providers')
         setShowSecretMessage(true)
         setTimeout(() => setShowSecretMessage(false), 3000)
       }
