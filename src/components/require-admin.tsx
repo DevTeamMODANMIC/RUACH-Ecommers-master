@@ -1,20 +1,20 @@
 
 
 import type React from "react"
-import { useNavigate } from "next/navigation"
+import { useNavigate } from "react-router-dom"
 import { useAdmin } from "@/hooks/use-admin"
 import { useEffect } from "react"
 
 export function RequireAdmin({ children }: { children: React.ReactNode }) {
-  const router = useNavigate()
+  const navigate = useNavigate()
   const { isAdmin, loading } = useAdmin()
 
   useEffect(() => {
     console.log("Admin check:", { isAdmin, loading })
     if (!loading && !isAdmin) {
-      router.replace("/login")
+      navigate("/login", { replace: true })
     }
-  }, [loading, isAdmin, router])
+  }, [loading, isAdmin, navigate])
 
   if (loading) {
     return (

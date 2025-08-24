@@ -127,3 +127,57 @@ export type CloudinaryImage = {
   alt?: string
   primary?: boolean
 }
+
+export type ServiceCategory = 
+  | "plumbing"
+  | "electrical"
+  | "cleaning"
+  | "event-planning"
+  | "catering"
+  | "beauty"
+  | "fitness"
+  | "tutoring"
+  | "photography"
+  | "repairs"
+  | "landscaping"
+  | "other"
+
+export type ServiceProvider = {
+  id: string
+  ownerId: string
+  name: string
+  description: string
+  category: ServiceCategory
+  contactEmail: string
+  contactPhone: string
+  serviceAreas: string[]
+  qualifications?: string[]
+  profileImage?: CloudinaryImage
+  rating: number
+  reviewCount: number
+  totalBookings: number
+  isApproved?: boolean
+  isActive?: boolean
+  createdAt?: string | number
+  updatedAt?: string | number
+}
+
+export type Service = {
+  id: string
+  providerId: string
+  name: string
+  description: string
+  category: ServiceCategory
+  price: number
+  duration: number
+  availability: {
+    days: string[]
+    hours: {
+      start: string
+      end: string
+    }
+  }
+  isActive: boolean
+  createdAt: string | number
+  updatedAt: string | number
+}

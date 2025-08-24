@@ -1,7 +1,7 @@
 
 
 import { useState, useEffect } from "react"
-import Link from "next/link"
+import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react"
 
@@ -133,7 +133,7 @@ export default function ProductSlider() {
                     size="lg" 
                     className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border border-white/30 px-8 py-6 text-base md:text-lg font-medium shadow-lg hover:shadow-xl transition-all rounded-md group relative overflow-hidden"
                   >
-                    <Link href={item.link}>
+                    <Link to={item.link}>
                       <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-white/10 to-transparent transform -translate-x-full group-hover:translate-x-0 transition-transform duration-700"></span>
                       {item.link.includes("bulk") ? "Bulk Orders" : "Shop Now"}
                       <ArrowRight className="ml-2 h-5 w-5 inline-block group-hover:translate-x-1 transition-transform" />

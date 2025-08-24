@@ -1,7 +1,7 @@
 
 
 import { useState, useEffect } from "react"
-import Link from "next/link"
+import { Link } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -120,7 +120,8 @@ export default function ProductShowcase({
       name: product.name,
       price: product.price,
       image: product.image,
-      quantity: 1
+      quantity: 1,
+      options: {}
     });
   };
 
@@ -156,7 +157,7 @@ export default function ProductShowcase({
           <p className="mt-1 text-gray-600">{subtitle}</p>
         </div>
         <Link 
-          href={`/shop?category=${mapCategoryToShopCategory(category)}`} 
+          to={`/shop?category=${mapCategoryToShopCategory(category)}`} 
           className="mt-2 md:mt-0 flex items-center text-green-600 hover:text-green-700 font-medium"
         >
           View all <ChevronRight className="h-4 w-4 ml-1" />
@@ -186,13 +187,11 @@ export default function ProductShowcase({
               onMouseLeave={() => setHoveredProductId(null)}
             >
               <div className="relative aspect-square overflow-hidden bg-gray-100">
-                <Link href={`/products/${product.id}`}>
-                  <Image
+                <Link to={`/products/${product.id}`}>
+                  <img
                     src={product.images?.[0] || "/placeholder.jpg"}
                     alt={product.name}
-                    fill
-                    className="object-contain p-4 group-hover:scale-105 transition-transform"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                    className="object-contain p-4 group-hover:scale-105 transition-transform w-full h-full absolute inset-0"
                     onError={handleImageError}
                   />
                 </Link>
@@ -237,7 +236,7 @@ export default function ProductShowcase({
               </div>
               
               <CardContent className="p-4">
-                <Link href={`/products/${product.id}`}>
+                <Link to={`/products/${product.id}`}>
                   <h3 className="font-medium text-lg hover:text-green-600 transition-colors line-clamp-2">
                     {product.name}
                   </h3>
@@ -251,18 +250,16 @@ export default function ProductShowcase({
                   <div className="mt-2 flex items-center gap-2">
                     <div className="flex items-center gap-1.5">
                       {vendors[product.vendorId].logoUrl ? (
-                        <Image
+                        <img
                           src={vendors[product.vendorId].logoUrl}
                           alt={vendors[product.vendorId].shopName}
-                          width={16}
-                          height={16}
-                          className="rounded-full object-cover"
+                          className="w-4 h-4 rounded-full object-cover"
                         />
                       ) : (
                         <Store className="h-4 w-4 text-gray-400" />
                       )}
                       <Link 
-                        href={`/vendor/${product.vendorId}`}
+                        to={`/vendor/${product.vendorId}`}
                         className="text-xs text-gray-600 hover:text-green-600 transition-colors font-medium"
                         onClick={(e) => e.stopPropagation()}
                       >

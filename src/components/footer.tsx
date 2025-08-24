@@ -1,13 +1,11 @@
 
 
 // import Link from "next/link"
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   Facebook,
   Instagram,
   Twitter,
-  MapPin,
-  Mail,
   Phone,
   Truck,
   CreditCard,
@@ -16,20 +14,13 @@ import {
   Send,
   ChevronUp,
 } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useToast } from "@/components/ui/use-toast"
-import React from "react"
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
   const [email, setEmail] = useState("")
   const { toast } = useToast()
-  const [mounted, setMounted] = useState(false)
-
-  // Force style update after component mounts
-  useEffect(() => {
-    setMounted(true)
-  }, [])
 
   return (
     <footer className="mt-16 select-none bg-transparent">
@@ -45,9 +36,6 @@ export default function Footer() {
               <h3 className="text-lg font-semibold text-white mb-4">RUACH E-STORE</h3>
               <p className="text-sm leading-relaxed mb-6">
                 Your trusted source for authentic products –delivered with care and quality assurance.
-              </p>
-              <p className="text-sm leading-relaxed mb-6">
-                Partnered with Modanmic.
               </p>
               <div className="flex space-x-4">
                 {[
@@ -79,7 +67,7 @@ export default function Footer() {
                   { href: "/bulk-order", label: "Bulk Orders" },
                 ].map(({ href, label }) => (
                   <li key={label}>
-                    <Link href={href} className="hover:text-white transition-transform transform hover:scale-110">
+                    <Link to={href} className="hover:text-white transition-transform transform hover:scale-110">
                       {label}
                     </Link>
                   </li>
@@ -99,7 +87,7 @@ export default function Footer() {
                   { href: "/terms", label: "Terms & Conditions" },
                 ].map(({ href, label }) => (
                   <li key={label}>
-                    <Link href={href} className="hover:text-white transition-transform transform hover:scale-110">
+                    <Link to={href} className="hover:text-white transition-transform transform hover:scale-110">
                       {label}
                     </Link>
                   </li>
@@ -170,7 +158,7 @@ export default function Footer() {
               <img src="/mastercard.svg" alt="Mastercard" className="h-6 w-auto" />
               <img src="/paypal.svg" alt="Paypal" className="h-6 w-auto" />
               <a
-                to="https://wa.me/2348160662997"
+                href="https://wa.me/2348160662997"
                 target="_blank"
                 rel="noopener noreferrer"
                 suppressHydrationWarning

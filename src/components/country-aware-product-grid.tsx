@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 
-import Link from "next/link"
+import { Link } from "react-router-dom"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -368,11 +368,9 @@ export function CountryAwareProductGrid({
               <CardContent className="p-0">
                 {/* Product Image */}
                 <div className="relative overflow-hidden rounded-t-lg">
-                  <Image
+                  <img
                     src={product.image || "/placeholder.svg"}
                     alt={product.name}
-                    width={300}
-                    height={300}
                     className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                   />
 
@@ -413,7 +411,7 @@ export function CountryAwareProductGrid({
                       />
                     </Button>
                     <Button size="icon" variant="secondary" className="h-8 w-8" asChild>
-                      <Link href={`/products/${product.id}`}>
+                      <Link to={`/products/${product.id}`}>
                         <Eye className="h-4 w-4" />
                       </Link>
                     </Button>
@@ -444,7 +442,7 @@ export function CountryAwareProductGrid({
 
                   {/* Product Name */}
                   <h3 className="font-semibold mb-2 line-clamp-2 group-hover:text-green-600 transition-colors">
-                    <Link href={`/products/${product.id}`}>{product.name}</Link>
+                    <Link to={`/products/${product.id}`}>{product.name}</Link>
                   </h3>
 
                   {/* Local Name */}
@@ -483,7 +481,7 @@ export function CountryAwareProductGrid({
 
                   {/* Tags */}
                   <div className="flex flex-wrap gap-1 mb-3">
-                    {product.tags.slice(0, 2).map((tag) => (
+                    {product.tags.slice(0, 2).map((tag: string) => (
                       <Badge key={tag} variant="outline" className="text-xs">
                         {tag}
                       </Badge>

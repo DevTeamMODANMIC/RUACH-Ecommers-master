@@ -1,5 +1,5 @@
 
-import Link from "next/link"
+import { Link } from "react-router-dom"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -54,12 +54,9 @@ export default function BlogPreview() {
             <Card key={post.id} className="group hover:shadow-lg transition-shadow">
               <CardHeader className="p-0">
                 <div className="relative overflow-hidden rounded-t-lg">
-                  <Image
+                  <img
                     src={post.image || "/placeholder.svg"}
                     alt={post.title}
-                    width={400}
-                    height={300}
-                    unoptimized
                     className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                   <Badge className="absolute top-4 left-4 bg-green-600">{post.category}</Badge>
@@ -67,7 +64,7 @@ export default function BlogPreview() {
               </CardHeader>
               <CardContent className="p-6">
                 <h3 className="text-xl font-semibold mb-3 group-hover:text-green-600 transition-colors">
-                  <Link href={`/blog/${post.id}`}>{post.title}</Link>
+                  <Link to={`/blog/${post.id}`}>{post.title}</Link>
                 </h3>
                 <p className="text-muted-foreground mb-4 line-clamp-3">{post.excerpt}</p>
                 <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
@@ -84,7 +81,7 @@ export default function BlogPreview() {
                   <span>{post.readTime}</span>
                 </div>
                 <Button variant="outline" asChild className="w-full">
-                  <Link href={`/blog/${post.id}`}>Read More</Link>
+                  <Link to={`/blog/${post.id}`}>Read More</Link>
                 </Button>
               </CardContent>
             </Card>

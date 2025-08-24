@@ -19,7 +19,7 @@ import {
   Settings,
   Eye
 } from "lucide-react"
-import Link from "next/link"
+import { Link } from "react-router-dom"
 
 
 export function StoreSwitcher() {
@@ -53,12 +53,10 @@ export function StoreSwitcher() {
         >
           <div className="flex items-center gap-3 min-w-0">
             {activeStore.logoUrl ? (
-              <Image
+              <img
                 src={activeStore.logoUrl}
                 alt={activeStore.shopName}
-                width={32}
-                height={32}
-                className="rounded-full object-cover flex-shrink-0"
+                className="w-8 h-8 rounded-full object-cover flex-shrink-0"
               />
             ) : (
               <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -100,12 +98,10 @@ export function StoreSwitcher() {
             >
               <div className="flex items-center gap-3 w-full">
                 {store.logoUrl ? (
-                  <Image
+                  <img
                     src={store.logoUrl}
                     alt={store.shopName}
-                    width={32}
-                    height={32}
-                    className="rounded-full object-cover"
+                    className="w-8 h-8 rounded-full object-cover"
                   />
                 ) : (
                   <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
@@ -153,7 +149,7 @@ export function StoreSwitcher() {
           )}
           
           <DropdownMenuItem asChild>
-            <Link href={`/vendor/${activeStore.id}`} className="p-3 cursor-pointer">
+            <Link to={`/vendor/${activeStore.id}`} className="p-3 cursor-pointer">
               <Eye className="h-4 w-4 mr-3" />
               <span>View Storefront</span>
             </Link>

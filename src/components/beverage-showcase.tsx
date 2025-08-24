@@ -1,18 +1,32 @@
 
 
 import { useState } from "react"
-import Link from "next/link"
+import { Link } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Star, ShoppingCart, Plus, ChevronRight } from "lucide-react"
-import { getRandomCategoryImage } from "@/lib/utils"
+import { Star, ShoppingCart, ChevronRight } from "lucide-react"
+
 
 interface ProductShowcaseProps {
   category?: string;
   title?: string;
   subtitle?: string;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  subtitle: string;
+  price: number;
+  image: string;
+  slug: string;
+  rating: number;
+  reviews: number;
+  isBestSeller?: boolean;
+  isBulk?: boolean;
+  isNew?: boolean;
 }
 
 export default function ProductShowcase({ 
@@ -23,7 +37,7 @@ export default function ProductShowcase({
   const [showDebug, setShowDebug] = useState(false)
   
   // Product data by category
-  const productData = {
+  const productData: Record<string, Product[]> = {
     "Beverages": [
     {
       id: "coca-cola-50cl",
@@ -332,7 +346,7 @@ export default function ProductShowcase({
           </div>
           
           <div className="mt-4 md:mt-0 flex items-center">
-            <Link href={`/shop?category=${encodeURIComponent(category)}`} className="flex items-center text-green-600 hover:text-green-700 font-medium">
+            <Link to={`/shop?category=${encodeURIComponent(category)}`} className="flex items-center text-green-600 hover:text-green-700 font-medium">
               View All Products
               <ChevronRight className="h-4 w-4 ml-1" />
             </Link>
@@ -360,7 +374,7 @@ export default function ProductShowcase({
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {products.map((product) => (
             <Card key={product.id} className="overflow-hidden transition-all hover:shadow-lg border border-gray-200 hover:border-green-200 group">
-              <Link href={`/products/${encodeURIComponent(product.id)}`}>
+              <Link to={`/products/${encodeURIComponent(product.id)}`}>
                 <div className="relative h-48 bg-gray-50 flex items-center justify-center p-4 overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-t from-gray-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   
@@ -378,14 +392,11 @@ export default function ProductShowcase({
                     </div>
                   )}
                   
-                  <Image
+                  <img
                     src={product.image}
                     alt={product.name}
-                    fill
-                    className="object-contain p-2 transform group-hover:scale-110 transition-transform duration-300"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                    className="object-contain p-2 transform group-hover:scale-110 transition-transform duration-300 absolute inset-0 w-full h-full"
                     onError={handleImageError}
-                    priority
                   />
                 </div>
                 
@@ -422,7 +433,7 @@ export default function ProductShowcase({
         </div>
         
         <div className="mt-12 flex flex-col items-center justify-center">
-          <Link href={`/shop?category=${encodeURIComponent(category)}`}>
+          <Link to={`/shop?category=${encodeURIComponent(category)}`}>
             <Button 
               className="bg-green-600 hover:bg-green-700 text-white rounded-full px-8 py-6 text-base font-medium shadow-md hover:shadow-lg transform transition-all duration-300 hover:scale-105 flex items-center gap-2 group mx-auto"
             >

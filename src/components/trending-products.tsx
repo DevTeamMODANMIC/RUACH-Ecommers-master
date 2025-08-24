@@ -180,13 +180,11 @@ export default function TrendingProducts() {
 
               {/* Product Image */}
               <div className="aspect-square relative overflow-hidden bg-gray-100">
-                <Link href={`/products/${product.id}`}>
+                <Link to={`/products/${product.id}`}>
                   <img 
                     src={product.images?.[0] || "/placeholder.jpg"} 
                     alt={product.name} 
-                    fill
-                    className="object-contain p-4 group-hover:scale-105 transition-transform"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                    className="absolute inset-0 w-full h-full object-contain p-4 group-hover:scale-105 transition-transform"
                   />
                 </Link>
                 
@@ -212,7 +210,7 @@ export default function TrendingProducts() {
               </div>
               
               <CardContent className="p-4">
-                <Link href={`/products/${product.id}`}>
+                <Link to={`/products/${product.id}`}>
                   <h3 className="font-medium text-lg hover:text-green-600 transition-colors mb-1 line-clamp-2">
                     {product.name}
                   </h3>
@@ -226,16 +224,14 @@ export default function TrendingProducts() {
                 {product.vendorId && vendors[product.vendorId] && (
                   <div className="mb-2">
                     <Link 
-                      href={`/vendor/${product.vendorId}`}
+                      to={`/vendor/${product.vendorId}`}
                       className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 transition-colors"
                     >
                       {vendors[product.vendorId].logoUrl ? (
-                        <Image
+                        <img
                           src={vendors[product.vendorId].logoUrl}
                           alt={vendors[product.vendorId].shopName}
-                          width={12}
-                          height={12}
-                          className="rounded-full object-cover"
+                          className="w-3 h-3 rounded-full object-cover"
                         />
                       ) : (
                         <Store className="h-3 w-3" />
@@ -300,17 +296,15 @@ export default function TrendingProducts() {
                 .map(([vendorId, vendor], index) => (
                   <Link 
                     key={vendorId}
-                    href={`/vendor/${vendorId}`}
+                    to={`/vendor/${vendorId}`}
                     className="flex items-center gap-2 p-3 rounded-lg border hover:border-orange-200 hover:bg-orange-50 transition-colors group"
                   >
                     <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center overflow-hidden">
                       {vendor.logoUrl ? (
-                        <Image
+                        <img
                           src={vendor.logoUrl}
                           alt={vendor.shopName}
-                          width={32}
-                          height={32}
-                          className="object-cover"
+                          className="w-8 h-8 rounded-full object-cover"
                         />
                       ) : (
                         <Store className="h-4 w-4 text-orange-600" />

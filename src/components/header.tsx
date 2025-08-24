@@ -1,6 +1,6 @@
 ;
 
-import Link from "next/link";
+import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,6 @@ import {
   Home,
   ShoppingBag,
   Store,
-  Info,
   Package,
   MessageCircle,
   LogOut,
@@ -135,13 +134,10 @@ export default function Header() {
             <Link to="/" className="flex items-center">
               {!logoError ? (
                 <div className="mr-2 flex items-center">
-                  <Image
+                  <img
                     src="/logo/logo.png"
                     alt="Ruach Logo"
-                    width={120}
-                    height={40}
                     className="h-10 w-auto"
-                    priority
                     onError={() => setLogoError(true)}
                   />
                 </div>
@@ -194,7 +190,7 @@ export default function Header() {
                       className="flex items-center cursor-pointer dropdown-menu-container px-3 rounded-md hover:bg-gray-50 transition-colors duration-200"
                     >
                       <Link
-                        href={item.href}
+                        to={item.href}
                         className={`flex items-center font-medium py-2 transition-colors duration-150 relative text-sm
                           ${
                             pathname === item.href
@@ -228,7 +224,7 @@ export default function Header() {
                             {item.dropdown.map((subItem) => (
                               <Link
                                 key={subItem.title}
-                                href={subItem.href}
+                                to={subItem.href}
                                 className="flex items-center px-2 py-1 text-gray-700 hover:bg-green-50 hover:text-green-700 text-xs transition-colors duration-150 rounded"
                                 onClick={() => setActiveDropdown(null)}
                               >
@@ -270,7 +266,7 @@ export default function Header() {
                       {mainNavItems.slice(4).map((item) => (
                         <li key={item.title}>
                           <Link
-                            href={item.href}
+                            to={item.href}
                             className="flex items-center px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-700 text-sm"
                             onClick={() => setActiveDropdown(null)}
                           >
@@ -327,7 +323,7 @@ export default function Header() {
                 </Link>
 
                 <a
-                  to="https://wa.me/2348160662997"
+                  href="https://wa.me/2348160662997"
                   target="_blank"
                   rel="noopener noreferrer"
                   suppressHydrationWarning
@@ -461,7 +457,7 @@ export default function Header() {
               </Link>
               
               <a
-                to="https://wa.me/2348012345678"
+                href="https://wa.me/2348012345678"
                 target="_blank"
                 rel="noopener noreferrer"
                 suppressHydrationWarning
@@ -528,7 +524,7 @@ export default function Header() {
               <li key={item.title} className="py-2">
                 {!item.dropdown ? (
                   <Link
-                    href={item.href}
+                    to={item.href}
                     className={`flex items-center py-2 space-x-2 ${
                       pathname === item.href
                         ? "text-green-600 font-medium"
@@ -576,7 +572,7 @@ export default function Header() {
                           {item.dropdown.map((subItem) => (
                             <Link
                               key={subItem.title}
-                              href={subItem.href}
+                              to={subItem.href}
                               className="flex items-center py-1.5 px-2 text-gray-600 hover:text-green-700 transition-colors duration-150 text-sm rounded hover:bg-green-50"
                               onClick={() => {
                                 setActiveDropdown(null);
@@ -605,7 +601,7 @@ export default function Header() {
               </Link>
               
               <a
-                to="https://wa.me/2348012345678"
+                href="https://wa.me/2348012345678"
                 target="_blank"
                 rel="noopener noreferrer"
                 suppressHydrationWarning
@@ -674,7 +670,7 @@ export default function Header() {
                 {mainNavItems[1].dropdown?.map((category) => (
                   <Link
                     key={category.title}
-                    href={category.href}
+                    to={category.href}
                     className="text-gray-700 py-1.5 px-2.5 bg-gray-100 rounded hover:bg-green-50 hover:text-green-700 text-xs transition-all duration-200"
                     onClick={() => setMobileMenuOpen(false)}
                   >

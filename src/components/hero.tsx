@@ -92,7 +92,7 @@ export default function Hero() {
           <img
             src={slide.image}
             alt={slide.title}
-            className="absolute inset-0 w-full h-full object-cover transition-transform duration-[15000ms] ease-out"
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-[15s] ease-out"
             style={{
               transform: index === currentSlide ? "scale(1.05)" : "scale(1)",
             }}

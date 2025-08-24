@@ -2,18 +2,20 @@
 
 import { useState, useEffect } from "react"
 
-import Link from "next/link"
+import { Link } from "react-router-dom"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Star, Eye, ShoppingCart, Heart, X, Store, User } from "lucide-react"
+import { Star, Eye, ShoppingCart, Heart, Store } from "lucide-react"
 import { useCart } from "@/components/cart-provider"
 import { formatCurrency } from "@/lib/utils"
 import { useWishlist, type WishlistItem } from "@/hooks/use-wishlist"
 import ProductDetailModal from "@/components/product-detail-modal"
+import { Product } from "@/types"
+
 import { getVendor, type Vendor } from "@/lib/firebase-vendors"
 
-interface Product {
+interface LocalProduct {
   id: string
   name: string
   description?: string
@@ -34,13 +36,13 @@ interface Product {
 }
 
 interface ProductGridProps {
-  products: Product[]
+  products: LocalProduct[]
   isLoading?: boolean
 }
 
 export default function ProductGrid({ products, isLoading = false }: ProductGridProps) {
   const [hoveredProductId, setHoveredProductId] = useState<string | null>(null);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<LocalProduct | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [vendors, setVendors] = useState<Record<string, Vendor>>({});
   const { addToCart } = useCart();
@@ -77,7 +79,7 @@ export default function ProductGrid({ products, isLoading = false }: ProductGrid
     }
   }, [products])
 
-  const handleAddToCart = (product: Product, e?: React.MouseEvent) => {
+  const handleAddToCart = (product: LocalProduct, e?: React.MouseEvent) => {
     if (e) e.preventDefault();
     addToCart({
       productId: product.id,
@@ -86,17 +88,18 @@ export default function ProductGrid({ products, isLoading = false }: ProductGrid
         ? product.price * (1 - product.discount / 100) 
         : product.price,
       image: product.images?.[0] || "/placeholder.jpg",
-      quantity: 1
+      quantity: 1,
+      options: {}
     });
   };
 
-  const handleProductClick = (product: Product, e?: React.MouseEvent) => {
+  const handleProductClick = (product: LocalProduct, e?: React.MouseEvent) => {
     if (e) e.preventDefault();
     setSelectedProduct(product);
     setIsModalOpen(true);
   };
 
-  const handleToggleWishlist = (product: Product, e?: React.MouseEvent) => {
+  const handleToggleWishlist = (product: LocalProduct, e?: React.MouseEvent) => {
     if (e) e.preventDefault();
     
     const wishlistItem: WishlistItem = {
@@ -179,13 +182,11 @@ export default function ProductGrid({ products, isLoading = false }: ProductGrid
                 )}
               </div>
             
-              <Image
+              <img
                 src={product.images?.[0] || "/placeholder.jpg"}
                 alt={product.name}
-                fill
-                className="object-contain p-4 transition-all duration-500 group-hover:scale-110 group-hover:rotate-1"
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                onError={(e) => {
+                className="object-contain p-4 transition-all duration-500 group-hover:scale-110 group-hover:rotate-1 w-full h-full absolute inset-0"
+                onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
                   const target = e.target as HTMLImageElement;
                   target.src = "/placeholder.jpg";
                 }}
@@ -242,18 +243,16 @@ export default function ProductGrid({ products, isLoading = false }: ProductGrid
                 <div className="mt-2 flex items-center gap-2">
                   <div className="flex items-center gap-1.5">
                     {vendors[product.vendorId].logoUrl ? (
-                      <Image
+                      <img
                         src={vendors[product.vendorId].logoUrl}
                         alt={vendors[product.vendorId].shopName}
-                        width={16}
-                        height={16}
-                        className="rounded-full object-cover"
+                        className="w-4 h-4 rounded-full object-cover"
                       />
                     ) : (
                       <Store className="h-4 w-4 text-gray-400" />
                     )}
                     <Link 
-                      href={`/vendor/${product.vendorId}`}
+                      to={`/vendor/${product.vendorId}`}
                       className="text-xs text-gray-600 hover:text-green-600 transition-colors font-medium"
                       onClick={(e) => e.stopPropagation()}
                     >
@@ -273,9 +272,9 @@ export default function ProductGrid({ products, isLoading = false }: ProductGrid
                       <Star 
                         key={i} 
                         className={`h-4 w-4 ${
-                          i < Math.floor(product.rating) 
+                          i < Math.floor(product.rating!) 
                             ? "text-amber-400 fill-amber-400" 
-                            : i < product.rating 
+                            : i < product.rating! 
                               ? "text-amber-400 fill-amber-400" 
                               : "text-gray-300"
                         }`}
@@ -324,7 +323,13 @@ export default function ProductGrid({ products, isLoading = false }: ProductGrid
       
       {/* Product Detail Modal */}
       <ProductDetailModal
-        product={selectedProduct}
+        product={selectedProduct ? {
+          ...selectedProduct,
+          description: selectedProduct.description || '',
+          origin: '',
+          inStock: selectedProduct.inStock !== false && !selectedProduct.outOfStock,
+          images: selectedProduct.images || []
+        } as Product : null}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
       />
