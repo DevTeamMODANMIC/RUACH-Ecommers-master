@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { VendorLayout } from "../components/vendor-layout"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge"
@@ -150,13 +151,12 @@ export default function ReviewsManagement() {
   }))
 
   return (
-    <div className="space-y-6">
+    <VendorLayout 
+      title="Reviews & Ratings" 
+      description="Monitor and respond to customer feedback"
+    >
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Reviews & Ratings</h1>
-          <p className="text-gray-600">Monitor and respond to customer feedback</p>
-        </div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <Button className="bg-blue-600 hover:bg-blue-700">
           <BarChart3 className="h-4 w-4 mr-2" />
           Review Analytics
@@ -429,6 +429,6 @@ export default function ReviewsManagement() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </VendorLayout>
   )
 }

@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../components/ui/card"
-import { Package, PlusCircle, ShoppingCart, Users, CloudUpload } from "lucide-react"
+import { Package, PlusCircle, ShoppingCart, Users, CloudUpload, Wrench } from "lucide-react"
 import { useAdmin } from "../hooks/use-admin"
 
 export default function AdminDashboard() {
@@ -43,6 +43,9 @@ export default function AdminDashboard() {
               </Link>
               <Link to="/admin/vendors" className="bg-slate-100 text-slate-800 hover:bg-slate-200 px-3 py-2 rounded-md font-medium">
                 Vendors
+              </Link>
+              <Link to="/admin/service-providers" className="bg-slate-100 text-slate-800 hover:bg-slate-200 px-3 py-2 rounded-md font-medium">
+                Service Providers
               </Link>
               <Link to="/admin/products/cloudinary-migration" className="bg-slate-100 text-slate-800 hover:bg-slate-200 px-3 py-2 rounded-md font-medium">
                 Cloudinary Migration
@@ -177,6 +180,29 @@ export default function AdminDashboard() {
               <Button asChild className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700">
                 <Link to="/admin/migration">
                   Run Migration
+                </Link>
+              </Button>
+            </CardFooter>
+          </Card>
+
+          {/* Service Providers Management Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Wrench className="h-5 w-5" />
+                <span>Service Providers</span>
+              </CardTitle>
+              <CardDescription>
+                Manage service provider accounts and applications
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm">Approve service provider applications, manage accounts, and oversee service offerings.</p>
+            </CardContent>
+            <CardFooter className="flex flex-col sm:flex-row">
+              <Button asChild className="w-full sm:w-auto">
+                <Link to="/admin/service-providers">
+                  Manage Service Providers
                 </Link>
               </Button>
             </CardFooter>

@@ -1,17 +1,17 @@
 
 
 import { useState } from "react"
-import { Button } from "../../src/components/ui/button"
-import { Input } from "../../src/components/ui/input"
-import { Slider } from "../../src/components/ui/slider"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Slider } from "@/components/ui/slider"
 import { Search, Filter, ChevronDown } from "lucide-react"
-import { useNavigate, useSearchParams } from "next/navigation"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { Link } from "react-router-dom";
-import { MAIN_CATEGORIES } from "../../src/lib/categories"
+import { MAIN_CATEGORIES } from "@/lib/categories"
 
 export function ProductFilters() {
-  const router = useNavigate()
-  const searchParams = useSearchParams()
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const currentCategory = searchParams.get('category')
   const currentOrigin = searchParams.get('origin')
   

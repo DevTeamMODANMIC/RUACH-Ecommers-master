@@ -59,12 +59,10 @@ export function VendorHeaderSwitcher() {
           disabled={isLoading}
         >
           {activeStore.logoUrl ? (
-            <Image
+            <img
               src={activeStore.logoUrl}
               alt={activeStore.shopName}
-              width={16}
-              height={16}
-              className="rounded-full object-cover"
+              className="w-4 h-4 rounded-full object-cover"
             />
           ) : (
             <Store className="h-4 w-4 text-gray-600" />
@@ -90,12 +88,10 @@ export function VendorHeaderSwitcher() {
             >
               <div className="flex items-center gap-2 w-full">
                 {store.logoUrl ? (
-                  <Image
+                  <img
                     src={store.logoUrl}
                     alt={store.shopName}
-                    width={20}
-                    height={20}
-                    className="rounded-full object-cover"
+                    className="w-5 h-5 rounded-full object-cover"
                   />
                 ) : (
                   <div className="w-5 h-5 bg-gray-200 rounded-full flex items-center justify-center">

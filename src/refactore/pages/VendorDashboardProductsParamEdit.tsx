@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { useRouter, useParams } from "react-router-dom"
+import { useNavigate, , useParams } from "react-router-dom"
 import { useVendor } from "../hooks/use-vendor"
 import { getProduct, updateProduct } from "../lib/firebase-products"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"

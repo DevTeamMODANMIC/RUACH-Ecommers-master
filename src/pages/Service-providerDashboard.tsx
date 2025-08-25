@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Link } from "react-router-dom";
+import { Link } from "react-router-dom"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge"
@@ -22,7 +22,8 @@ import {
   BarChart3,
   Sparkles,
   Wrench,
-  ArrowUpRight
+  ArrowUpRight,
+  RefreshCw
 } from "lucide-react"
 import { ServiceProvider, Service, ServiceBooking } from "../types"
 import { useAuth } from "../components/auth-provider"
@@ -32,7 +33,8 @@ import { DashboardHeader } from "../components/dashboard-header"
 import { DashboardStatsCard } from "../components/dashboard-stats-card"
 import { DashboardQuickActions } from "../components/dashboard-quick-actions"
 import { DashboardWelcome } from "../components/dashboard-welcome"
-import { useRouter } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
+import { ServiceProviderLayout } from "../components/service-provider-layout"
 
 // Helper function to get time-based greeting
 const getTimeBasedGreeting = () => {
@@ -65,7 +67,7 @@ export default function ServiceProviderDashboard() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [router])
+  }, [navigate])
 
   useEffect(() => {
     // Don't do anything if auth is still loading
@@ -91,11 +93,11 @@ export default function ServiceProviderDashboard() {
         
         // Create timeout with shorter duration for better UX
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Request timeout after 8 seconds')), 8000)
+          setTimeout(() => reject(new Error('Request timeout after 6 seconds')), 6000)
         })
         
         console.log("🔍 Calling getServiceProviderByOwnerId...")
-        const dataPromise = getServiceProviderByOwnerId(user.uid)
+        const dataPromise = getServiceProviderByOwnerId(user.uid, controller)
         
         console.log("🏁 Starting Promise.race between dataPromise and timeoutPromise")
         const serviceProvider = await Promise.race([dataPromise, timeoutPromise]) as ServiceProvider | null
@@ -117,7 +119,7 @@ export default function ServiceProviderDashboard() {
           // Load services in parallel without blocking
           console.log("🔍 Loading services for provider:", serviceProvider.id)
           Promise.allSettled([
-            getServicesByProviderId(serviceProvider.id)
+            getServicesByProviderId(serviceProvider.id, controller)
           ]).then(([servicesResult]) => {
             if (!isMounted) return
             
@@ -166,6 +168,10 @@ export default function ServiceProviderDashboard() {
         if (isMounted) {
           if (err.message.includes('timeout')) {
             setError("Loading timeout - please refresh the page or check your connection")
+          } else if (err.message.includes('aborted') || err.message.includes('cancelled')) {
+            // Don't show error for cancelled requests (component unmounted)
+            console.log("ℹ️ Request was cancelled (component unmounted)")
+            return
           } else if (err.message.includes('permission-denied')) {
             setError("Access denied - please check your permissions")
           } else if (err.message.includes('unavailable')) {
@@ -202,6 +208,7 @@ export default function ServiceProviderDashboard() {
         <div className="text-center">
           <div className="h-8 w-8 border-4 border-t-blue-500 border-l-blue-600 border-r-blue-600 border-b-blue-700 rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-600">Loading dashboard...</p>
+          <p className="text-sm text-gray-400 mt-2">This should take no more than 6 seconds</p>
         </div>
       </div>
     )
@@ -230,8 +237,22 @@ export default function ServiceProviderDashboard() {
             
             <div className="flex flex-col gap-3">
               <Button variant="outline" onClick={() => window.location.reload()}>
+                <RefreshCw className="h-4 w-4 mr-2" />
                 Try Again
               </Button>
+              
+              {error.includes('timeout') && (
+                <div className="bg-blue-50 p-3 rounded text-sm text-blue-800">
+                  <p className="font-medium mb-1">Connection timeout</p>
+                  <p>If this keeps happening, try:</p>
+                  <ul className="list-disc list-inside text-xs mt-1 space-y-1">
+                    <li>Check your internet connection</li>
+                    <li>Refresh the page</li>
+                    <li>Clear browser cache</li>
+                  </ul>
+                </div>
+              )}
+              
               {process.env.NODE_ENV === 'development' && (
                 <Button variant="outline" asChild>
                   <Link to="/debug/firebase">
@@ -314,13 +335,14 @@ export default function ServiceProviderDashboard() {
   ]
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <DashboardHeader
-        title={`${getTimeBasedGreeting()}, ${provider.name || 'Service Provider'}!`}
-        subtitle="Here's what's happening with your services today."
-        userType="service-provider"
-      />
+    <ServiceProviderLayout title="Dashboard" description="Manage your service provider business">
+      <div className="space-y-8">
+        {/* Header */}
+        <DashboardHeader
+          title={`${getTimeBasedGreeting()}, ${provider.name || 'Service Provider'}!`}
+          subtitle="Here's what's happening with your services today."
+          userType="service-provider"
+        />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -645,6 +667,8 @@ export default function ServiceProviderDashboard() {
         </div>
       </div>
       
+      </div>
+      
       {/* Secret message overlay */}
       {showSecretMessage && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
@@ -654,6 +678,6 @@ export default function ServiceProviderDashboard() {
           </div>
         </div>
       )}
-    </div>
+    </ServiceProviderLayout>
   )
 }

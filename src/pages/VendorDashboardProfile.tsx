@@ -2,6 +2,7 @@ import { useAuth } from "../components/auth-provider"
 import { SubmitHandler, useForm } from "react-hook-form"
 // import { zodResolver } from "..hookform/resolvers/zod"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { VendorLayout } from "../components/vendor-layout"
 
 import * as z from "zod"
 import { useNavigate } from "react-router-dom"
@@ -62,8 +63,12 @@ export default function VendorProfilePage(){
   }
 
   return (
-    <div className="container mx-auto pt-20 pb-40 max-w-xl">
-      <Card>
+    <VendorLayout 
+      title="Edit Store Profile" 
+      description="Update your store information"
+    >
+      <div className="max-w-xl mx-auto">
+        <Card>
         <CardHeader>
           <CardTitle>Edit Store Profile</CardTitle>
           <p className="text-gray-600">Update your store information</p>
@@ -100,6 +105,7 @@ export default function VendorProfilePage(){
           </form>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </VendorLayout>
   )
 }

@@ -53,12 +53,11 @@ export default function CartPage() {
             {items.map((item) => (
               <div key={item.productId} className="bg-white border border-gray-200 rounded-lg p-4">
                 <div className="flex items-start gap-4">
-                  <div className="relative w-20 h-20 rounded-lg overflow-hidden border">
+                  <div className="w-20 h-20 rounded-lg overflow-hidden border">
                     <img 
                       src={imageError[item.productId] ? "/product_images/unknown-product.jpg" : (item.image || "/product_images/unknown-product.jpg")} 
                       alt={item.name}
-                      fill
-                      className="object-contain"
+                      className="w-full h-full object-contain"
                       onError={() => setImageError(prev => ({ ...prev, [item.productId]: true }))}
                     />
                   </div>

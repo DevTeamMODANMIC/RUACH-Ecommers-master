@@ -1,18 +1,22 @@
 import { useState, useEffect } from "react"
-import { useRouter } from "react-router-dom"
-import { Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom"
 
-import { Button } from "../components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
-import { Badge } from "../components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, CheckCircle, XCircle, UploadCloud, Loader2, AlertCircle } from "lucide-react"
-import { auth } from "../lib/firebase"
+import { auth } from "@/lib/firebase"
 import { onAuthStateChanged } from "firebase/auth"
-import { useToast } from "../hooks/use-toast"
-import { Product } from "../types"
-import { getProducts } from "../lib/firebase-products"
-import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert"
-import CloudinaryImage from "../components/cloudinary-image"
+import { useToast } from "@/hooks/use-toast"
+import { Product } from "@/types"
+import { getProducts } from "@/lib/firebase-products"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import CloudinaryImage from "@/components/cloudinary-image"
+
+// Extended Product type for migration page
+type ProductWithMigration = Product & {
+  cloudinaryMigrated?: boolean
+}
 
 export default function CloudinaryMigrationPage() {
   const navigate = useNavigate()
@@ -20,7 +24,7 @@ export default function CloudinaryMigrationPage() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
   const [imageError, setImageError] = useState<Record<string, boolean>>({})
-  const [products, setProducts] = useState<Product[]>([])
+  const [products, setProducts] = useState<ProductWithMigration[]>([])
   const [migrating, setMigrating] = useState(false)
   const [migrationResults, setMigrationResults] = useState<Record<string, any>>({})
   const [error, setError] = useState<string | null>(null)
@@ -42,13 +46,13 @@ export default function CloudinaryMigrationPage() {
     })
 
     return () => checkAuth()
-  }, [router])
+  }, [navigate])
 
   const loadProducts = async () => {
     try {
       setLoading(true)
       const result = await getProducts({}, 100)
-      setProducts(result.products)
+      setProducts(result.products as unknown as ProductWithMigration[])
     } catch (err: any) {
       toast({
         title: "Error loading products",
@@ -286,8 +290,7 @@ export default function CloudinaryMigrationPage() {
                     <img
                       src={product.images[0]}
                       alt={product.name}
-                      fill
-                      className="object-contain"
+                      className="w-full h-full object-contain"
                       onError={() => {
                         setImageError(prev => ({ ...prev, [product.id]: true }));
                       }}

@@ -3,7 +3,7 @@ import Hero from "../components/hero"
 import Newsletter from "../components/newsletter"
 import { BulkOrderCTA } from "../components/bulk-order-cta"
 import ServicesShowcase from "../components/services-showcase"
-import { useRouter } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 
 // Lazy load components that are below the fold
 const FeaturedProducts = lazy(() => import("../components/featured-products"))

@@ -1,6 +1,6 @@
 import type React from "react"
 import { useState } from "react"
-import { useRouter } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import { Link } from "react-router-dom";
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"

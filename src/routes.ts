@@ -60,7 +60,6 @@ import Stores from './pages/Stores'
 import Terms from './pages/Terms'
 import VendorDashboard from './pages/VendorDashboard'
 import VendorDashboardAnalytics from './pages/VendorDashboardAnalytics'
-import VendorDashboardBookings from './pages/VendorDashboardBookings'
 import VendorDashboardCustomers from './pages/VendorDashboardCustomers'
 import VendorDashboardOrders from './pages/VendorDashboardOrders'
 import VendorDashboardProducts from './pages/VendorDashboardProducts'
@@ -68,8 +67,6 @@ import VendorDashboardProductsNew from './pages/VendorDashboardProductsNew'
 import VendorDashboardProductsParamEdit from './pages/VendorDashboardProductsParamEdit'
 import VendorDashboardProfile from './pages/VendorDashboardProfile'
 import VendorDashboardReviews from './pages/VendorDashboardReviews'
-import VendorDashboardServices from './pages/VendorDashboardServices'
-import VendorDashboardServicesAdd from './pages/VendorDashboardServicesAdd'
 import VendorDashboardSettings from './pages/VendorDashboardSettings'
 import VendorParam from './pages/VendorParam'
 import VendorRegister from './pages/VendorRegister'
@@ -141,10 +138,10 @@ const routes: RouteDef[] = [
   { path: '/shop', Component: Shop },
   { path: '/stores', Component: Stores },
   { path: '/terms', Component: Terms },
-  { path: '/vendor/:vendorId', Component: VendorParam },
+  { path: '/vendor/register', Component: VendorRegister },
+  { path: '/vendor/stores', Component: VendorStores },
   { path: '/vendor/dashboard', Component: VendorDashboard },
   { path: '/vendor/dashboard/analytics', Component: VendorDashboardAnalytics },
-  { path: '/vendor/dashboard/bookings', Component: VendorDashboardBookings },
   { path: '/vendor/dashboard/customers', Component: VendorDashboardCustomers },
   { path: '/vendor/dashboard/orders', Component: VendorDashboardOrders },
   { path: '/vendor/dashboard/products', Component: VendorDashboardProducts },
@@ -152,11 +149,8 @@ const routes: RouteDef[] = [
   { path: '/vendor/dashboard/products/new', Component: VendorDashboardProductsNew },
   { path: '/vendor/dashboard/profile', Component: VendorDashboardProfile },
   { path: '/vendor/dashboard/reviews', Component: VendorDashboardReviews },
-  { path: '/vendor/dashboard/services', Component: VendorDashboardServices },
-  { path: '/vendor/dashboard/services/add', Component: VendorDashboardServicesAdd },
   { path: '/vendor/dashboard/settings', Component: VendorDashboardSettings },
-  { path: '/vendor/register', Component: VendorRegister },
-  { path: '/vendor/stores', Component: VendorStores },
+  { path: '/vendor/:vendorId', Component: VendorParam },
   { path: '/wishlist', Component: Wishlist }
 ]
 

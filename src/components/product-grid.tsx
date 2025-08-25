@@ -1,17 +1,16 @@
 
 
 import { useState, useEffect } from "react"
-
 import { Link } from "react-router-dom";
-import { Card, CardContent, CardFooter } from "../../src/components/ui/card"
-import { Button } from "../../src/components/ui/button"
-import { Badge } from "../../src/components/ui/badge"
+import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Star, Eye, ShoppingCart, Heart, X, Store, User } from "lucide-react"
-import { useCart } from "../../src/components/cart-provider"
-import { formatCurrency } from "../../src/lib/utils"
-import { useWishlist, type WishlistItem } from "../../src/hooks/use-wishlist"
-import ProductDetailModal from "../../src/components/product-detail-modal"
-import { getVendor, type Vendor } from "../../src/lib/firebase-vendors"
+import { useCart } from "@/components/cart-provider"
+import { formatCurrency } from "@/lib/utils"
+import { useWishlist, type WishlistItem } from "@/hooks/use-wishlist"
+import ProductDetailModal from "@/components/product-detail-modal"
+import { getVendor, type Vendor } from "@/lib/firebase-vendors"
 
 interface Product {
   id: string
@@ -86,7 +85,8 @@ export default function ProductGrid({ products, isLoading = false }: ProductGrid
         ? product.price * (1 - product.discount / 100) 
         : product.price,
       image: product.images?.[0] || "/placeholder.jpg",
-      quantity: 1
+      quantity: 1,
+      options: {}
     });
   };
 
@@ -114,18 +114,20 @@ export default function ProductGrid({ products, isLoading = false }: ProductGrid
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
         {[...Array(8)].map((_, i) => (
-          <div key={i} className="rounded-lg overflow-hidden border border-gray-200">
-            <div className="aspect-square bg-gray-100 relative">
-              <div className="absolute inset-0 animate-pulse bg-gray-200" />
-            </div>
-            <div className="p-4">
-              <div className="h-4 bg-gray-200 rounded animate-pulse mb-2 w-3/4" />
-              <div className="h-3 bg-gray-200 rounded animate-pulse mb-4 w-1/2" />
-              <div className="h-5 bg-gray-200 rounded animate-pulse w-1/4" />
-            </div>
-          </div>
+          <Card key={i} className="animate-pulse border border-gray-200 rounded-xl overflow-hidden bg-white">
+            <div className="h-60 bg-gray-100" />
+            <CardContent className="pt-4">
+              <div className="h-5 bg-gray-100 rounded w-3/4 mb-2" />
+              <div className="h-4 bg-gray-100 rounded w-1/2 mb-2" />
+              <div className="h-4 bg-gray-100 rounded w-5/6" />
+            </CardContent>
+            <CardFooter className="flex justify-between">
+              <div className="h-5 bg-gray-100 rounded w-1/4" />
+              <div className="h-9 bg-gray-100 rounded w-1/3" />
+            </CardFooter>
+          </Card>
         ))}
       </div>
     );
@@ -141,19 +143,34 @@ export default function ProductGrid({ products, isLoading = false }: ProductGrid
 
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
         {products.map(product => (
           <Card 
             key={product.id} 
-            className="group relative overflow-hidden hover:shadow-lg transition-all duration-300"
+            className="group relative overflow-hidden border border-gray-200 hover:border-green-500 hover:shadow-lg transition-all duration-200 rounded-xl bg-white flex flex-col h-full"
             onMouseEnter={() => setHoveredProductId(product.id)}
             onMouseLeave={() => setHoveredProductId(null)}
           >
-            <div className="relative aspect-square overflow-hidden bg-gray-100">
-              <div 
-                className="absolute inset-0 z-10 cursor-pointer"
-                onClick={(e) => handleProductClick(product, e)}
+            {/* Wishlist button */}
+            <div className="absolute right-3 top-3 z-20">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-100 text-gray-500 hover:text-rose-500 backdrop-blur-sm shadow-sm"
+                onClick={(e) => handleToggleWishlist(product, e)}
               >
+                <Heart 
+                  className={`h-4 w-4 ${isInWishlist(product.id) ? 'fill-rose-500 text-rose-500' : ''}`}
+                />
+                <span className="sr-only">Toggle wishlist</span>
+              </Button>
+            </div>
+
+            <div 
+              className="block cursor-pointer"
+              onClick={(e) => handleProductClick(product, e)}
+            >
+              <div className="relative h-60 bg-white overflow-hidden">
                 {product.outOfStock && (
                   <div className="absolute top-4 left-0 z-20 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-r-lg shadow-md">
                     Out of Stock
@@ -161,8 +178,10 @@ export default function ProductGrid({ products, isLoading = false }: ProductGrid
                 )}
                 
                 {product.discount && (
-                  <div className="absolute top-12 left-0 z-20 bg-red-500 text-white text-xs font-bold px-3 py-0.5 rounded-r-lg shadow-md">
-                    -{product.discount}% OFF
+                  <div className="absolute top-2 right-2 z-10">
+                    <Badge className="bg-red-500 hover:bg-red-600 text-white">
+                      -{product.discount}% OFF
+                    </Badge>
                   </div>
                 )}
                 
@@ -177,90 +196,74 @@ export default function ProductGrid({ products, isLoading = false }: ProductGrid
                     <Badge className="bg-blue-500 hover:bg-blue-600">New Arrival</Badge>
                   </div>
                 )}
-              </div>
             
-              <Image
-                src={product.images?.[0] || "/placeholder.jpg"}
-                alt={product.name}
-                fill
-                className="object-contain p-4 transition-all duration-500 group-hover:scale-110 group-hover:rotate-1"
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = "/placeholder.jpg";
-                }}
-              />
-              
-              {/* Wishlist button */}
-              <div className="absolute top-3 right-3 z-20">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-100 text-gray-500 hover:text-rose-500 shadow-sm"
-                  onClick={(e) => handleToggleWishlist(product, e)}
-                >
-                  <Heart 
-                    className={`h-4 w-4 ${isInWishlist(product.id) ? 'fill-rose-500 text-rose-500' : ''}`}
-                  />
-                  <span className="sr-only">Toggle wishlist</span>
-                </Button>
-              </div>
-              
-              {/* Hover actions */}
-              <div className={`absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center gap-2 transition-opacity duration-300 ${hoveredProductId === product.id ? 'opacity-100' : 'opacity-0'}`}>
-                <button 
-                  onClick={(e) => handleProductClick(product, e)}
-                  className="w-10 h-10 rounded-full bg-white flex items-center justify-center hover:bg-green-500 hover:text-white transition-colors"
-                  aria-label="View product details"
-                >
-                  <Eye className="h-5 w-5" />
-                </button>
-                <button 
-                  onClick={(e) => handleAddToCart(product, e)}
-                  className="w-10 h-10 rounded-full bg-white flex items-center justify-center hover:bg-green-500 hover:text-white transition-colors"
-                  aria-label="Add to cart"
-                  disabled={product.outOfStock}
-                >
-                  <ShoppingCart className="h-5 w-5" />
-                </button>
+                <img
+                  src={product.images?.[0] || "/placeholder.jpg"}
+                  alt={product.name}
+                  className="absolute inset-0 w-full h-full object-contain p-4 transition-transform duration-300 group-hover:scale-105"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = "/placeholder.jpg";
+                  }}
+                />
+                
+                {/* Hover actions */}
+                {hoveredProductId === product.id && (
+                  <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center gap-2 transition-opacity duration-300">
+                    <button 
+                      onClick={(e) => handleProductClick(product, e)}
+                      className="w-10 h-10 rounded-full bg-white flex items-center justify-center hover:bg-green-500 hover:text-white transition-colors"
+                      aria-label="View product details"
+                    >
+                      <Eye className="h-5 w-5" />
+                    </button>
+                    <button 
+                      onClick={(e) => handleAddToCart(product, e)}
+                      className="w-10 h-10 rounded-full bg-white flex items-center justify-center hover:bg-green-500 hover:text-white transition-colors"
+                      aria-label="Add to cart"
+                      disabled={product.outOfStock}
+                    >
+                      <ShoppingCart className="h-5 w-5" />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
             
-            <CardContent className="p-4">
+            <CardContent className="pt-4 flex-grow">
               <div 
-                className="cursor-pointer"
+                className="block cursor-pointer"
                 onClick={(e) => handleProductClick(product, e)}
               >
-                <h3 className="font-medium text-lg hover:text-green-600 transition-colors">
+                <h3 className="font-semibold text-lg line-clamp-2 min-h-[3.5rem] group-hover:text-green-600 transition-colors">
                   {product.name}
                 </h3>
               </div>
-              <p className="text-sm text-gray-500 mt-1">{product.displayCategory || product.category}</p>
+              <p className="text-sm text-gray-600 mt-1 line-clamp-2 h-10">{product.description}</p>
+              <p className="text-sm text-gray-500 mt-1 line-clamp-1">{product.displayCategory || product.category}</p>
               
               {/* Vendor Information */}
               {product.vendorId && vendors[product.vendorId] && (
                 <div className="mt-2 flex items-center gap-2">
                   <div className="flex items-center gap-1.5">
                     {vendors[product.vendorId].logoUrl ? (
-                      <Image
+                      <img
                         src={vendors[product.vendorId].logoUrl}
                         alt={vendors[product.vendorId].shopName}
-                        width={16}
-                        height={16}
-                        className="rounded-full object-cover"
+                        className="w-4 h-4 rounded-full object-cover"
                       />
                     ) : (
                       <Store className="h-4 w-4 text-gray-400" />
                     )}
                     <Link 
-                      href={`/vendor/${product.vendorId}`}
-                      className="text-xs text-gray-600 hover:text-green-600 transition-colors font-medium"
+                      to={`/vendor/${product.vendorId}`}
+                      className="text-xs text-gray-600 hover:text-green-600 transition-colors font-medium line-clamp-1"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {vendors[product.vendorId].shopName}
                     </Link>
                   </div>
-                  <Badge variant="outline" className="text-xs px-1.5 py-0.5">
+                  <Badge variant="outline" className="text-xs px-1.5 py-0.5 flex-shrink-0">
                     Vendor
                   </Badge>
                 </div>
@@ -289,34 +292,25 @@ export default function ProductGrid({ products, isLoading = false }: ProductGrid
                   )}
                 </div>
               )}
-              
-              <div className="mt-2">
+            </CardContent>
+            
+            <CardFooter className="flex items-center justify-between pt-0 mt-auto">
+              <div className="flex flex-col">
                 {product.discount ? (
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-green-600">
+                  <>
+                    <span className="font-bold text-green-600 text-lg">
                       {formatCurrency(product.price * (1 - product.discount / 100))}
                     </span>
                     <span className="text-sm text-gray-500 line-through">
                       {formatCurrency(product.price)}
                     </span>
-                  </div>
+                  </>
                 ) : (
-                  <span className="font-semibold">
+                  <span className="font-bold text-gray-900 text-lg">
                     {formatCurrency(product.price)}
                   </span>
                 )}
               </div>
-            </CardContent>
-            
-            <CardFooter className="p-4 pt-0">
-              <Button 
-                className="w-full" 
-                size="sm"
-                onClick={(e) => handleAddToCart(product, e)}
-                disabled={product.outOfStock}
-              >
-                {product.outOfStock ? "Out of Stock" : "Add to Cart"}
-              </Button>
             </CardFooter>
           </Card>
         ))}

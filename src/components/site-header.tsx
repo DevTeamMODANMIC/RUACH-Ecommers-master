@@ -35,6 +35,7 @@ import { useCart } from "../../src/components/cart-provider"
 import { useWishlist } from "../../src/hooks/use-wishlist"
 import { useAuth } from "../../src/components/auth-provider"
 import { useVendor } from "../../src/hooks/use-vendor"
+import { useServiceProvider } from "../../src/hooks/use-service-provider"
 import { VendorHeaderSwitcher } from "../../src/components/vendor-header-switcher"
 import { DesktopMegaMenu, MobileMegaMenu } from "../../src/components/mega-menu"
 import clsx from "clsx"
@@ -71,6 +72,7 @@ export default function HeaderImproved() {
   const { getTotalItems } = useCart()
   const { user, logout } = useAuth()
   const { isVendor } = useVendor()
+  const { isServiceProvider } = useServiceProvider()
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const handleSearch = (e: React.FormEvent) => {
@@ -140,7 +142,7 @@ export default function HeaderImproved() {
 
         {/* Logo */}
         <Link to="/" className="flex items-center space-x-2">
-          <img src="/logo/logo.png" alt="RUACH Logo" className="h-10 w-auto" />
+          <img src="/images/new_logo.jpg" alt="RUACH Logo" className="h-10 w-10 rounded-full object-cover" />
           <span className="font-bold tracking-tight text-gray-900 hidden sm:inline">
             RUACH E-STORE
           </span>
@@ -191,7 +193,7 @@ export default function HeaderImproved() {
 
           {/* WhatsApp Floating Icon */}
           <a
-            to="https://wa.me/2348160662997"
+            href="https://wa.me/2348160662997"
             target="_blank"
             rel="noopener noreferrer"
             className="hidden lg:inline-flex items-center justify-center bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-sm font-medium"
@@ -221,6 +223,11 @@ export default function HeaderImproved() {
                   {isVendor && (
                     <DropdownMenuItem onSelect={() => navigate("/vendor/dashboard")}>
                       Vendor Dashboard
+                    </DropdownMenuItem>
+                  )}
+                  {isServiceProvider && (
+                    <DropdownMenuItem onSelect={() => navigate("/service-provider/dashboard")}>
+                      Service Provider
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem onSelect={logout} className="text-red-600">
