@@ -58,6 +58,7 @@ const legacyCategories = [
 const primaryLinks = [
   { title: "Home", href: "/" },
   { title: "Shop", href: "/shop" },
+  { title: "Services", href: "/services" },
   { title: "Stores", href: "/stores" },
   { title: "Become a Vendor", href: "/vendor/register" },
   { title: "Bulk Order", href: "/bulk-order" },

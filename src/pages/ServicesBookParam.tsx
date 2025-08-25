@@ -544,7 +544,7 @@ export default function ServiceBookingPage() {
           <div className="flex items-center">
             <Button
               variant="ghost"
-              onClick={() => router.back()}
+              onClick={() => navigate(-1)}
               className="mr-4"
             >
               <ArrowLeft className="h-4 w-4" />

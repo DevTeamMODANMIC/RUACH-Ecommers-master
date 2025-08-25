@@ -142,7 +142,7 @@ export function BulkOrderModal({ isOpen, onClose, productId, productName, basePr
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <Package2 className="h-5 w-5 text-green-600" />
@@ -362,7 +362,7 @@ export function BulkOrderModal({ isOpen, onClose, productId, productName, basePr
               <Checkbox id="terms" required />
               <Label htmlFor="terms" className="text-sm">
                 I agree to the{" "}
-                <a to="/terms" className="text-green-600 hover:underline">
+                <a href="/terms" className="text-green-600 hover:underline">
                   terms and conditions
                 </a>{" "}
                 for bulk orders

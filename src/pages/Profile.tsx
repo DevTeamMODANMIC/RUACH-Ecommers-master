@@ -35,8 +35,8 @@ export default function ProfilePage() {
   const { toast } = useToast()
   const [isEditing, setIsEditing] = useState(false)
   const [profileData, setProfileData] = useState({
-    firstName: user?.name?.split(" ")[0] || "",
-    lastName: user?.name?.split(" ")[1] || "",
+    firstName: user?.displayName?.split(" ")[0] || "",
+    lastName: user?.displayName?.split(" ")[1] || "",
     email: user?.email || "",
     phone: "",
     dateOfBirth: "",
@@ -221,12 +221,24 @@ export default function ProfilePage() {
       name: product.name,
       price: product.price,
       image: product.image,
-      quantity: 1
+      quantity: 1,
+      options: {} // Add empty options object to satisfy CartItem interface
     })
     
     toast({
       title: "Added to cart",
       description: `${product.name} has been added to your cart`,
+    })
+  }
+
+  const setAddressAsDefault = (id: number) => {
+    setAddresses(addresses.map(address => ({
+      ...address,
+      isDefault: address.id === id
+    })))
+    toast({
+      title: "Default address updated",
+      description: "Your default address has been changed."
     })
   }
 
@@ -279,14 +291,14 @@ export default function ProfilePage() {
             <Avatar className="h-16 w-16">
               <AvatarImage src="/placeholder.svg" />
               <AvatarFallback className="text-lg">
-                {user.name
+                {user.displayName
                   ?.split(" ")
                   .map((n) => n[0])
                   .join("") || "U"}
               </AvatarFallback>
             </Avatar>
             <div>
-              <h1 className="text-3xl font-bold">Welcome back, {user.name?.split(" ")[0]}!</h1>
+              <h1 className="text-3xl font-bold">Welcome back, {user.displayName?.split(" ")[0]}!</h1>
               <p className="text-muted-foreground">Manage your account and preferences</p>
             </div>
           </div>
@@ -545,8 +557,7 @@ export default function ProfilePage() {
                             <img
                               src={item.image}
                               alt={item.name}
-                              fill
-                              className="object-cover"
+                              className="object-cover w-full h-full"
                             />
                           </div>
                           <div className="flex-1 space-y-1 min-w-0">
@@ -666,7 +677,7 @@ export default function ProfilePage() {
             
             {/* Address Dialog */}
             <Dialog open={addressDialogOpen} onOpenChange={setAddressDialogOpen}>
-              <DialogContent className="sm:max-w-[500px]">
+              <DialogContent className="sm:max-w-[500px] bg-white">
                 <DialogHeader>
                   <DialogTitle>{currentAddress ? "Edit Address" : "Add New Address"}</DialogTitle>
                 </DialogHeader>

@@ -679,7 +679,7 @@ export default function ShopPage() {
                   )}
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-full sm:max-w-md overflow-y-auto">
+              <SheetContent side="left" className="w-full sm:max-w-md overflow-y-auto bg-white">
                 <SheetHeader className="mb-6">
                   <SheetTitle>Filters</SheetTitle>
                   <SheetDescription>

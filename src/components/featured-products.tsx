@@ -236,7 +236,7 @@ export default function FeaturedProducts() {
 
       {/* Quick View Modal */}
       <Dialog open={quickViewProduct !== null} onOpenChange={(isOpen) => !isOpen && setQuickViewProduct(null)}>
-        <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto bg-white">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold">{quickViewProduct?.name}</DialogTitle>
             <DialogDescription>

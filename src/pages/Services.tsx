@@ -266,7 +266,7 @@ export default function ServicesPage() {
                   </div>
                   <h3 className="text-lg font-semibold mb-2">Call Us</h3>
                   <p className="text-gray-600 mb-3">Speak directly with our team</p>
-                  <p className="font-semibold text-blue-600">+234 816 066 2997</p>
+                  <p className="font-semibold text-blue-600">+2347054915173</p>
                   <p className="text-sm text-gray-500">Mon-Sat: 8AM - 8PM</p>
                 </CardContent>
               </Card>

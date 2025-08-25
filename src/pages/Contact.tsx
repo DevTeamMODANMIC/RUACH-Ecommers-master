@@ -12,17 +12,11 @@ const officeLocations = [
   {
     name: "Lagos Headquarters",
     address: "Plot 123, Victoria Island, Lagos, Nigeria",
-    phone: "+234 816 066 2997",
+    phone: "+2347054915173",
     email: "lagos@ruachestore.com.ng",
     hours: "Mon-Fri: 8AM-8PM, Sat: 9AM-6PM"
   },
-  {
-    name: "Abuja Office", 
-    address: "Suite 45, Central Business District, Abuja, Nigeria",
-    phone: "+234 816 066 2997",
-    email: "abuja@ruachestore.com.ng",
-    hours: "Mon-Fri: 8AM-6PM, Sat: 10AM-4PM"
-  }
+
 ]
 
 const supportTypes = [
@@ -126,37 +120,39 @@ export default function ContactPage() {
             <p className="text-lg text-gray-600">Visit us at our offices across Nigeria</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {officeLocations.map((location, index) => (
-              <div key={index} className="bg-white p-6 rounded-lg shadow-sm">
-                <h3 className="text-xl font-semibold mb-4 flex items-center">
-                  <MapPin className="h-5 w-5 mr-2 text-blue-600" />
-                  {location.name}
-                </h3>
-                
-                <div className="space-y-3 text-gray-600">
-                  <div className="flex items-start space-x-3">
-                    <MapPin className="h-4 w-4 mt-0.5 text-gray-400" />
-                    <span className="text-sm">{location.address}</span>
-                  </div>
+          <div className="flex justify-center">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl w-full">
+              {officeLocations.map((location, index) => (
+                <div key={index} className="bg-white p-6 rounded-lg shadow-sm mx-auto w-full max-w-md">
+                  <h3 className="text-xl font-semibold mb-4 flex items-center justify-center md:justify-start">
+                    <MapPin className="h-5 w-5 mr-2 text-blue-600" />
+                    {location.name}
+                  </h3>
                   
-                  <div className="flex items-center space-x-3">
-                    <Phone className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm">{location.phone}</span>
-                  </div>
-                  
-                  <div className="flex items-center space-x-3">
-                    <Mail className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm">{location.email}</span>
-                  </div>
-                  
-                  <div className="flex items-center space-x-3">
-                    <Clock className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm">{location.hours}</span>
+                  <div className="space-y-3 text-gray-600">
+                    <div className="flex items-start space-x-3">
+                      <MapPin className="h-4 w-4 mt-0.5 text-gray-400" />
+                      <span className="text-sm">{location.address}</span>
+                    </div>
+                    
+                    <div className="flex items-center space-x-3">
+                      <Phone className="h-4 w-4 text-gray-400" />
+                      <span className="text-sm">{location.phone}</span>
+                    </div>
+                    
+                    <div className="flex items-center space-x-3">
+                      <Mail className="h-4 w-4 text-gray-400" />
+                      <span className="text-sm">{location.email}</span>
+                    </div>
+                    
+                    <div className="flex items-center space-x-3">
+                      <Clock className="h-4 w-4 text-gray-400" />
+                      <span className="text-sm">{location.hours}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </div>

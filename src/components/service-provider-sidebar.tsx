@@ -244,7 +244,7 @@ export function ServiceProviderSidebar() {
             <span className="sr-only">Toggle navigation</span>
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="p-0 w-64">
+        <SheetContent side="left" className="p-0 w-64 bg-white">
           <SidebarContent />
         </SheetContent>
       </Sheet>
