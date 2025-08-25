@@ -79,7 +79,7 @@ export default function Footer() {
                   { href: "/bulk-order", label: "Bulk Orders" },
                 ].map(({ href, label }) => (
                   <li key={label}>
-                    <Link href={href} className="hover:text-white transition-transform transform hover:scale-110">
+                    <Link to={href} className="hover:text-white transition-transform transform hover:scale-110">
                       {label}
                     </Link>
                   </li>
@@ -99,7 +99,7 @@ export default function Footer() {
                   { href: "/terms", label: "Terms & Conditions" },
                 ].map(({ href, label }) => (
                   <li key={label}>
-                    <Link href={href} className="hover:text-white transition-transform transform hover:scale-110">
+                    <Link to={href} className="hover:text-white transition-transform transform hover:scale-110">
                       {label}
                     </Link>
                   </li>
@@ -169,7 +169,7 @@ export default function Footer() {
               <img src="/visa.svg" alt="Visa" className="h-6 w-auto" />
               <img src="/mastercard.svg" alt="Mastercard" className="h-6 w-auto" />
               <img src="/paypal.svg" alt="Paypal" className="h-6 w-auto" />
-              <a
+              <Link
                 to="https://wa.me/2348160662997"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -177,7 +177,7 @@ export default function Footer() {
                 className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-full flex items-center transition-transform transform hover:scale-110 text-sm"
               >
                 <Phone className="h-4 w-4 mr-1" /> WhatsApp
-              </a>
+              </Link>
               <button
                 onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
                 aria-label="Back to top"

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Link from "next/link";
+import { Link } from "react-router-dom";;
 ;
 import { Button } from "../../src/components/ui/button";
 import { Input } from "../../src/components/ui/input";

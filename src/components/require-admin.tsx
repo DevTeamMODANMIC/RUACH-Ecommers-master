@@ -1,7 +1,7 @@
 
 
 import type React from "react"
-import { useNavigate } from "next/navigation"
+import { useNavigate } from "react-router-dom"
 import { useAdmin } from "../../src/hooks/use-admin"
 import { useEffect } from "react"
 

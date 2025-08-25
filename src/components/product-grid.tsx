@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 
-import Link from "next/link"
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardFooter } from "../../src/components/ui/card"
 import { Button } from "../../src/components/ui/button"
 import { Badge } from "../../src/components/ui/badge"

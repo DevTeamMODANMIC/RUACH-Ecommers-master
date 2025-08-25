@@ -1,5 +1,5 @@
 
-import Link from "next/link"
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "../../src/components/ui/card"
 import { Badge } from "../../src/components/ui/badge"
 import { Button } from "../../src/components/ui/button"

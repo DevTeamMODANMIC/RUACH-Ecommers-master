@@ -6,7 +6,7 @@ import { Input } from "../../src/components/ui/input"
 import { Slider } from "../../src/components/ui/slider"
 import { Search, Filter, ChevronDown } from "lucide-react"
 import { useNavigate, useSearchParams } from "next/navigation"
-import Link from "next/link"
+import { Link } from "react-router-dom";
 import { MAIN_CATEGORIES } from "../../src/lib/categories"
 
 export function ProductFilters() {
