@@ -43,10 +43,7 @@ export function useAdmin(): UseAdminResult {
 
       // 2. Fallback: check Firestore profile role field
       if (active) {
-        // TEMPORARY: Grant admin access to all authenticated users
-        // REMOVE THIS LINE BEFORE PRODUCTION!
-        setIsAdmin(true)
-        // Original line: setIsAdmin(profile?.role === "admin")
+        setIsAdmin(profile?.role === "admin")
         setLoading(false)
       }
     }

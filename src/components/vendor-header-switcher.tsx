@@ -19,8 +19,8 @@ import {
   Settings
 } from "lucide-react"
 
-// import Link from "next/link"
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+// Import removed - using regular img tag instead
+import { Link } from "react-router-dom"
 
 
 export function VendorHeaderSwitcher() {
