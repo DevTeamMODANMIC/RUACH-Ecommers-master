@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Keyboard, Command } from "lucide-react"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 interface Shortcut {
   keys: string[]
@@ -13,6 +14,7 @@ interface Shortcut {
 
 export default function KeyboardShortcutsHelp() {
   const [isOpen, setIsOpen] = useState(false)
+  const isMobile = useIsMobile()
 
   const shortcuts: Shortcut[] = [
     {
@@ -94,14 +96,22 @@ export default function KeyboardShortcutsHelp() {
       {/* Help trigger button */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-4 left-4 z-50 bg-gray-800 hover:bg-gray-700 text-white p-2 rounded-full shadow-lg transition-colors"
+        className={`fixed bottom-4 left-4 z-50 text-white rounded-full shadow-lg transition-all duration-300 ${
+          isMobile 
+            ? "bg-gray-900/90 hover:bg-gray-800/95 backdrop-blur-md border border-gray-700/50 p-3 shadow-2xl" 
+            : "bg-gray-800 hover:bg-gray-700 p-2"
+        }`}
         title="Keyboard shortcuts (Ctrl+Shift+?)"
       >
-        <Keyboard className="h-4 w-4" />
+        <Keyboard className={isMobile ? "h-5 w-5" : "h-4 w-4"} />
       </button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className={`max-w-md ${
+          isMobile 
+            ? "bg-white/95 backdrop-blur-md border border-gray-200/50 shadow-2xl" 
+            : "bg-white"
+        }`}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Command className="h-5 w-5" />
