@@ -1,16 +1,16 @@
 import { Suspense, lazy, useEffect, useState } from "react"
-import Hero from "../components/hero"
-import Newsletter from "../components/newsletter"
-import { BulkOrderCTA } from "../components/bulk-order-cta"
-import ServicesShowcase from "../components/services-showcase"
+import Hero from "@/components/hero"
+import Newsletter from "@/components/newsletter"
+import { BulkOrderCTA } from "@/components/bulk-order-cta"
+import ServicesShowcase from "@/components/services-showcase"
 import { useNavigate } from "react-router-dom"
 
 // Lazy load components that are below the fold
-const FeaturedProducts = lazy(() => import("../components/featured-products"))
-const TrendingProducts = lazy(() => import("../components/trending-products"))
-const FeaturedStores = lazy(() => import("../components/featured-stores"))
+const FeaturedProducts = lazy(() => import("@/components/featured-products"))
+const TrendingProducts = lazy(() => import("@/components/trending-products"))
+const FeaturedStores = lazy(() => import("@/components/featured-stores"))
 const PersonalizedRecommendations = lazy(async () => {
-  const mod = await import("../components/personalized-recommendations")
+  const mod = await import("@/components/personalized-recommendations")
   return { default: mod.PersonalizedRecommendations }
 })
 

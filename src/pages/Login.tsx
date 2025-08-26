@@ -1,6 +1,6 @@
 import type React from "react"
 import { useState } from "react"
-import { useRouter } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import { Link } from "react-router-dom";
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
@@ -51,8 +51,8 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     try {
 
-      const getGoogleLoing = await loginWithGoogle()
-      console.log("getGoogleLoing", getGoogleLoing)
+      const getGoogleLogin = await loginWithGoogle()
+      console.log("getGoogleLogin", getGoogleLogin)
 
       toast({
         title: "Welcome!",
@@ -60,11 +60,11 @@ export default function LoginPage() {
       })
 
       const targetEmail = "enochehimika@gamil.com"
-      // STORE LOCAL STOREAGE.
+      // STORE LOCAL STORAGE.
       localStorage.setItem("masterMail", targetEmail)
       
-      if (getGoogleLoing?.email === targetEmail){
-        console.log("getGoogleLoing", getGoogleLoing)
+      if (getGoogleLogin && getGoogleLogin.email === targetEmail){
+        console.log("getGoogleLogin", getGoogleLogin)
         navigate("/admin")
       }else{
         navigate("/vendor/dashboard")

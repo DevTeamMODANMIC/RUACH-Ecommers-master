@@ -24,7 +24,7 @@ import { DashboardHeader } from "../components/dashboard-header"
 import { DashboardStatsCard } from "../components/dashboard-stats-card"
 import { DashboardQuickActions } from "../components/dashboard-quick-actions"
 import { DashboardWelcome } from "../components/dashboard-welcome"
-import { useRouter } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 
 interface DashboardStats {
   totalProducts: number

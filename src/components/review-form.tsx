@@ -146,7 +146,7 @@ export function ReviewForm({ productId, productName, availableCountries, onClose
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
         <DialogHeader>
           <DialogTitle>Write a Review</DialogTitle>
           <p className="text-sm text-muted-foreground">{productName}</p>
@@ -289,12 +289,10 @@ export function ReviewForm({ productId, productName, availableCountries, onClose
                 {imagePreview.map((preview, index) => (
                   <div key={index} className="relative">
                     <div className="w-20 h-20 rounded-lg overflow-hidden border">
-                      <Image
+                      <img
                         src={preview || "/placeholder.svg"}
                         alt={`Preview ${index + 1}`}
-                        width={80}
-                        height={80}
-                        className="object-cover"
+                        className="w-full h-full object-cover"
                       />
                     </div>
                     <Button

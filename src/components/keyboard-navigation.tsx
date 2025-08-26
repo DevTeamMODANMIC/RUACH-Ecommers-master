@@ -1,9 +1,10 @@
 
 
 import { useEffect } from "react"
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../src/components/auth-provider"
-import { useVendor } from "../../src/hooks/use-vendor"
+import { useNavigate } from "react-router-dom"
+import { useAuth } from "@/components/auth-provider"
+import { useVendor } from "@/hooks/use-vendor"
+import KeyboardShortcutsHelp from "@/components/keyboard-shortcuts-help"
 
 export default function KeyboardNavigation() {
   const navigate = useNavigate()
@@ -88,5 +89,5 @@ export default function KeyboardNavigation() {
     }
   }, [navigate, user, isVendor])
 
-  return null // This component doesn't render anything
+  return <KeyboardShortcutsHelp />
 }

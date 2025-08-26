@@ -1,11 +1,16 @@
 
 
 import { useState } from 'react'
-import Image, { ImageProps } from 'next/image'
 
-interface OptimizedImageProps extends Omit<ImageProps, 'onError'> {
+interface OptimizedImageProps {
+  src: string;
+  alt: string;
   fallbackSrc?: string;
   showLoadingState?: boolean;
+  className?: string;
+  fill?: boolean;
+  width?: number;
+  height?: number;
 }
 
 export function OptimizedImage({
@@ -36,27 +41,14 @@ export function OptimizedImage({
         </div>
       )}
       
-      {isLocalImage ? (
-        // For local images, use standard img tag
-        <img
-          src={error ? fallbackSrc : src}
-          alt={alt}
-          className={`${className} ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300 w-full h-full object-contain`}
-          onLoad={() => setIsLoading(false)}
-          onError={handleError}
-        />
-      ) : (
-        // For remote images, use Next.js Image
-        <Image
-          src={error ? fallbackSrc : src}
-          alt={alt}
-          className={`${className} ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
-          onLoad={() => setIsLoading(false)}
-          onError={handleError}
-          fill={fill}
-          {...props}
-        />
-      )}
+      <img
+        src={error ? fallbackSrc : src}
+        alt={alt}
+        className={`${className} ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300 w-full h-full object-contain`}
+        onLoad={() => setIsLoading(false)}
+        onError={handleError}
+        style={fill ? { position: 'absolute', inset: 0 } : undefined}
+      />
     </div>
   )
 }

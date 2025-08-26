@@ -216,7 +216,10 @@ export const getServiceProvider = async (providerId: string): Promise<ServicePro
 }
 
 // Get service provider by owner ID
-export const getServiceProviderByOwnerId = async (ownerId: string): Promise<ServiceProvider | null> => {
+export const getServiceProviderByOwnerId = async (
+  ownerId: string, 
+  abortController?: AbortController
+): Promise<ServiceProvider | null> => {
   try {
     console.log("🔍 Firebase: Querying service provider by ownerId:", ownerId)
     
@@ -224,14 +227,25 @@ export const getServiceProviderByOwnerId = async (ownerId: string): Promise<Serv
       throw new Error('Invalid ownerId provided')
     }
     
-    // Add timeout to prevent hanging
+    // Simplified query with better timeout handling
     const queryPromise = (async () => {
       try {
+        // Check if request was aborted before starting
+        if (abortController?.signal.aborted) {
+          throw new Error('Request was aborted')
+        }
+        
         const q = query(collection(db, "serviceProviders"), where("ownerId", "==", ownerId))
-        console.log("🔍 Firebase: Query created, executing...")
+        console.log("🔍 Firebase: Executing service provider query...")
         
         const snapshot = await getDocs(q)
-        console.log("📊 Firebase: Query executed, results:", {
+        
+        // Check if request was aborted after query
+        if (abortController?.signal.aborted) {
+          throw new Error('Request was aborted')
+        }
+        
+        console.log("📊 Firebase: Service provider query executed:", {
           empty: snapshot.empty,
           size: snapshot.size,
           docs: snapshot.docs.length
@@ -255,69 +269,51 @@ export const getServiceProviderByOwnerId = async (ownerId: string): Promise<Serv
           ...data
         } as ServiceProvider
       } catch (queryError: any) {
-        console.error("💥 Firebase: Error in query execution for service provider:", {
-          queryError: queryError,
-          queryErrorString: JSON.stringify(queryError, Object.getOwnPropertyNames(queryError)),
-          queryErrorMessage: queryError?.message || 'No message',
-          queryErrorCode: queryError?.code || 'no_code',
-          queryErrorName: queryError?.name || 'no_name',
-          ownerId,
-          queryErrorStack: queryError?.stack || 'No stack trace'
-        })
+        // Don't log error if request was aborted
+        if (!queryError?.message?.includes('aborted')) {
+          console.error("💥 Firebase: Error in service provider query:", {
+            queryErrorMessage: queryError?.message || 'No message',
+            queryErrorCode: queryError?.code || 'no_code',
+            ownerId
+          })
+        }
         throw queryError
       }
     })()
     
     const timeoutPromise = new Promise<never>((_, reject) => {
-      console.log("⏰ Firebase: Setting up timeout for 8 seconds")
-      setTimeout(() => {
-        console.error("⏰ Firebase: Query timeout after 8 seconds")
-        reject(new Error('Database query timeout after 8 seconds'))
-      }, 8000)
+      const timeoutId = setTimeout(() => {
+        console.error("⏰ Firebase: Service provider query timeout after 6 seconds")
+        reject(new Error('Service provider query timeout after 6 seconds'))
+      }, 6000) // Standardized 6-second timeout
+      
+      // Clear timeout if request is aborted
+      if (abortController) {
+        abortController.signal.addEventListener('abort', () => {
+          clearTimeout(timeoutId)
+          reject(new Error('Request was aborted'))
+        })
+      }
     })
     
-    console.log("🏁 Firebase: Starting Promise.race between query and timeout")
     const result = await Promise.race([queryPromise, timeoutPromise])
-    console.log("✅ Firebase: Promise.race completed successfully")
+    console.log("✅ Firebase: Service provider query completed successfully")
     return result
     
   } catch (error: any) {
-    // Enhanced error logging to capture more details
-    console.error("💥 Firebase: Error fetching service provider by owner ID:", {
-      error: error,
-      errorString: JSON.stringify(error, Object.getOwnPropertyNames(error)),
-      errorType: typeof error,
-      errorMessage: error?.message || 'No message',
-      errorCode: error?.code || 'no_code',
-      errorName: error?.name || 'no_name',
-      ownerId,
-      stack: error?.stack || 'No stack trace',
-      // Additional error properties that might exist in Firebase errors
-      errorConstructor: error?.constructor?.name,
-      errorKeys: error ? Object.keys(error) : 'No keys',
-      errorHasMessage: 'message' in error,
-      errorHasCode: 'code' in error,
-      errorToString: error?.toString(),
-      // Try to get Firebase-specific error details
-      firebaseErrorDetails: error?.details || error?.customData || error?.serverResponse || 'No Firebase details',
-      // Check if this is a timeout error
-      isTimeoutError: error?.message?.includes('timeout'),
-      // Check if this is a Firebase error
-      isFirebaseError: error?.code !== undefined,
-      // Try to stringify the error in different ways
-      errorJSON: JSON.stringify(error),
-      errorStringifyAll: JSON.stringify(error, Object.getOwnPropertyNames(error)),
-      // Check if error has a message property
-      hasMessageProperty: Object.prototype.hasOwnProperty.call(error, 'message'),
-      // Try to access error properties directly
-      directMessage: error.message,
-      directCode: error.code,
-      directName: error.name,
-      directStack: error.stack
-    })
+    // Don't log error if request was aborted
+    if (!error?.message?.includes('aborted')) {
+      console.error("💥 Firebase: Error fetching service provider by owner ID:", {
+        errorMessage: error?.message || 'No message',
+        errorCode: error?.code || 'no_code',
+        ownerId
+      })
+    }
     
-    // Handle specific Firebase errors
-    if (error?.code === 'failed-precondition') {
+    // Handle specific Firebase errors gracefully
+    if (error?.message?.includes('aborted')) {
+      throw new Error('Request was cancelled')
+    } else if (error?.code === 'failed-precondition') {
       throw new Error("Database index required - please contact support")
     } else if (error?.code === 'permission-denied') {
       throw new Error("Permission denied - please check your login status")

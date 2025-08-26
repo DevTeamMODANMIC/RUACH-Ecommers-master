@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { useParams, useRouter } from "react-router-dom"
+import { useParams,, useNavigate } from "react-router-dom"
 import Link from "react-router-dom"
 
 import { Button } from "../components/ui/button"

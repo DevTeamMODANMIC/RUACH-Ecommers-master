@@ -46,9 +46,6 @@ export default function Footer() {
               <p className="text-sm leading-relaxed mb-6">
                 Your trusted source for authentic products –delivered with care and quality assurance.
               </p>
-              <p className="text-sm leading-relaxed mb-6">
-                Partnered with Modanmic.
-              </p>
               <div className="flex space-x-4">
                 {[
                   { Icon: Facebook, href: "#", label: "Facebook" },
@@ -163,7 +160,7 @@ export default function Footer() {
 
           {/* Bottom bar */}
           <div className="flex flex-col md:flex-row justify-between items-center border-t border-gray-700 pt-6 mt-10 text-sm text-gray-400 gap-4">
-            <p className="mb-4 md:mb-0">© {currentYear} RUACH E-STORE. Partnered with Modanmic.</p>
+            <p className="mb-4 md:mb-0">© {currentYear} RUACH E-STORE. Powered by MODANMIC.</p>
             <div className="flex items-center flex-wrap justify-center md:justify-start gap-4">
               <span>We Accept</span>
               <img src="/visa.svg" alt="Visa" className="h-6 w-auto" />

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Link } from "react-router-dom";
+import { Link } from "react-router-dom"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Input } from "../components/ui/input"
@@ -26,6 +26,9 @@ import { Service, ServiceCategory } from "../types"
 import { useAuth } from "../components/auth-provider"
 import { getServiceProviderByOwnerId } from "../lib/firebase-service-providers"
 import { getServicesByProviderId, toggleServiceStatus, deleteService } from "../lib/firebase-services"
+import { ServiceProviderLayout } from "../components/service-provider-layout"
+
+// Service Provider Services Management Page
 
 
 export default function ServiceProviderServicesPage() {
@@ -60,14 +63,14 @@ export default function ServiceProviderServicesPage() {
       
       console.log('🔍 Current user UID:', user.uid)
       
-      // Clear caches before loading
-      console.log('🧹 Clearing localStorage caches...')
-      Object.keys(localStorage).forEach(key => {
-        if (key.includes('service') || key.includes('firebase')) {
-          console.log('🗑️ Removing localStorage key:', key)
-          localStorage.removeItem(key)
-        }
-      })
+      // Test Firebase connection first
+      const { testFirebaseConnection } = await import("../lib/firebase-services")
+      const isConnected = await testFirebaseConnection()
+      if (!isConnected) {
+        setError("Unable to connect to database. Please check your internet connection and try again.")
+        setServices([])
+        return
+      }
       
       // First get the service provider profile to get the provider ID
       console.log('🔍 Fetching service provider profile for user:', user.uid)
@@ -102,7 +105,7 @@ export default function ServiceProviderServicesPage() {
       console.log(`🔄 Loading services for provider: ${serviceProvider.id}`)
       const providerServices = await getServicesByProviderId(serviceProvider.id)
       
-      console.log(`📊 Raw services loaded from database:`, providerServices.length)
+      console.log(`📊 Services loaded:`, providerServices.length)
       
       // Additional client-side filtering for extra security
       const validServices = providerServices.filter(service => {
@@ -124,60 +127,28 @@ export default function ServiceProviderServicesPage() {
         console.warn(`⚠️ Filtered out ${providerServices.length - validServices.length} invalid services`)
       }
       
-      // Log details of each service for debugging
-      validServices.forEach((service, index) => {
-        console.log(`📝 Service ${index + 1}:`, {
-          id: service.id,
-          name: service.name,
-          providerId: service.providerId,
-          category: service.category,
-          isActive: service.isActive
-        })
-      })
-      
       setServices(validServices)
-      
-      // Debug: Show all services in an alert for troubleshooting
-      if (process.env.NODE_ENV === 'development') {
-        console.log('DEBUG - ALL SERVICES:', JSON.stringify(validServices, null, 2))
-        
-        // Alert showing service count and first service details if available
-        if (validServices.length > 0) {
-          const firstService = validServices[0]
-          alert(`Found ${validServices.length} services.\n\nFirst service details:\nName: ${firstService.name}\nID: ${firstService.id}\nProvider ID: ${firstService.providerId}`)
-        } else {
-          alert('No services found in database. Try adding a new service.')
-        }
-      }
       
     } catch (err: any) {
       console.error("❌ Error loading services:", {
-        error: err,
-        errorString: JSON.stringify(err, Object.getOwnPropertyNames(err)),
         message: err?.message || 'No message provided',
         code: err?.code || 'no_code',
-        stack: err?.stack || 'No stack trace',
-        name: err?.name || 'Unknown error type',
-        errorConstructor: err?.constructor?.name,
-        errorKeys: err ? Object.keys(err) : 'No keys',
-        errorHasMessage: 'message' in err,
-        errorHasCode: 'code' in err,
-        errorToString: err?.toString(),
-        // Additional context
-        userId: user?.uid,
-        timestamp: new Date().toISOString(),
-        // Try to stringify the error in different ways
-        errorJSON: JSON.stringify(err),
-        errorStringifyAll: JSON.stringify(err, Object.getOwnPropertyNames(err)),
-        // Check if error has a message property
-        hasMessageProperty: Object.prototype.hasOwnProperty.call(err, 'message'),
-        // Try to access error properties directly
-        directMessage: err.message,
-        directCode: err.code,
-        directName: err.name,
-        directStack: err.stack
+        userId: user?.uid
       })
-      setError(err?.message || "Failed to load services")
+      
+      // Provide user-friendly error messages
+      let userMessage = "Failed to load services"
+      if (err?.message?.includes('timeout')) {
+        userMessage = "Request timed out. Please check your internet connection and try again."
+      } else if (err?.message?.includes('permission')) {
+        userMessage = "Permission denied. Please log out and log back in."
+      } else if (err?.message?.includes('unavailable')) {
+        userMessage = "Database temporarily unavailable. Please try again in a moment."
+      } else if (err?.message?.includes('index')) {
+        userMessage = "Database optimization in progress. Please try again in a few minutes."
+      }
+      
+      setError(userMessage)
       setServices([])
     } finally {
       setIsLoading(false)
@@ -363,175 +334,55 @@ export default function ServiceProviderServicesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b">
-        <div className="w-full px-6 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">My Services</h1>
-              <p className="text-gray-600 mt-1">Manage your service offerings and pricing</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <Button 
-                onClick={() => loadServices(true)}
-                disabled={isRefreshing}
-                variant="outline"
-                size="sm"
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-                {isRefreshing ? 'Refreshing...' : 'Refresh'}
-              </Button>
-              <Button asChild>
-                <Link to="/service-provider/dashboard/services/add">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add New Service
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </div>
+    <ServiceProviderLayout title="My Services" description="Manage your service offerings and pricing">
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-gray-900">{stats.totalServices}</div>
+            <div className="text-sm text-gray-600">Total Services</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-green-600">{stats.activeServices}</div>
+            <div className="text-sm text-gray-600">Active Services</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-gray-600">{stats.inactiveServices}</div>
+            <div className="text-sm text-gray-600">Inactive Services</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-blue-600">{stats.avgBookings}</div>
+            <div className="text-sm text-gray-600">Avg Bookings/Month</div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Stats Overview */}
-      <div className="w-full px-6 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-gray-900">{stats.totalServices}</div>
-              <div className="text-sm text-gray-600">Total Services</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-green-600">{stats.activeServices}</div>
-              <div className="text-sm text-gray-600">Active Services</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-gray-600">{stats.inactiveServices}</div>
-              <div className="text-sm text-gray-600">Inactive Services</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-blue-600">{stats.avgBookings}</div>
-              <div className="text-sm text-gray-600">Avg Bookings/Month</div>
-            </CardContent>
-          </Card>
+      {/* Header Actions */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <Button 
+            onClick={() => loadServices(true)}
+            disabled={isRefreshing}
+            variant="outline"
+            size="sm"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Refreshing...' : 'Refresh'}
+          </Button>
+          <Button asChild>
+            <Link to="/service-provider/dashboard/services/add">
+              <Plus className="h-4 w-4 mr-2" />
+              Add New Service
+            </Link>
+          </Button>
         </div>
-
-        {/* TEMPORARY: Debug Services Info */}
-        {services.length > 0 && (
-          <Card className="mb-6 border-blue-200 bg-blue-50">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-blue-800">Debug: Services Analysis</h3>
-                <Button
-                  onClick={async () => {
-                    console.log('🔍 CURRENT USER DEBUG INFO:')
-                    console.log('User UID:', user?.uid)
-                    
-                    try {
-                      const serviceProvider = await getServiceProviderByOwnerId(user?.uid || '')
-                      console.log('Service Provider:', serviceProvider)
-                      
-                      console.log('\n🔍 SERVICES DEBUG INFO:')
-                      services.forEach((service, index) => {
-                        console.log(`Service ${index + 1}:`, {
-                          id: service.id,
-                          name: service.name,
-                          providerId: service.providerId,
-                          expectedProviderId: serviceProvider?.id,
-                          match: service.providerId === serviceProvider?.id,
-                          category: service.category,
-                          description: service.description?.substring(0, 50) + '...',
-                          isActive: service.isActive
-                        })
-                      })
-                      
-                      // Check for mismatched services
-                      const mismatchedServices = services.filter(s => s.providerId !== serviceProvider?.id)
-                      if (mismatchedServices.length > 0) {
-                        console.warn('⚠️ MISMATCHED SERVICES FOUND:', mismatchedServices.length)
-                        mismatchedServices.forEach(service => {
-                          console.warn('❌ This service does not belong to you:', {
-                            id: service.id,
-                            name: service.name,
-                            providerId: service.providerId,
-                            yourProviderId: serviceProvider?.id
-                          })
-                        })
-                      }
-                    } catch (error) {
-                      console.error('Debug error:', error)
-                    }
-                  }}
-                  variant="outline"
-                  size="sm"
-                  className="mr-2"
-                >
-                  Debug Console
-                </Button>
-                <Button
-                  onClick={async () => {
-                    if (!confirm('This will remove any services that do not belong to your account. Continue?')) {
-                      return
-                    }
-                    
-                    try {
-                      const serviceProvider = await getServiceProviderByOwnerId(user?.uid || '')
-                      if (!serviceProvider) {
-                        alert('Service provider profile not found')
-                        return
-                      }
-                      
-                      const foreignServices = services.filter(s => s.providerId !== serviceProvider.id)
-                      
-                      if (foreignServices.length === 0) {
-                        alert('No foreign services found. All services belong to your account.')
-                        return
-                      }
-                      
-                      console.log(`🧹 Removing ${foreignServices.length} foreign services:`)
-                      
-                      for (const service of foreignServices) {
-                        try {
-                          console.log(`Removing foreign service: ${service.name} (ID: ${service.id})`)
-                          // Note: We're not calling deleteService here because these services
-                          // don't belong to the current user. We'll just filter them out.
-                        } catch (error) {
-                          console.error('Error removing foreign service:', error)
-                        }
-                      }
-                      
-                      // Filter out foreign services from local state
-                      const validServices = services.filter(s => s.providerId === serviceProvider.id)
-                      setServices(validServices)
-                      
-                      alert(`Removed ${foreignServices.length} services that did not belong to your account.`)
-                      
-                    } catch (error: any) {
-                      console.error('Error cleaning foreign services:', error)
-                      alert(`Error: ${error.message}`)
-                    }
-                  }}
-                  variant="outline"
-                  size="sm"
-                  className="bg-red-50 border-red-200 text-red-600 hover:bg-red-100"
-                >
-                  Remove Foreign Services
-                </Button>
-              </div>
-              <div className="text-sm text-blue-700">
-                <p>Current User: {user?.uid}</p>
-                <p>Total Services: {services.length}</p>
-                <p className="text-xs mt-2">Click "Debug Services in Console" and check the browser console (F12) for detailed analysis</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}        
+      </div>
 
         {/* Filters and Search */}
         <Card className="mb-6">
@@ -702,7 +553,6 @@ export default function ServiceProviderServicesPage() {
             </CardContent>
           </Card>
         )}
-      </div>
-    </div>
+    </ServiceProviderLayout>
   )
 }

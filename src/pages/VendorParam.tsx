@@ -32,20 +32,37 @@ export default function VendorStorefront() {
 
   useEffect(() => {
     async function fetchData() {
-      if (!vendorId) return;
-
-      console.log("🔍 Loading vendor storefront for ID:", vendorId);
-      const vendorData = await getVendor(vendorId);
-      if (!vendorData || !vendorData.approved) {
-        setVendor(null);
+      if (!vendorId) {
+        console.log("❌ No vendorId provided");
         setLoading(false);
         return;
       }
-      setVendor(vendorData);
 
-      const productData = (await getVendorProducts(vendorId)) as Product[];
-      setProducts(productData);
-      setLoading(false);
+      console.log("🔍 Loading vendor storefront for ID:", vendorId);
+      
+      try {
+        const vendorData = await getVendor(vendorId);
+        console.log("📊 Vendor data:", vendorData);
+        
+        if (!vendorData || !vendorData.approved) {
+          console.log("❌ Vendor not found or not approved");
+          setVendor(null);
+          setLoading(false);
+          return;
+        }
+        
+        console.log("✅ Vendor found and approved:", vendorData.shopName);
+        setVendor(vendorData);
+
+        const productData = (await getVendorProducts(vendorId)) as Product[];
+        console.log("📦 Products loaded:", productData.length, "items");
+        setProducts(productData);
+        setLoading(false);
+      } catch (error) {
+        console.error("💥 Error fetching vendor data:", error);
+        setVendor(null);
+        setLoading(false);
+      }
     }
     fetchData();
   }, [vendorId]);

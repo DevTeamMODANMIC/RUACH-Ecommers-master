@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom";
 
-import { useRouter } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge"
@@ -56,12 +56,22 @@ export default function OrdersPage() {
       try {
         // First get initial orders
         const initialOrders = await getUserOrders(user.uid)
-        setOrders(initialOrders)
+        setOrders(initialOrders.map(order => ({
+          ...order,
+          estimatedDelivery: order.estimatedDelivery instanceof Date ? order.estimatedDelivery.getTime() : order.estimatedDelivery,
+          createdAt: order.createdAt instanceof Date ? order.createdAt.getTime() : order.createdAt,
+          updatedAt: order.updatedAt instanceof Date ? order.updatedAt.getTime() : order.updatedAt
+        })))
         setLoading(false)
         
         // Then set up real-time listener
         unsubscribe = listenToUserOrders((updatedOrders) => {
-          setOrders(updatedOrders)
+          setOrders(updatedOrders.map(order => ({
+            ...order,
+            estimatedDelivery: order.estimatedDelivery instanceof Date ? order.estimatedDelivery.getTime() : order.estimatedDelivery,
+            createdAt: order.createdAt instanceof Date ? order.createdAt.getTime() : order.createdAt,
+            updatedAt: order.updatedAt instanceof Date ? order.updatedAt.getTime() : order.updatedAt
+          })))
         }, user.uid)
       } catch (err: any) {
         console.error("Error loading orders:", err)
@@ -317,8 +327,7 @@ export default function OrdersPage() {
                                 <img 
                                   src={imageError[`${order.id}-${item.productId}`] ? "/product_images/unknown-product.jpg" : item.image}
                                   alt={item.name}
-                                  fill
-                                  className="object-cover"
+                                  className="object-cover w-full h-full"
                                   onError={() => setImageError(prev => ({ ...prev, [`${order.id}-${item.productId}`]: true }))}
                                 />
                               </div>

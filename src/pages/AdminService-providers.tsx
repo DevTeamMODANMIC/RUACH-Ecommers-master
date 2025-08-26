@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react"
+import { Link } from "react-router-dom"
 import { onAuthStateChanged } from "firebase/auth"
 import { collection, query, where, getDocs } from "firebase/firestore"
 import { auth, db } from "../lib/firebase"
@@ -38,7 +39,9 @@ import {
   Mail,
   Phone,
   RefreshCw,
-  Loader2
+  Loader2,
+  ArrowLeft,
+  Home
 } from "lucide-react"
 import { ServiceProvider, Service, ServiceBooking, Complaint } from "../types"
 import { toast } from "sonner"
@@ -690,6 +693,48 @@ export default function ServiceProviderAdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Admin Navigation Header */}
+      <div className="bg-white border-b shadow-sm">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Link 
+                to="/admin" 
+                className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span className="font-medium">Back to Admin Dashboard</span>
+              </Link>
+              <div className="text-gray-300">|</div>
+              <div className="flex items-center space-x-1 text-sm text-gray-500">
+                <Home className="h-4 w-4" />
+                <span>/</span>
+                <Link to="/admin" className="hover:text-gray-700">Admin</Link>
+                <span>/</span>
+                <span className="text-gray-900 font-medium">Service Providers</span>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Link to="/admin/products">
+                <Button variant="outline" size="sm">
+                  Products
+                </Button>
+              </Link>
+              <Link to="/admin/orders">
+                <Button variant="outline" size="sm">
+                  Orders
+                </Button>
+              </Link>
+              <Link to="/admin/vendors">
+                <Button variant="outline" size="sm">
+                  Vendors
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="bg-white border-b">
         <div className="container mx-auto px-4 py-6">

@@ -97,38 +97,36 @@ export default function CloudinaryUploadWidget({
         throw new Error("You must be logged in to upload images");
       }
 
-      const idToken = await currentUser.getIdToken();
+      // Get Cloudinary configuration from environment
+      const cloudName = (import.meta as any).env.VITE_CLOUDINARY_CLOUD_NAME;
+      const uploadPreset = (import.meta as any).env.VITE_CLOUDINARY_UPLOAD_PRESET;
+      
+      if (!cloudName || !uploadPreset) {
+        throw new Error("Cloudinary configuration is missing. Please check your environment variables.");
+      }
 
       // Upload each file
       for (let i = 0; i < selectedFiles.length; i++) {
         const file = selectedFiles[i];
         setUploadProgress(`Uploading ${file.name} (${i + 1}/${selectedFiles.length})...`);
         
-        // Convert file to base64
-        const base64 = await convertFileToBase64(file);
+        // Create form data for direct Cloudinary upload
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', uploadPreset);
+        formData.append('folder', 'ruach_ecommerce_products');
+        formData.append('quality', 'auto:good');
+        formData.append('fetch_format', 'auto');
         
-        // Upload to our API endpoint with timeout
+        // Upload directly to Cloudinary with timeout
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minute timeout
         
         let response;
         try {
-          response = await fetch('/api/cloudinary/upload', {
+          response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${idToken}`
-            },
-            body: JSON.stringify({
-              file: {
-                base64,
-                name: file.name,
-                type: file.type
-              },
-              options: {
-                folder: 'ruach_ecommerce_products' // Updated folder name
-              }
-            }),
+            body: formData,
             signal: controller.signal
           });
           
@@ -158,11 +156,10 @@ export default function CloudinaryUploadWidget({
         }
 
         if (!response.ok) {
-          // Extract error message from the detailed error response
+          // Extract error message from Cloudinary response
           const errorMessage = responseData?.error?.message || 
-            responseData?.error?.details || 
+            responseData?.message || 
             responseData?.error || 
-            responseData || 
             'Upload failed with unknown error';
 
           console.error("Upload Error Details:", {
@@ -179,8 +176,9 @@ export default function CloudinaryUploadWidget({
           throw new Error(formattedError);
         }
 
-        if (responseData.success && responseData.result) {
-          const { public_id, secure_url, original_filename } = responseData.result;
+        // Cloudinary returns data directly in the response, not nested in a result object
+        if (responseData.public_id && responseData.secure_url) {
+          const { public_id, secure_url, original_filename } = responseData;
           const alt = original_filename || file.name || "Product image";
           
           // Add to previews if not already there
@@ -190,6 +188,8 @@ export default function CloudinaryUploadWidget({
           
           // Trigger parent callback
           onUploadSuccess(public_id, secure_url, alt);
+        } else {
+          throw new Error('Invalid response from Cloudinary: missing public_id or secure_url');
         }
       }
 
@@ -222,15 +222,6 @@ export default function CloudinaryUploadWidget({
       setIsUploading(false);
       setUploadProgress('');
     }
-  };
-
-  const convertFileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = error => reject(error);
-    });
   };
 
   const handleRemoveImage = (publicId: string) => {

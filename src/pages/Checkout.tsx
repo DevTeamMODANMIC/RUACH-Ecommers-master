@@ -1,5 +1,5 @@
-import { useState } from "react"
-import { useRouter } from "react-router-dom"
+import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
@@ -11,7 +11,6 @@ import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group"
 import { Separator } from "../components/ui/separator"
 import { CreditCard, Truck, Shield, Lock, ArrowLeft } from "lucide-react"
 import { useCart } from "../components/cart-provider"
-import { useSafeCurrency } from "../hooks/use-safe-currency"
 import { useAuth } from "../components/auth-provider"
 import { useToast } from "../hooks/use-toast"
 import {
@@ -24,32 +23,76 @@ import {
 } from "../components/ui/breadcrumb"
 import { createOrder } from "../lib/firebase-orders"
 
+// Nigerian states for shipping
+const NIGERIA_STATES = [
+  "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue", "Borno", "Cross River", "Delta",
+  "Ebonyi", "Edo", "Ekiti", "Enugu", "Gombe", "Imo", "Jigawa", "Kaduna", "Kano", "Katsina",
+  "Kebbi", "Kogi", "Kwara", "Lagos", "Nasarawa", "Niger", "Ogun", "Ondo", "Osun", "Oyo",
+  "Plateau", "Rivers", "Sokoto", "Taraba", "Yobe", "Zamfara", "FCT Abuja"
+]
+
+const lagosShippingOptions = [
+  { id: 'lagos-mainland-1', name: 'Lagos Mainland 1', price: 1500, description: 'Allen Avenue, Opebi, Toyin Ikeja' },
+  { id: 'lagos-mainland-2', name: 'Lagos Mainland 2', price: 2000, description: 'Computer village, Alausa, Oregun Ikeja' },
+  { id: 'lagos-mainland-3', name: 'Lagos Mainland 3', price: 3000, description: 'Omole phase 1 & 2, Magodo, Ogudu, Ojota, Oko oba, Agege' },
+  { id: 'lagos-mainland-4', name: 'Lagos Mainland 4', price: 3500, description: 'Surulere, Yaba, Bariga, Gbagada, Ajao estate, Anthony, Ikosi, Ketu, Iju ishaga, Oshodi, Maryland, Mushin, Ilupeju' },
+  { id: 'lagos-mainland-5', name: 'Lagos Mainland 5', price: 4500, description: 'Iyana ipaja, Ikotun, Egbeda, Abule Egba, Amuwo odofin, Igando, Festac, Meiran, Ayobo, Ago palace way, Satellite town, idimu, Ijaiye, Ejigbo' },
+  { id: 'lagos-mainland-6', name: 'Lagos Mainland 6', price: 5000, description: 'Ojokoro, Ikorodu, Akute, Alagbado' },
+  { id: 'lagos-island-1', name: 'Lagos Island 1', price: 4500, description: 'Eko idumota, IKOYI, Victoria island, Oniru' },
+  { id: 'lagos-island-2', name: 'Lagos Island 2', price: 4500, description: 'Lekki, Agungi, Ikate, Ologolo' },
+  { id: 'lagos-island-3', name: 'Lagos Island 3', price: 3000, description: 'CHEVRON, VGC, ORCHID, IKOTA, AJAH, IGBO-EFON' },
+  { id: 'sangotedo', name: 'Sangotedo', price: 2000, description: '' },
+  { id: 'abijo-awoyaya', name: 'Abijo/Awoyaya', price: 3000, description: '' },
+]
+
+const otherShippingOptions = [
+  { id: 'gig-logistics', name: 'GIG Logistics', price: 6000, description: "Tracked delivery outside Lagos. 3-5 working days. Price may be higher for orders over 2kg." },
+  { id: 'international-delivery', name: 'International Delivery', price: 3000, description: "Outside Nigeria. Price determined by weight. Agent will contact you." },
+  { id: 'bus-park-delivery', name: 'Bus Park Delivery', price: 1000, description: '' },
+]
+
+// NGN currency formatter
+const formatNaira = (amount: number) => new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 2 }).format(amount)
+
 export default function CheckoutPage() {
   const navigate = useNavigate()
   const { items, getTotalPrice, clearCart } = useCart()
-  const { formatPrice } = useSafeCurrency()
   const { user } = useAuth()
   const { toast } = useToast()
 
   const [step, setStep] = useState(1)
   const [isProcessing, setIsProcessing] = useState(false)
   const [shippingInfo, setShippingInfo] = useState({
-    firstName: user?.name?.split(" ")[0] || "",
-    lastName: user?.name?.split(" ")[1] || "",
-    email: user?.email || "",
+    firstName: "",
+    lastName: "",
+    email: "",
     phone: "",
     address: "",
     city: "",
+    state: "Lagos",
     postalCode: "",
-    country: "UK",
+    country: "Nigeria",
   })
+
+  // Populate shipping info from authenticated user after mount
+  useEffect(() => {
+    if (user) {
+      setShippingInfo((prev) => ({
+        ...prev,
+        firstName: user.displayName ? user.displayName.split(" ")[0] || "" : prev.firstName,
+        lastName: user.displayName ? user.displayName.split(" ")[1] || "" : prev.lastName,
+        email: user.email || prev.email,
+      }))
+    }
+  }, [user])
   const [billingInfo, setBillingInfo] = useState({
     firstName: "",
     lastName: "",
     address: "",
     city: "",
+    state: "Lagos",
     postalCode: "",
-    country: "UK",
+    country: "Nigeria",
   })
   const [paymentInfo, setPaymentInfo] = useState({
     cardNumber: "",
@@ -57,14 +100,23 @@ export default function CheckoutPage() {
     cvv: "",
     nameOnCard: "",
   })
-  const [shippingMethod, setShippingMethod] = useState("standard")
+  const [deliveryType, setDeliveryType] = useState('lagos')
+  const [lagosShippingOptionId, setLagosShippingOptionId] = useState('lagos-mainland-1')
+  const [otherShippingOptionId, setOtherShippingOptionId] = useState('gig-logistics')
   const [paymentMethod, setPaymentMethod] = useState("card")
   const [sameAsShipping, setSameAsShipping] = useState(true)
+  const [orderId, setOrderId] = useState<string | null>(null)
 
   const subtotal = getTotalPrice()
-  const shippingCost = shippingMethod === "express" ? 9.99 : shippingMethod === "standard" ? 4.99 : 0
-  const tax = subtotal * 0.2 // 20% VAT
+  const shippingCost = deliveryType === 'lagos' 
+    ? lagosShippingOptions.find(option => option.id === lagosShippingOptionId)?.price || 0
+    : otherShippingOptions.find(option => option.id === otherShippingOptionId)?.price || 0
+  // VAT = 2.5% of subtotal for Nigeria
+  const tax = subtotal * 0.025
   const total = subtotal + shippingCost + tax
+
+  // Override formatPrice to use Naira on this page
+  const formatPrice = (amount: number) => formatNaira(amount)
 
   const handleShippingChange = (field: string, value: string) => {
     setShippingInfo((prev) => ({ ...prev, [field]: value }))
@@ -103,6 +155,10 @@ export default function CheckoutPage() {
         if (paymentMethod === "card") {
           return paymentInfo.cardNumber && paymentInfo.expiryDate && paymentInfo.cvv && paymentInfo.nameOnCard
         }
+        if (paymentMethod === "external") {
+          // External payment method doesn't need validation
+          return true
+        }
         return true
       default:
         return false
@@ -132,12 +188,13 @@ export default function CheckoutPage() {
           price: item.price,
           image: item.image,
           quantity: item.quantity,
-          options: item.options
+          total: item.price * item.quantity
         })),
         subtotal,
         shipping: shippingCost,
         tax,
         total,
+        currency: "NGN", // Nigerian Naira
         status: "pending" as const,
         paymentStatus: "pending" as const,
         paymentMethod: paymentMethod,
@@ -145,7 +202,9 @@ export default function CheckoutPage() {
           firstName: shippingInfo.firstName,
           lastName: shippingInfo.lastName,
           address1: shippingInfo.address,
+          street: shippingInfo.address,
           city: shippingInfo.city,
+          state: shippingInfo.state,
           postalCode: shippingInfo.postalCode,
           country: shippingInfo.country,
           phone: shippingInfo.phone,
@@ -155,7 +214,9 @@ export default function CheckoutPage() {
               firstName: shippingInfo.firstName,
               lastName: shippingInfo.lastName,
               address1: shippingInfo.address,
+              street: shippingInfo.address,
               city: shippingInfo.city,
+              state: shippingInfo.state,
               postalCode: shippingInfo.postalCode,
               country: shippingInfo.country,
               phone: shippingInfo.phone,
@@ -164,41 +225,60 @@ export default function CheckoutPage() {
               firstName: billingInfo.firstName,
               lastName: billingInfo.lastName,
               address1: billingInfo.address,
+              street: billingInfo.address,
               city: billingInfo.city,
+              state: billingInfo.state,
               postalCode: billingInfo.postalCode,
               country: billingInfo.country,
               phone: shippingInfo.phone,
             },
-        estimatedDelivery: shippingMethod === "express" 
-          ? Date.now() + 2 * 24 * 60 * 60 * 1000  // 2 days for express
-          : Date.now() + 5 * 24 * 60 * 60 * 1000, // 5 days for standard
+        estimatedDelivery: deliveryType === "lagos"
+          ? new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)  // 1-2 days for Lagos
+          : new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 3-5 days for Interstate
       }
 
-      // Process payment (this would be integrated with a payment provider)
-      // For demo purposes, we're simulating a successful payment
-      const paymentResult = await simulatePaymentProcessing();
-      
-      if (paymentResult.success) {
-        // Add payment details to order
-        orderData.paymentStatus = "paid";
-        orderData.paymentId = paymentResult.paymentId;
-        
-        // Create the order in Firebase Realtime Database
-        const orderId = await createOrder(orderData);
+      // Handle different payment methods
+      if (paymentMethod === "external") {
+        // For external payment, create the order first as pending
+        const createdOrder = await createOrder(orderData)
+        const orderId = createdOrder?.id || createdOrder
 
-      // Clear cart
-        clearCart();
+        // For testing, redirect to payment successful page
+        // This will be replaced with actual external payment link
+        navigate(`/payment-successful?orderId=${orderId}&amount=${total.toFixed(2)}&items=${items.length}&email=${encodeURIComponent(shippingInfo.email)}`)
         
-        // Show success message
-        toast({
-          title: "Order placed successfully",
-          description: "Your order has been placed and is being processed.",
-        });
-
-      // Redirect to confirmation page
-        navigate(`/order-confirmation?orderId=${orderId}`);
+        // Don't clear cart yet - this will be done after successful payment
+        
       } else {
-        throw new Error("Payment processing failed");
+        // Standard card payment processing
+        const paymentResult = await simulatePaymentProcessing()
+        
+        if (paymentResult.success) {
+          // Update order with payment info
+          const updatedOrderData = {
+            ...orderData,
+            paymentStatus: "paid" as const,
+            paymentId: paymentResult.paymentId
+          }
+
+          // Create the order in Firebase
+          const createdOrder = await createOrder(updatedOrderData)
+          const orderId = createdOrder?.id || createdOrder
+
+          // Clear cart
+          clearCart()
+          
+          // Show success message
+          toast({
+            title: "Order placed successfully",
+            description: "Your order has been placed and is being processed.",
+          })
+
+          // Redirect to confirmation page
+          navigate(`/order-confirmation?orderId=${orderId}`)
+        } else {
+          throw new Error("Payment processing failed")
+        }
       }
     } catch (error: any) {
       console.error("Error placing order:", error);
@@ -237,9 +317,7 @@ export default function CheckoutPage() {
           <div className="text-center py-16">
             <h1 className="text-3xl font-bold mb-4">Your cart is empty</h1>
             <p className="text-muted-foreground mb-8">Add some items to your cart before checking out.</p>
-            <Button asChild>
-              <a href="/products">Continue Shopping</a>
-            </Button>
+            <Button onClick={() => navigate('/')}>Continue Shopping</Button>
           </div>
         </div>
       </div>
@@ -396,36 +474,84 @@ export default function CheckoutPage() {
                     </div>
                   </div>
 
-                  {/* Shipping Method */}
+                  {/* Delivery Type */}
                   <div className="mt-6">
-                    <Label className="text-base font-semibold">Shipping Method</Label>
-                    <RadioGroup value={shippingMethod} onValueChange={setShippingMethod} className="mt-3">
+                    <Label className="text-base font-semibold">Delivery Type</Label>
+                    <RadioGroup value={deliveryType} onValueChange={setDeliveryType} className="mt-3">
                       <div className="flex items-center space-x-2 border p-3 rounded-lg">
-                        <RadioGroupItem value="standard" id="standard" />
-                        <Label htmlFor="standard" className="flex-1 cursor-pointer">
+                        <RadioGroupItem value="lagos" id="lagos" />
+                        <Label htmlFor="lagos" className="flex-1 cursor-pointer">
                           <div className="flex justify-between">
                             <div>
-                              <div className="font-medium">Standard Delivery</div>
-                              <div className="text-sm text-muted-foreground">5-7 business days</div>
+                              <div className="font-medium">Lagos Delivery</div>
+                              <div className="text-sm text-muted-foreground">Various options within Lagos</div>
                             </div>
-                            <div className="font-medium">{formatPrice(4.99)}</div>
                           </div>
                         </Label>
                       </div>
                       <div className="flex items-center space-x-2 border p-3 rounded-lg">
-                        <RadioGroupItem value="express" id="express" />
-                        <Label htmlFor="express" className="flex-1 cursor-pointer">
+                        <RadioGroupItem value="other" id="other" />
+                        <Label htmlFor="other" className="flex-1 cursor-pointer">
                           <div className="flex justify-between">
                             <div>
-                              <div className="font-medium">Express Delivery</div>
-                              <div className="text-sm text-muted-foreground">2-3 business days</div>
+                              <div className="font-medium">Other Locations</div>
+                              <div className="text-sm text-muted-foreground">Outside Lagos or International</div>
                             </div>
-                            <div className="font-medium">{formatPrice(9.99)}</div>
                           </div>
                         </Label>
                       </div>
                     </RadioGroup>
                   </div>
+
+                  {/* Lagos Shipping Options */}
+                  {deliveryType === 'lagos' && (
+                    <div className="mt-4">
+                      <Label className="text-base font-semibold">Lagos Shipping Options</Label>
+                      <RadioGroup value={lagosShippingOptionId} onValueChange={setLagosShippingOptionId} className="mt-3">
+                        {lagosShippingOptions.map((option) => (
+                          <div key={option.id} className="flex items-center space-x-2 border p-3 rounded-lg">
+                            <RadioGroupItem value={option.id} id={option.id} />
+                            <Label htmlFor={option.id} className="flex-1 cursor-pointer">
+                              <div className="flex justify-between">
+                                <div>
+                                  <div className="font-medium">{option.name}</div>
+                                  {option.description && (
+                                    <div className="text-sm text-muted-foreground">{option.description}</div>
+                                  )}
+                                </div>
+                                <div className="font-medium">{formatPrice(option.price)}</div>
+                              </div>
+                            </Label>
+                          </div>
+                        ))}
+                      </RadioGroup>
+                    </div>
+                  )}
+
+                  {/* Other Shipping Options */}
+                  {deliveryType === 'other' && (
+                    <div className="mt-4">
+                      <Label className="text-base font-semibold">Shipping Options</Label>
+                      <RadioGroup value={otherShippingOptionId} onValueChange={setOtherShippingOptionId} className="mt-3">
+                        {otherShippingOptions.map((option) => (
+                          <div key={option.id} className="flex items-center space-x-2 border p-3 rounded-lg">
+                            <RadioGroupItem value={option.id} id={option.id} />
+                            <Label htmlFor={option.id} className="flex-1 cursor-pointer">
+                              <div className="flex justify-between">
+                                <div>
+                                  <div className="font-medium">{option.name}</div>
+                                  {option.description && (
+                                    <div className="text-sm text-muted-foreground">{option.description}</div>
+                                  )}
+                                </div>
+                                <div className="font-medium">{formatPrice(option.price)}</div>
+                              </div>
+                            </Label>
+                          </div>
+                        ))}
+                      </RadioGroup>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -606,13 +732,12 @@ export default function CheckoutPage() {
                     <h3 className="font-semibold mb-4">Order Items</h3>
                     <div className="space-y-3">
                       {items.map((item) => (
-                        <div key={item.id} className="flex items-center gap-3 p-3 border rounded-lg">
-                          <div className="relative w-12 h-12 rounded overflow-hidden">
+                        <div key={item.productId} className="flex items-center gap-3 p-3 border rounded-lg">
+                          <div className="w-12 h-12 rounded overflow-hidden">
                             <img
                               src={item.image || "/placeholder.svg"}
                               alt={item.name}
-                              fill
-                              className="object-cover"
+                              className="w-full h-full object-cover"
                             />
                           </div>
                           <div className="flex-1">
@@ -684,7 +809,7 @@ export default function CheckoutPage() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   {items.map((item) => (
-                    <div key={item.id} className="flex justify-between text-sm">
+                    <div key={item.productId} className="flex justify-between text-sm">
                       <span>
                         {item.name} × {item.quantity}
                       </span>

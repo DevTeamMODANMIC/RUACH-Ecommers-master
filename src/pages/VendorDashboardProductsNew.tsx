@@ -16,6 +16,7 @@ import {
 import { Label } from "../components/ui/label"
 import { Loader2, X } from "lucide-react"
 import { MAIN_CATEGORIES } from "../lib/categories"
+import { VendorLayout } from "../components/vendor-layout"
 
 export default function VendorAddProductPage() {
   const categories = MAIN_CATEGORIES.filter(
@@ -116,9 +117,12 @@ export default function VendorAddProductPage() {
   if (!activeStore) return <div>Loading store information...</div>
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <h1 className="text-2xl font-semibold mb-6">Add New Product</h1>
-      <form onSubmit={handleSubmit} className="space-y-6">
+    <VendorLayout 
+      title="Add New Product" 
+      description="Create a new product listing for your store"
+    >
+      <div className="max-w-2xl mx-auto">
+        <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <Label htmlFor="name">Product Name</Label>
           <Input
@@ -299,5 +303,6 @@ export default function VendorAddProductPage() {
         </Button>
       </form>
     </div>
+    </VendorLayout>
   )
 }
