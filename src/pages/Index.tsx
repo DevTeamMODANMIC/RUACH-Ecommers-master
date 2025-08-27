@@ -1,21 +1,25 @@
 import { Suspense, lazy, useEffect, useState } from "react"
-import Hero from "../components/hero"
-import Newsletter from "../components/newsletter"
-import { BulkOrderCTA } from "../components/bulk-order-cta"
-import ServicesShowcase from "../components/services-showcase"
+import Hero from "@/components/hero"
+import Newsletter from "@/components/newsletter"
+import { BulkOrderCTA } from "@/components/bulk-order-cta"
+import ServicesShowcase from "@/components/services-showcase"
 import { useNavigate } from "react-router-dom"
+import { useAuth } from "@/components/auth-provider"
+import { useServiceProvider } from "@/hooks/use-service-provider"
 
 // Lazy load components that are below the fold
-const FeaturedProducts = lazy(() => import("../components/featured-products"))
-const TrendingProducts = lazy(() => import("../components/trending-products"))
-const FeaturedStores = lazy(() => import("../components/featured-stores"))
+const FeaturedProducts = lazy(() => import("@/components/featured-products"))
+const TrendingProducts = lazy(() => import("@/components/trending-products"))
+const FeaturedStores = lazy(() => import("@/components/featured-stores"))
 const PersonalizedRecommendations = lazy(async () => {
-  const mod = await import("../components/personalized-recommendations")
+  const mod = await import("@/components/personalized-recommendations")
   return { default: mod.PersonalizedRecommendations }
 })
 
 export default function HomePage() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const { isServiceProvider } = useServiceProvider()
   const [keySequence, setKeySequence] = useState<string[]>([])
   const [showSecretMessage, setShowSecretMessage] = useState(false)
 
@@ -26,12 +30,22 @@ export default function HomePage() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Check for Ctrl+Shift+G shortcut
+      // Check for Ctrl+Shift+G shortcut - only for authenticated service providers
       if (e.ctrlKey && e.shiftKey && e.key === 'G') {
         e.preventDefault()
-        navigate('/service-provider/dashboard')
-        setShowSecretMessage(true)
-        setTimeout(() => setShowSecretMessage(false), 3000)
+        
+        // Security check: only allow registered service providers
+        if (user && isServiceProvider) {
+          navigate('/service-provider/dashboard')
+          setShowSecretMessage(true)
+          setTimeout(() => setShowSecretMessage(false), 3000)
+        } else if (user) {
+          // Logged in but not a service provider - redirect to registration
+          navigate('/vendor/register')
+        } else {
+          // Not logged in - redirect to login
+          navigate('/login?redirect=/service-provider/dashboard')
+        }
         return
       }
 
@@ -42,10 +56,19 @@ export default function HomePage() {
         // Check if the sequence matches the secret code
         if (newSequence.length === secretCode.length && 
             newSequence.every((key, index) => key === secretCode[index])) {
-          // Navigate to service provider dashboard
-          navigate('/service-provider/dashboard')
-          setShowSecretMessage(true)
-          setTimeout(() => setShowSecretMessage(false), 3000)
+          
+          // Security check: only allow registered service providers
+          if (user && isServiceProvider) {
+            navigate('/service-provider/dashboard')
+            setShowSecretMessage(true)
+            setTimeout(() => setShowSecretMessage(false), 3000)
+          } else if (user) {
+            // Logged in but not a service provider - redirect to registration
+            navigate('/vendor/register')
+          } else {
+            // Not logged in - redirect to login
+            navigate('/login?redirect=/service-provider/dashboard')
+          }
         }
         
         return newSequence
@@ -54,7 +77,7 @@ export default function HomePage() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [navigate])
+  }, [navigate, user, isServiceProvider])
 
   return (
     <main className="flex flex-col bg-white text-gray-800">

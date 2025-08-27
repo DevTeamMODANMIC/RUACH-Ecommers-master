@@ -1,9 +1,10 @@
 
 
 import { useState, useEffect } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../src/components/ui/dialog"
-import { Badge } from "../../src/components/ui/badge"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Badge } from "@/components/ui/badge"
 import { Keyboard, Command } from "lucide-react"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 interface Shortcut {
   keys: string[]
@@ -13,6 +14,7 @@ interface Shortcut {
 
 export default function KeyboardShortcutsHelp() {
   const [isOpen, setIsOpen] = useState(false)
+  const isMobile = useIsMobile()
 
   const shortcuts: Shortcut[] = [
     {
@@ -94,26 +96,33 @@ export default function KeyboardShortcutsHelp() {
       {/* Help trigger button */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-4 left-4 z-50 bg-gray-800 hover:bg-gray-700 text-white p-2 rounded-full shadow-lg transition-colors"
+        className={`fixed bottom-4 left-4 z-50 text-white rounded-full shadow-lg transition-all duration-300 ${
+          isMobile 
+            ? "bg-gray-900/90 hover:bg-gray-800/95 backdrop-blur-md border border-gray-700/50 p-3 shadow-2xl" 
+            : "bg-gray-800 hover:bg-gray-700 p-2"
+        }`}
         title="Keyboard shortcuts (Ctrl+Shift+?)"
       >
-        <Keyboard className="h-4 w-4" />
+        <Keyboard className={isMobile ? "h-5 w-5" : "h-4 w-4"} />
       </button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className={`max-w-md ${
+          isMobile 
+            ? "bg-white/95 backdrop-blur-md border border-gray-200/50 shadow-2xl" 
+            : "bg-white"
+        }`}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Command className="h-5 w-5" />
               Keyboard Shortcuts
             </DialogTitle>
+            <DialogDescription>
+              Use these keyboard shortcuts to navigate quickly around the site
+            </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
-            <p className="text-sm text-gray-600">
-              Use these keyboard shortcuts to navigate quickly around the site:
-            </p>
-            
             <div className="space-y-3">
               {shortcuts.map((shortcut, index) => (
                 <div key={index} className="flex items-center justify-between">
@@ -137,10 +146,25 @@ export default function KeyboardShortcutsHelp() {
                   </div>
                 </div>
               ))}
+              
+              {/* Special note for Ctrl+Shift+G */}
+              <div className="flex items-center justify-between pt-3 border-t">
+                <div className="flex-1">
+                  <div className="text-sm font-medium">Service Provider Dashboard</div>
+                  <div className="text-xs text-gray-500">Only works on Service Provider pages</div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Badge variant="outline" className="text-xs px-2 py-1">Ctrl</Badge>
+                  <span className="mx-1 text-gray-400">+</span>
+                  <Badge variant="outline" className="text-xs px-2 py-1">Shift</Badge>
+                  <span className="mx-1 text-gray-400">+</span>
+                  <Badge variant="outline" className="text-xs px-2 py-1">G</Badge>
+                </div>
+              </div>
             </div>
             
             <div className="pt-4 border-t text-xs text-gray-500">
-              <p>💡 Tip: Press <Badge variant="outline" className="text-xs">Esc</Badge> to close any modal or this help.</p>
+              <div>💡 Tip: Press <Badge variant="outline" className="text-xs">Esc</Badge> to close any modal or this help.</div>
             </div>
           </div>
         </DialogContent>

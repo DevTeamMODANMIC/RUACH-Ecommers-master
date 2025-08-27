@@ -32,8 +32,8 @@ const quickContactMethods = [
     icon: Phone,
     title: 'Phone Support',
     description: 'Mon-Sat: 8AM - 8PM',
-    contact: '+234 816 066 2997',
-    action: () => window.location.href = 'tel:+2348160662997',
+    contact: '+2347054915173',
+    action: () => window.location.href = 'tel:+2347054915173',
     color: 'bg-blue-600 hover:bg-blue-700'
   },
   {
@@ -42,7 +42,7 @@ const quickContactMethods = [
     title: 'WhatsApp Chat',
     description: 'Available 24/7',
     contact: 'Instant messaging',
-    action: () => window.open('https://wa.me/2348160662997', '_blank'),
+    action: () => window.open('https://wa.me/2347054915173', '_blank'),
     color: 'bg-green-600 hover:bg-green-700'
   },
   {
@@ -152,7 +152,7 @@ export default function ContactIntegration({
           <Button
             size="sm"
             className="w-full bg-green-600 hover:bg-green-700 text-xs"
-            onClick={() => window.open('https://wa.me/2348160662997', '_blank')}
+            onClick={() => window.open('https://wa.me/2347054915173', '_blank')}
           >
             <MessageCircle className="mr-1 h-3 w-3" />
             WhatsApp
@@ -161,7 +161,7 @@ export default function ContactIntegration({
             size="sm"
             variant="outline"
             className="w-full text-xs"
-            onClick={() => window.location.href = 'tel:+2348160662997'}
+            onClick={() => window.location.href = 'tel:+2347054915173'}
           >
             <Phone className="mr-1 h-3 w-3" />
             Call Now

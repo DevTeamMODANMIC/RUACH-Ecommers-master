@@ -15,16 +15,15 @@ import {
   ArrowUpRight,
   Sparkles,
   CheckCircle,
-  Wrench,
-  Calendar,
   BarChart3
 } from "lucide-react"
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { DashboardHeader } from "../components/dashboard-header"
 import { DashboardStatsCard } from "../components/dashboard-stats-card"
 import { DashboardQuickActions } from "../components/dashboard-quick-actions"
 import { DashboardWelcome } from "../components/dashboard-welcome"
-import { useRouter } from "react-router-dom"
+import { VendorLayout } from "../components/vendor-layout"
+
 
 interface DashboardStats {
   totalProducts: number
@@ -57,7 +56,6 @@ export default function VendorDashboardHome() {
     lowStockProducts: 0
   })
   const [loading, setLoading] = useState(true)
-  const [isServiceProvider, setIsServiceProvider] = useState(false)
   const [keySequence, setKeySequence] = useState<string[]>([])
   const [showSecretMessage, setShowSecretMessage] = useState(false)
 
@@ -96,27 +94,10 @@ export default function VendorDashboardHome() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [router])
-
-  // Check if user is in service provider mode
-  useEffect(() => {
-    const serviceProviderMode = localStorage.getItem('serviceProviderMode') === 'true'
-    setIsServiceProvider(serviceProviderMode)
-    
-    // If service provider mode, set loading to false immediately
-    if (serviceProviderMode) {
-      setLoading(false)
-    }
-  }, [])
+  }, [navigate])
 
   useEffect(() => {
     const fetchDashboardData = async () => {
-      // Skip vendor data fetching for service providers
-      if (isServiceProvider) {
-        setLoading(false)
-        return
-      }
-      
       if (!activeStore) return
       
       try {
@@ -143,168 +124,40 @@ export default function VendorDashboardHome() {
     }
     
     fetchDashboardData()
-  }, [activeStore, isServiceProvider])
+  }, [activeStore])
 
-  if (loading || (!isServiceProvider && !activeStore)) {
+  // Let VendorLayout handle all authentication checks and redirects
+  // Only show loading for dashboard data, not vendor authentication
+  if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="h-8 w-8 border-4 border-t-green-500 border-l-green-600 border-r-green-600 border-b-green-700 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading dashboard...</p>
+      <VendorLayout title="Dashboard" description="Loading your dashboard...">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="h-8 w-8 border-4 border-t-green-500 border-l-green-600 border-r-green-600 border-b-green-700 rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-gray-600">Loading dashboard data...</p>
+          </div>
         </div>
-      </div>
+      </VendorLayout>
     )
   }
 
-  // Check if this is a new vendor (no products yet) or service provider mode
-  const isNewVendor = !isServiceProvider && stats.totalProducts === 0
+  // Check if this is a new vendor (no products yet)
+  const isNewVendor = stats.totalProducts === 0
   
-  // Service Provider Dashboard
-  if (isServiceProvider) {
+  // Safety check - this should be handled by VendorLayout, but just in case
+  if (!activeStore) {
     return (
-      <div className="space-y-8">
-        {/* Service Provider Welcome Header */}
-        <div className="text-center py-8">
-          <div className="flex justify-center mb-4">
-            <div className="p-4 bg-blue-100 rounded-full">
-              <Sparkles className="h-8 w-8 text-blue-600" />
-            </div>
-          </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            {getTimeBasedGreeting()}, Service Provider!
-          </h1>
-          <p className="text-lg text-gray-500 mb-2">Welcome to your service provider dashboard</p>
-          <p className="text-xl text-gray-600 mb-8">
-            Manage your services, bookings, and grow your business.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button asChild size="lg" className="bg-blue-600 hover:bg-blue-700">
-              <Link to="/vendor/dashboard/services">
-                <Wrench className="h-5 w-5 mr-2" />
-                Manage Services
-              </Link>
-            </Button>
-            <Button asChild variant="outline" size="lg">
-              <Link to="/vendor/dashboard/bookings">
-                <Calendar className="h-5 w-5 mr-2" />
-                View Bookings
-              </Link>
-            </Button>
+      <VendorLayout title="Dashboard" description="Setting up your dashboard...">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="h-8 w-8 border-4 border-t-green-500 border-l-green-600 border-r-green-600 border-b-green-700 rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-gray-600">Setting up your store...</p>
           </div>
         </div>
-
-        {/* Service Provider Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="rounded-full w-12 h-12 bg-blue-100 flex items-center justify-center">
-                  <Wrench className="h-6 w-6 text-blue-600" />
-                </div>
-                <div className="ml-4">
-                  <div className="text-2xl font-bold">0</div>
-                  <div className="text-sm text-gray-600">Active Services</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="rounded-full w-12 h-12 bg-green-100 flex items-center justify-center">
-                  <Calendar className="h-6 w-6 text-green-600" />
-                </div>
-                <div className="ml-4">
-                  <div className="text-2xl font-bold">0</div>
-                  <div className="text-sm text-gray-600">Total Bookings</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="rounded-full w-12 h-12 bg-yellow-100 flex items-center justify-center">
-                  <Star className="h-6 w-6 text-yellow-600" />
-                </div>
-                <div className="ml-4">
-                  <div className="text-2xl font-bold">0.0</div>
-                  <div className="text-sm text-gray-600">Average Rating</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="rounded-full w-12 h-12 bg-purple-100 flex items-center justify-center">
-                  <DollarSign className="h-6 w-6 text-purple-600" />
-                </div>
-                <div className="ml-4">
-                  <div className="text-2xl font-bold">₦0</div>
-                  <div className="text-sm text-gray-600">Total Earnings</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Button asChild variant="outline" className="h-auto p-4">
-                <Link to="/vendor/dashboard/services/add">
-                  <div className="text-center">
-                    <Plus className="h-8 w-8 mx-auto mb-2" />
-                    <div className="font-medium">Add New Service</div>
-                    <div className="text-sm text-gray-500">Create a new service offering</div>
-                  </div>
-                </Link>
-              </Button>
-              
-              <Button asChild variant="outline" className="h-auto p-4">
-                <Link to="/vendor/dashboard/bookings">
-                  <div className="text-center">
-                    <Calendar className="h-8 w-8 mx-auto mb-2" />
-                    <div className="font-medium">Manage Bookings</div>
-                    <div className="text-sm text-gray-500">View and manage appointments</div>
-                  </div>
-                </Link>
-              </Button>
-              
-              <Button asChild variant="outline" className="h-auto p-4">
-                <Link to="/vendor/dashboard/analytics">
-                  <div className="text-center">
-                    <BarChart3 className="h-8 w-8 mx-auto mb-2" />
-                    <div className="font-medium">View Analytics</div>
-                    <div className="text-sm text-gray-500">Track your performance</div>
-                  </div>
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Secret message overlay */}
-        {showSecretMessage && (
-          <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-            <div className="bg-white p-6 rounded-lg shadow-xl text-center">
-              <h2 className="text-2xl font-bold mb-2">Secret Unlocked!</h2>
-              <p>Navigating to Admin Vendors page...</p>
-            </div>
-          </div>
-        )}
-      </div>
+      </VendorLayout>
     )
   }
-
+  
   const statCards = [
     {
       title: "Total Products",
@@ -342,87 +195,94 @@ export default function VendorDashboardHome() {
 
   if (isNewVendor) {
     return (
-      <DashboardWelcome 
-        userType="vendor" 
-        userName={activeStore?.shopName || 'Vendor'}
-      />
+      <VendorLayout title="Welcome to Your Vendor Dashboard" description="Let's get your store set up and start selling!">
+        <DashboardWelcome 
+          userType="vendor" 
+          userName={activeStore?.shopName || 'Vendor'}
+        />
+      </VendorLayout>
     )
   }
 
   // Existing vendor dashboard (when they have products)
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <DashboardHeader
-        title={`${getTimeBasedGreeting()}, ${activeStore?.shopName || 'Vendor'}!`}
-        subtitle="Here's what's happening with your store today."
-        userType="vendor"
-      />
+    <VendorLayout 
+      title={`${getTimeBasedGreeting()}, ${activeStore?.shopName || 'Vendor'}!`} 
+      description="Here's what's happening with your store today."
+    >
+      <div className="space-y-8">
+        {/* Header */}
+        <DashboardHeader
+          title={`${getTimeBasedGreeting()}, ${activeStore?.shopName || 'Vendor'}!`}
+          subtitle="Here's what's happening with your store today."
+          userType="vendor"
+        />
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statCards.map((stat, index) => (
-          <DashboardStatsCard
-            key={index}
-            title={stat.title}
-            value={stat.value}
-            change={stat.change}
-            icon={stat.icon}
-            color={stat.color}
-            bgColor={stat.bgColor}
-          />
-        ))}
-      </div>
-
-      {/* Quick Actions */}
-      <DashboardQuickActions userType="vendor" />
-
-      {/* Store Performance */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            Store Performance
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div>
-            <div className="flex justify-between text-sm mb-2">
-              <span>Store Completion</span>
-              <span>{Math.min(100, (stats.totalProducts * 20))}%</span>
-            </div>
-            <Progress value={Math.min(100, (stats.totalProducts * 20))} className="h-2" />
-            <p className="text-xs text-gray-500 mt-1">
-              Add more products to improve store completion
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-green-600">{stats.totalProducts}</p>
-              <p className="text-sm text-gray-600">Products Listed</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-blue-600">{stats.activeProducts}</p>
-              <p className="text-sm text-gray-600">Active Products</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-purple-600">{stats.totalOrders}</p>
-              <p className="text-sm text-gray-600">Total Orders</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      
-      {/* Secret message overlay */}
-      {showSecretMessage && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl text-center">
-            <h2 className="text-2xl font-bold mb-2">Secret Unlocked!</h2>
-            <p>Navigating to Admin Vendors page...</p>
-          </div>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {statCards.map((stat, index) => (
+            <DashboardStatsCard
+              key={index}
+              title={stat.title}
+              value={stat.value}
+              change={stat.change}
+              icon={stat.icon}
+              color={stat.color}
+              bgColor={stat.bgColor}
+            />
+          ))}
         </div>
-      )}
-    </div>
+
+        {/* Quick Actions */}
+        <DashboardQuickActions userType="vendor" />
+
+        {/* Store Performance */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Store Performance
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div>
+              <div className="flex justify-between text-sm mb-2">
+                <span>Store Completion</span>
+                <span>{Math.min(100, (stats.totalProducts * 20))}%</span>
+              </div>
+              <Progress value={Math.min(100, (stats.totalProducts * 20))} className="h-2" />
+              <p className="text-xs text-gray-500 mt-1">
+                Add more products to improve store completion
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-green-600">{stats.totalProducts}</p>
+                <p className="text-sm text-gray-600">Products Listed</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-blue-600">{stats.activeProducts}</p>
+                <p className="text-sm text-gray-600">Active Products</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-purple-600">{stats.totalOrders}</p>
+                <p className="text-sm text-gray-600">Total Orders</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* Secret message overlay */}
+        {showSecretMessage && (
+          <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+            <div className="bg-white p-6 rounded-lg shadow-xl text-center">
+              <h2 className="text-2xl font-bold mb-2">Secret Unlocked!</h2>
+              <p>Navigating to Admin Vendors page...</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </VendorLayout>
   )
 }

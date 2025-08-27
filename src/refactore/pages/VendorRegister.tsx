@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useRouter } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { 
@@ -216,7 +216,7 @@ export default function VendorServiceSelection() {
       <div className="container mx-auto px-4 py-20">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-6xl mx-auto">
           {/* Vendor Card */}
-          <Card className="relative overflow-hidden hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-500">
+          <Card className="relative overflow-hidden hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-500 h-full flex flex-col">
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-100 rounded-full -translate-y-16 translate-x-16"></div>
             <CardHeader className="text-center pb-6">
               <div className="w-20 h-20 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
@@ -229,8 +229,8 @@ export default function VendorServiceSelection() {
                 Sell physical products like food, beverages, spices, and more
               </p>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-3">
+            <CardContent className="space-y-6 flex-grow flex flex-col">
+              <div className="space-y-3 flex-grow">
                 <h4 className="font-semibold text-gray-900 text-lg">What you can do:</h4>
                 <div className="space-y-2">
                   {vendorBenefits.map((benefit, index) => (
@@ -242,7 +242,7 @@ export default function VendorServiceSelection() {
                 </div>
               </div>
               
-              <div className="pt-4">
+              <div className="pt-4 mt-auto">
                 <Button 
                   onClick={() => setSelectedType("vendor")}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 text-lg rounded-xl"
@@ -256,7 +256,7 @@ export default function VendorServiceSelection() {
           </Card>
 
           {/* Service Provider Card */}
-          <Card className="relative overflow-hidden hover:shadow-xl transition-all duration-300 border-2 hover:border-green-500">
+          <Card className="relative overflow-hidden hover:shadow-xl transition-all duration-300 border-2 hover:border-green-500 h-full flex flex-col">
             <div className="absolute top-0 right-0 w-32 h-32 bg-green-100 rounded-full -translate-y-16 translate-x-16"></div>
             <CardHeader className="text-center pb-6">
               <div className="w-20 h-20 bg-green-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
@@ -269,8 +269,8 @@ export default function VendorServiceSelection() {
                 Offer professional services like plumbing, event planning, cleaning, and more
               </p>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-3">
+            <CardContent className="space-y-6 flex-grow flex flex-col">
+              <div className="space-y-3 flex-grow">
                 <h4 className="font-semibold text-gray-900 text-lg">What you can do:</h4>
                 <div className="space-y-2">
                   {serviceProviderBenefits.map((benefit, index) => (
@@ -282,7 +282,7 @@ export default function VendorServiceSelection() {
                 </div>
               </div>
               
-              <div className="pt-4">
+              <div className="pt-4 mt-auto">
                 <Button 
                   onClick={() => setSelectedType("service-provider")}
                   className="w-full bg-green-600 hover:bg-green-700 text-white py-6 text-lg rounded-xl"

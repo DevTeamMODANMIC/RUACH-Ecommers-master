@@ -35,6 +35,7 @@ import { useCart } from "../../src/components/cart-provider"
 import { useWishlist } from "../../src/hooks/use-wishlist"
 import { useAuth } from "../../src/components/auth-provider"
 import { useVendor } from "../../src/hooks/use-vendor"
+import { useServiceProvider } from "../../src/hooks/use-service-provider"
 import { VendorHeaderSwitcher } from "../../src/components/vendor-header-switcher"
 import { DesktopMegaMenu, MobileMegaMenu } from "../../src/components/mega-menu"
 import clsx from "clsx"
@@ -57,6 +58,7 @@ const legacyCategories = [
 const primaryLinks = [
   { title: "Home", href: "/" },
   { title: "Shop", href: "/shop" },
+  { title: "Services", href: "/services" },
   { title: "Stores", href: "/stores" },
   { title: "Become a Vendor", href: "/vendor/register" },
   { title: "Bulk Order", href: "/bulk-order" },
@@ -71,6 +73,7 @@ export default function HeaderImproved() {
   const { getTotalItems } = useCart()
   const { user, logout } = useAuth()
   const { isVendor } = useVendor()
+  const { isServiceProvider } = useServiceProvider()
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const handleSearch = (e: React.FormEvent) => {
@@ -87,7 +90,7 @@ export default function HeaderImproved() {
         <div className="flex items-center gap-6">
           <span className="flex items-center gap-1">
             <Phone className="h-3 w-3" />
-            +2348160662997
+            +2347054915173
           </span>
         </div>
         {/*<Link to="/vendor/register" className="text-green-700 hover:underline">
@@ -100,32 +103,42 @@ export default function HeaderImproved() {
         {/* Mobile Nav */}
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" aria-label="Toggle menu" className="md:hidden mr-2">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              aria-label="Toggle menu" 
+              className="md:hidden mr-2 hover:bg-gray-100/80 backdrop-blur-sm border border-transparent hover:border-gray-200/50 transition-all duration-300"
+            >
               <Menu className="h-6 w-6" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="pr-0">
-            <SheetHeader className="px-6">
+          <SheetContent side="left" className="pr-0 bg-white/95 backdrop-blur-md border-r border-gray-200/50 shadow-2xl">
+            <SheetHeader className="px-6 bg-gray-50/80 backdrop-blur-sm border-b border-gray-200/50 mb-4">
               <SheetTitle>Menu</SheetTitle>
             </SheetHeader>
-            <nav className="px-6 pt-4 space-y-4 text-sm">
+            <nav className="px-6 pt-4 space-y-4 text-sm bg-gradient-to-b from-white/50 to-transparent">
               {primaryLinks.map(link => (
                 <Link
                   key={link.title}
                   to={link.href}
                   onClick={() => setMobileOpen(false)}
-                  className={clsx("block", pathname === link.href ? "text-green-600 font-medium" : "text-gray-700")}
+                  className={clsx(
+                    "block py-3 px-4 rounded-lg transition-all duration-300 backdrop-blur-sm", 
+                    pathname === link.href 
+                      ? "text-green-600 font-medium bg-green-50/80 border border-green-200/50" 
+                      : "text-gray-700 hover:text-green-600 hover:bg-gray-50/80 hover:border hover:border-gray-200/50"
+                  )}
                 >
                   {link.title}
                 </Link>
               ))}
-              <div>
-                <p className="uppercase text-xs text-gray-500 mb-2">Categories</p>
+              <div className="bg-gray-50/50 backdrop-blur-sm rounded-lg p-4 border border-gray-200/30">
+                <p className="uppercase text-xs text-gray-500 mb-3 font-medium">Categories</p>
                 <MobileMegaMenu onNavigate={() => setMobileOpen(false)} />
               </div>
 
               {/* Mobile Vendor CTA */}
-              <div className="pt-4 border-t">
+              <div className="pt-4 border-t border-gray-200/50 bg-gray-50/30 backdrop-blur-sm rounded-lg p-4 mt-4">
                 <Link
                   to="/vendor/register"
                   onClick={() => setMobileOpen(false)}
@@ -140,7 +153,7 @@ export default function HeaderImproved() {
 
         {/* Logo */}
         <Link to="/" className="flex items-center space-x-2">
-          <img src="/logo/logo.png" alt="RUACH Logo" className="h-10 w-auto" />
+          <img src="/images/new_logo.jpg" alt="RUACH Logo" className="h-10 w-10 rounded-full object-cover" />
           <span className="font-bold tracking-tight text-gray-900 hidden sm:inline">
             RUACH E-STORE
           </span>
@@ -191,7 +204,7 @@ export default function HeaderImproved() {
 
           {/* WhatsApp Floating Icon */}
           <a
-            to="https://wa.me/2348160662997"
+            href="https://wa.me/2348160662997"
             target="_blank"
             rel="noopener noreferrer"
             className="hidden lg:inline-flex items-center justify-center bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-sm font-medium"
@@ -213,22 +226,27 @@ export default function HeaderImproved() {
                 )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuContent align="end" className="w-48 bg-white border border-gray-200 shadow-lg rounded-md overflow-hidden">
               {user ? (
                 <>
-                  <DropdownMenuItem onSelect={() => navigate("/profile")}>Profile</DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => navigate("/profile/orders")}>Orders</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => navigate("/profile")} className="cursor-pointer hover:bg-gray-50 transition-colors">Profile</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => navigate("/profile/orders")} className="cursor-pointer hover:bg-gray-50 transition-colors">Orders</DropdownMenuItem>
                   {isVendor && (
-                    <DropdownMenuItem onSelect={() => navigate("/vendor/dashboard")}>
+                    <DropdownMenuItem onSelect={() => navigate("/vendor/dashboard")} className="cursor-pointer hover:bg-gray-50 transition-colors">
                       Vendor Dashboard
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuItem onSelect={logout} className="text-red-600">
+                  {isServiceProvider && (
+                    <DropdownMenuItem onSelect={() => navigate("/service-provider/dashboard")} className="cursor-pointer hover:bg-gray-50 transition-colors">
+                      Service Provider
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onSelect={logout} className="text-red-600 cursor-pointer hover:bg-red-50 transition-colors">
                     Log out
                   </DropdownMenuItem>
                 </>
               ) : (
-                <DropdownMenuItem onSelect={() => navigate("/login")}>Sign In</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => navigate("/login")} className="cursor-pointer hover:bg-gray-50 transition-colors">Sign In</DropdownMenuItem>
               )}
             </DropdownMenuContent>
           </DropdownMenu>

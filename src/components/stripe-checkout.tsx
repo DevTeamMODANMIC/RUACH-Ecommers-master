@@ -1,4 +1,4 @@
-﻿/**
+﻿﻿﻿/**
  * TEMPORARILY DISABLED: This component is part of the Stripe integration that has been paused.
  * Do not use this component until the Stripe integration is re-enabled.
  */
@@ -6,12 +6,12 @@
 ;
 
 import { useEffect, useState } from "react";
-import { useNavigate } from "next/navigation";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../src/components/ui/card";
-import { useToast } from "../../src/hooks/use-toast";
-import StripeProvider from "../../src/components/stripe-provider";
-import { PaymentElement, useElements, useStripe } from "../../srcstripe/react-stripe-js";
-import { Button } from "../../src/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useToast } from "@/hooks/use-toast"
+import StripeProvider from "@/components/stripe-provider"
+import { PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js"
+import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react";
 
 interface StripeCheckoutProps {
@@ -33,7 +33,7 @@ export default function StripeCheckout({
   returnUrl = "/order-confirmation",
   showCompletionMessage = true
 }: StripeCheckoutProps) {
-  const router = useNavigate();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [clientSecret, setClientSecret] = useState<string | undefined>(initialClientSecret);
   const [isLoading, setIsLoading] = useState(!initialClientSecret);
@@ -104,7 +104,7 @@ export default function StripeCheckout({
           <Button
             variant="outline"
             className="w-full mt-4"
-            onClick={() => router.back()}
+            onClick={() => navigate(-1)}
           >
             Go Back
           </Button>
@@ -158,7 +158,7 @@ function CheckoutForm({
   const elements = useElements();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const router = useNavigate();
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {

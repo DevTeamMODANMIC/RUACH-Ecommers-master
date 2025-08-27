@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 
 // import Link from "next/link"
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 import { Card, CardContent } from "../../src/components/ui/card"
 import { Badge } from "../../src/components/ui/badge"
@@ -108,13 +108,12 @@ export function ProductRecommendations({
         {products.map((product) => (
           <Card key={product.id} className="group hover:shadow-md transition-all">
             <CardContent className="p-3">
-              <Link href={`/products/${product.id}`} className="block">
+              <Link to={`/products/${product.id}`} className="block">
                 <div className="relative aspect-square overflow-hidden rounded-md mb-3">
-                  <Image
+                  <img
                     src={product.image || "/placeholder.svg"}
                     alt={product.name}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="object-cover group-hover:scale-105 transition-transform duration-300 w-full h-full"
                   />
                   {product.discount > 0 && (
                     <Badge variant="destructive" className="absolute top-2 left-2 text-xs">

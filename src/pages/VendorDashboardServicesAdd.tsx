@@ -1,5 +1,6 @@
 import { useState } from "react"
-import { useRouter } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
+import { VendorLayout } from "../components/vendor-layout"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Input } from "../components/ui/input"
@@ -169,21 +170,20 @@ export default function AddServicePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <VendorLayout 
+      title="Add New Service" 
+      description="Create a new service offering for your customers"
+    >
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 mb-6">
         <Button 
           variant="outline" 
-          onClick={() => router.back()}
+          onClick={() => navigate(-1)}
           className="shrink-0"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Add New Service</h1>
-          <p className="text-gray-600">Create a new service offering for your customers</p>
-        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -585,7 +585,7 @@ export default function AddServicePage() {
           <Button 
             type="button" 
             variant="outline" 
-            onClick={() => router.back()}
+            onClick={() => navigate(-1)}
             className="flex-1"
             disabled={isSubmitting}
           >
@@ -593,6 +593,6 @@ export default function AddServicePage() {
           </Button>
         </div>
       </form>
-    </div>
+    </VendorLayout>
   )
 }

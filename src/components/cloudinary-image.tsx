@@ -1,8 +1,5 @@
-;
-
 import React, { useState } from "react";
-;
-import { buildImageUrl, buildSrcSet } from "../../src/lib/cloudinary-client";
+import { buildImageUrl, buildSrcSet } from "../lib/cloudinary-client";
 
 interface CloudinaryImageProps {
   publicId: string;
@@ -57,19 +54,17 @@ const CloudinaryImage = ({
 
   return (
     <div className={`relative ${className} ${isLoading ? 'bg-gray-100 animate-pulse' : ''}`}>
-      <Image
+      <img
         src={imgSrc}
         srcSet={srcSet}
         sizes="(max-width: 640px) 200px, (max-width: 1024px) 400px, 800px"
         alt={alt}
         width={width || (size === 'thumbnail' ? 150 : size === 'small' ? 250 : size === 'medium' ? 500 : 800)}
         height={height || (size === 'thumbnail' ? 150 : size === 'small' ? 250 : size === 'medium' ? 500 : 800)}
-        className={`${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300 object-contain`}
+        className={`${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300 object-contain w-full h-full`}
         onLoad={handleLoad}
         onError={handleError}
-        priority={priority}
-        placeholder="blur"
-        blurDataURL={blurDataURL}
+        loading={priority ? 'eager' : 'lazy'}
       />
       {isError && (
         <div className="absolute inset-0 flex items-center justify-center text-xs text-gray-500">

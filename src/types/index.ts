@@ -52,7 +52,7 @@ export type CartItem = {
   productId: string
   name: string
   price: number
-  image: string
+  image?: string
   quantity: number
   options?: Record<string, string>
 }
@@ -77,7 +77,7 @@ export type Order = {
   shipping: number
   tax: number
   total: number
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
+  status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
   paymentStatus?: 'pending' | 'paid' | 'failed' | 'refunded'
   paymentMethod: string
   paymentId?: string

@@ -1,14 +1,17 @@
 
 
 import { useEffect } from "react"
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../src/components/auth-provider"
-import { useVendor } from "../../src/hooks/use-vendor"
+import { useNavigate } from "react-router-dom"
+import { useAuth } from "@/components/auth-provider"
+import { useVendor } from "@/hooks/use-vendor"
+import { useServiceProvider } from "@/hooks/use-service-provider"
+import KeyboardShortcutsHelp from "@/components/keyboard-shortcuts-help"
 
 export default function KeyboardNavigation() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { isVendor } = useVendor()
+  const { isServiceProvider } = useServiceProvider()
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -63,6 +66,18 @@ export default function KeyboardNavigation() {
             event.preventDefault()
             navigate('/admin')
             break
+          case 'G': // Service Provider Dashboard (for service providers only)
+            event.preventDefault()
+            if (user && isServiceProvider) {
+              navigate('/service-provider/dashboard')
+            } else if (user) {
+              // Logged in but not a service provider - redirect to registration
+              navigate('/vendor/register')
+            } else {
+              // Not logged in - redirect to login
+              navigate('/login?redirect=/service-provider/dashboard')
+            }
+            break
         }
       }
 
@@ -86,7 +101,7 @@ export default function KeyboardNavigation() {
     return () => {
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [navigate, user, isVendor])
+  }, [navigate, user, isVendor, isServiceProvider])
 
-  return null // This component doesn't render anything
+  return <KeyboardShortcutsHelp />
 }

@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react"
-import { Link } from "react-router-dom";
-
-import { useRouter } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { Button } from "../components/ui/button"
 import { Card } from "../components/ui/card"
 import { Pencil, Trash2, Plus, ArrowLeft, FileUp, Eye, CloudUpload, AlertTriangle, Database } from "lucide-react"
@@ -63,7 +61,7 @@ export default function AdminProducts() {
     })
 
     return () => checkAuth()
-  }, [router])
+  }, [navigate])
 
   const handleDeleteProduct = async (id: string) => {
     try {

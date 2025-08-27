@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { useParams, useRouter } from "react-router-dom"
+import { useParams, useNavigate } from "react-router-dom"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Input } from "../components/ui/input"
@@ -544,7 +544,7 @@ export default function ServiceBookingPage() {
           <div className="flex items-center">
             <Button
               variant="ghost"
-              onClick={() => router.back()}
+              onClick={() => navigate(-1)}
               className="mr-4"
             >
               <ArrowLeft className="h-4 w-4" />

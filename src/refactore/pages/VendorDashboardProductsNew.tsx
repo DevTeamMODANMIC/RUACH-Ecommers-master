@@ -1,18 +1,18 @@
 import { useState, useEffect } from "react"
-import { useRouter } from "react-router-dom"
-import { useVendor } from "../hooks/use-vendor"
-import { addProduct } from "../lib/firebase-products"
-import CloudinaryUploadWidget from "../components/cloudinary-upload-widget"
-import { Input } from "../components/ui/input"
-import { Textarea } from "../components/ui/textarea"
-import { Button } from "../components/ui/button"
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "../components/ui/select"
-import { Label } from "../components/ui/label"
+import { useNavigate } from "react-router-dom"
+import { useVendor } from "@/hooks/use-vendor"
+import { addProduct } from "@/lib/firebase-products"
+import CloudinaryUploadWidget from "@/components/cloudinary-upload-widget"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button"
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
 import { Loader2, X, Plus } from "lucide-react"
 
 
 // Use centralized categories to match shop page filtering
-import { MAIN_CATEGORIES } from "../lib/categories"
+import { MAIN_CATEGORIES } from "@/lib/categories"
 
 export default function VendorAddProductPage() {
   // Filter categories to only show those with subcategories
@@ -94,14 +94,15 @@ export default function VendorAddProductPage() {
       }
       
       console.log("Creating product with data:", productData)
-      const id = await addProduct(productData as any)
+      const id = await addProduct(productData)
       console.log("Product created with ID:", id)
       
       alert("Product added successfully!")
       navigate("/vendor/dashboard/products")
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error creating product:", err)
-      alert(`Error: ${err.message}`)
+      const errorMessage = err instanceof Error ? err.message : "An unknown error occurred"
+      alert(`Error: ${errorMessage}`)
     } finally {
       setSubmitting(false)
     }
@@ -151,7 +152,7 @@ export default function VendorAddProductPage() {
               required
             >
               <SelectTrigger>
-                <SelectValue  categories`} />
+                <SelectValue placeholder="Select from available categories" />
               </SelectTrigger>
               <SelectContent>
                 {categories.length === 0 ? (

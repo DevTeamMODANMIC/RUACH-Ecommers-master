@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useRouter } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import { Link } from "react-router-dom";
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
@@ -23,11 +23,14 @@ import { Service, ServiceCategory } from "../types"
 import { useAuth } from "../components/auth-provider"
 import { getServiceProviderByOwnerId } from "../lib/firebase-service-providers"
 import { createService } from "../lib/firebase-services"
+import { useVendor } from "../hooks/use-vendor"
 import { serviceCategories } from "../lib/categories"
+import { ServiceProviderLayout } from "../components/service-provider-layout"
 
 export default function AddServicePage() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { isVendor } = useVendor()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -97,12 +100,19 @@ export default function AddServicePage() {
     if (!formData.name?.trim()) return "Service name is required"
     if (!formData.description?.trim()) return "Service description is required"
     if (!formData.category) return "Service category is required"
-    if (formData.pricingType === "fixed" && (!formData.basePrice || formData.basePrice <= 0)) {
-      return "Base price must be greater than 0 for fixed pricing"
+    
+    // Validate pricing based on type
+    if (formData.pricingType === "fixed") {
+      if (!formData.basePrice || formData.basePrice <= 0) {
+        return "Base price must be greater than 0 for fixed pricing"
+      }
+    } else if (formData.pricingType === "hourly") {
+      if (!formData.hourlyRate || formData.hourlyRate <= 0) {
+        return "Hourly rate must be greater than 0 for hourly pricing"
+      }
     }
-    if (formData.pricingType === "hourly" && (!formData.hourlyRate || formData.hourlyRate <= 0)) {
-      return "Hourly rate must be greater than 0 for hourly pricing"
-    }
+    // Custom pricing doesn't require price validation
+    
     if (!formData.serviceAreas?.length) return "At least one service area is required"
     if (!formData.features?.length) return "At least one feature is required"
     return null
@@ -139,8 +149,10 @@ export default function AddServicePage() {
         category: formData.category!,
         providerId: serviceProvider.id,
         pricingType: formData.pricingType!,
-        basePrice: formData.pricingType === "fixed" ? formData.basePrice : undefined,
-        hourlyRate: formData.pricingType === "hourly" ? formData.hourlyRate : undefined,
+        // Only include basePrice for fixed pricing
+        ...(formData.pricingType === "fixed" && formData.basePrice ? { basePrice: formData.basePrice } : {}),
+        // Only include hourlyRate for hourly pricing
+        ...(formData.pricingType === "hourly" && formData.hourlyRate ? { hourlyRate: formData.hourlyRate } : {}),
         duration: formData.duration || 60,
         serviceAreas: formData.serviceAreas!,
         features: formData.features!,
@@ -148,7 +160,8 @@ export default function AddServicePage() {
         images: formData.images || [],
         bookingRequiresApproval: formData.bookingRequiresApproval || false,
         depositRequired: formData.depositRequired || false,
-        depositAmount: formData.depositAmount,
+        // Only include depositAmount if depositRequired is true and amount is provided
+        ...(formData.depositRequired && formData.depositAmount ? { depositAmount: formData.depositAmount } : {}),
         // Initialize statistics
         bookingCount: 0,
         rating: 0,
@@ -165,8 +178,33 @@ export default function AddServicePage() {
         }
       })
 
-      // Show success message and redirect
+      // Show success message and redirect based on user context
       alert("Service created successfully! You'll be redirected to services page.")
+      
+      // Smart redirect: Use user role and referrer to determine best destination
+      const referrer = document.referrer
+      const currentOrigin = window.location.origin
+      
+      // First priority: User role
+      if (isVendor) {
+        navigate("/vendor/dashboard/services")
+        return
+      }
+      
+      // Second priority: Referrer path analysis
+      if (referrer && referrer.startsWith(currentOrigin)) {
+        const referrerPath = new URL(referrer).pathname
+        
+        if (referrerPath.includes('/vendor/dashboard')) {
+          navigate("/vendor/dashboard/services")
+          return
+        } else if (referrerPath.includes('/service-provider/dashboard')) {
+          navigate("/service-provider/dashboard/services")
+          return
+        }
+      }
+      
+      // Default fallback: service provider dashboard (since this is a service provider component)
       navigate("/service-provider/dashboard/services")
 
     } catch (error: any) {
@@ -190,30 +228,24 @@ export default function AddServicePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b">
-        <div className="w-full px-6 py-6">
-          <div className="flex items-center">
-            <Button
-              variant="ghost"
-              onClick={() => router.back()}
-              className="mr-4"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Add New Service</h1>
-              <p className="text-gray-600 mt-1">Create a new service offering for your customers</p>
-            </div>
-          </div>
+    <ServiceProviderLayout 
+      title="Add New Service" 
+      description="Create a new service offering for your customers"
+    >
+      <div className="space-y-6">
+        {/* Back Navigation */}
+        <div className="flex items-center mb-6">
+          <Button
+            variant="ghost"
+            onClick={() => navigate(-1)}
+            className="mr-4"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
         </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="w-full px-6 py-6">
-        <div className="max-w-4xl mx-auto">
-          <form onSubmit={handleSubmit} className="space-y-6">
+        
+        <form onSubmit={handleSubmit} className="space-y-6">
             {/* Error Display */}
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
@@ -503,7 +535,7 @@ export default function AddServicePage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => router.back()}
+                onClick={() => navigate(-1)}
                 disabled={isLoading}
               >
                 Cancel
@@ -535,7 +567,6 @@ export default function AddServicePage() {
             </div>
           </form>
         </div>
-      </div>
-    </div>
+    </ServiceProviderLayout>
   )
 }

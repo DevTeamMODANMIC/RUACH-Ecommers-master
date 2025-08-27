@@ -9,11 +9,13 @@ export interface OrderItem {
   quantity: number
   price: number
   total: number
+  options?: Record<string, string>
 }
 
 export interface ShippingAddress {
   firstName: string
   lastName: string
+  address1: string
   street: string
   city: string
   state: string
@@ -35,9 +37,11 @@ export interface Order {
   status: "pending" | "confirmed" | "processing" | "shipped" | "delivered" | "cancelled"
   paymentStatus: "pending" | "paid" | "failed" | "refunded"
   paymentMethod: string
+  paymentId?: string
   shippingAddress: ShippingAddress
   billingAddress: ShippingAddress
   trackingNumber?: string
+  trackingUrl?: string
   estimatedDelivery?: Date
   notes?: string
   createdAt: Date
@@ -273,9 +277,41 @@ export const listenToUserOrders = (callback: (orders: Order[]) => void, userId?:
     throw new Error(error.message);
   }
 };
-export const listenToOrder = (orderId: string, callback: (orderData: any) => void) => {
-  // Your existing code...
-}
+export const listenToOrder = (orderId: string, callback: (orderData: Order | null) => void) => {
+  try {
+    if (!orderId) {
+      console.error("No orderId provided to listenToOrder");
+      callback(null);
+      return () => {}; // Return empty unsubscribe function
+    }
+
+    const orderRef = doc(db, "orders", orderId);
+
+    const unsubscribe = onSnapshot(orderRef, (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const data = docSnapshot.data();
+        const order: Order = {
+          id: docSnapshot.id,
+          ...data,
+          createdAt: data.createdAt.toDate(),
+          updatedAt: data.updatedAt.toDate(),
+          estimatedDelivery: data.estimatedDelivery?.toDate(),
+        } as Order;
+        callback(order);
+      } else {
+        callback(null);
+      }
+    }, (error) => {
+      console.error("Error listening to order:", error);
+      callback(null);
+    });
+
+    return unsubscribe;
+  } catch (error: any) {
+    console.error("Error setting up order listener:", error);
+    throw new Error(error.message);
+  }
+};
 export const updateOrder = async (id: string, updates: Partial<Order>) => {
   try {
     const updateData = {

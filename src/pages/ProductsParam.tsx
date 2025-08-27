@@ -1,13 +1,13 @@
 import { useEffect } from "react"
-import { useRouter } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 
 export default function ProductDetailPage() {
   const navigate = useNavigate()
   
   useEffect(() => {
     // Redirect to the shop page
-    router.replace('/shop')
-  }, [router])
+    navigate('/shop', { replace: true })
+  }, [navigate])
   
   return null
 }

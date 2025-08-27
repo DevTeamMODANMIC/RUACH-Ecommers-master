@@ -1,17 +1,18 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { Button } from "../../src/components/ui/button";
-import { Card, CardContent, CardFooter } from "../../src/components/ui/card";
-import { Badge } from "../../src/components/ui/badge";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, Star, Award, TrendingUp, ChevronRight, Heart, Sparkles, Eye, X, Store } from "lucide-react";
-import { getProducts, type Product } from "../../src/lib/firebase-products";
-import { getVendor, type Vendor } from "../../src/lib/firebase-vendors";
-import { useCart } from "../../src/components/cart-provider";
-import { formatCurrency } from "../../src/lib/utils";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "../../src/components/ui/dialog";
-import { useWishlist, type WishlistItem } from "../../src/hooks/use-wishlist";
+import { getProducts, type Product } from "@/lib/firebase-products";
+import { getVendor, type Vendor } from "@/lib/firebase-vendors";
+import { useCart } from "@/components/cart-provider";
+import { formatCurrency } from "@/lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
+import { useWishlist, type WishlistItem } from "@/hooks/use-wishlist";
 
 export default function FeaturedProducts() {
+  const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [hoveredProductId, setHoveredProductId] = useState<string | null>(null);
@@ -27,7 +28,7 @@ export default function FeaturedProducts() {
         const { products: allProducts } = await getProducts({}, 20);
         const featured = allProducts.filter((p) => p.inStock).slice(0, 8);
         setProducts(featured);
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("Error loading featured products:", error);
         setProducts([]);
       } finally {
@@ -45,7 +46,7 @@ export default function FeaturedProducts() {
         try {
           const vendor = await getVendor(vendorId);
           return { vendorId, vendor };
-        } catch (error) {
+        } catch (error: unknown) {
           console.error(`Error fetching vendor ${vendorId}:`, error);
           return { vendorId, vendor: null };
         }
@@ -74,6 +75,7 @@ export default function FeaturedProducts() {
       price: product.discount ? product.price * (1 - product.discount / 100) : product.price,
       image: product.images?.[0] || "/placeholder.jpg",
       quantity: 1,
+      options: {},
     });
   };
 
@@ -135,16 +137,16 @@ export default function FeaturedProducts() {
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-gray-800">Featured Products</h2>
           <div className="w-24 h-1 bg-gradient-to-r from-green-500 to-green-600 rounded-full mb-6"></div>
           <p className="text-gray-600 text-center max-w-2xl mb-8">
-            From our hands to yours. Discover the best of African and international craftsmanship in our featured collection.
+            From our hands to yours. Discover the best of products and craftsmanship in our featured collection.
           </p>
         </div>
 
         {products.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto px-4">
             {products.map((product) => (
               <Card
                 key={product.id}
-                className="group relative overflow-hidden border border-gray-200 hover:border-green-500 hover:shadow-lg transition-all duration-200 rounded-xl bg-white"
+                className="group relative overflow-hidden border border-gray-200 hover:border-green-500 hover:shadow-lg transition-all duration-200 rounded-xl bg-white flex flex-col h-full"
                 onMouseEnter={() => setHoveredProductId(product.id)}
                 onMouseLeave={() => setHoveredProductId(null)}
               >
@@ -159,12 +161,15 @@ export default function FeaturedProducts() {
                   </Button>
                 </div>
 
-                <Link to={`/products/${encodeURIComponent(product.id)}`} className="block">
+                <div 
+                  className="block cursor-pointer"
+                  onClick={() => navigate(`/products/${encodeURIComponent(product.id)}`)}
+                >
                   <div className="relative h-60 bg-white overflow-hidden">
                     <img
                       src={product.images?.[0] || "/placeholder.jpg"}
                       alt={product.name}
-                      className="absolute inset-0 w-full h-full object-contain p-4 transition-all duration-500 group-hover:scale-110 group-hover:rotate-1"
+                      className="absolute inset-0 w-full h-full object-contain p-4 transition-transform duration-300 group-hover:scale-105"
                       onError={(e) => (e.currentTarget.src = "/placeholder.jpg")}
                     />
 
@@ -185,16 +190,19 @@ export default function FeaturedProducts() {
                       </div>
                     )}
                   </div>
-                </Link>
+                </div>
 
-                <CardContent className="pt-4">
-                  <Link to={`/products/${encodeURIComponent(product.id)}`} className="block">
-                    <h3 className="font-semibold text-lg truncate group-hover:text-green-600 transition-colors">{product.name}</h3>
-                  </Link>
+                <CardContent className="pt-4 flex-grow">
+                  <div 
+                    className="block cursor-pointer"
+                    onClick={() => navigate(`/products/${encodeURIComponent(product.id)}`)}
+                  >
+                    <h3 className="font-semibold text-lg line-clamp-2 min-h-[3.5rem] group-hover:text-green-600 transition-colors">{product.name}</h3>
+                  </div>
                   <p className="text-gray-600 text-sm mt-1 line-clamp-2 h-10">{product.description}</p>
                 </CardContent>
 
-                <CardFooter className="flex items-center justify-between pt-0">
+                <CardFooter className="flex items-center justify-between pt-0 mt-auto">
                   <div className="flex flex-col">
                     {product.discount ? (
                       <>
@@ -216,21 +224,24 @@ export default function FeaturedProducts() {
         )}
 
         <div className="flex justify-center mt-12">
-          <Link
-            to="/shop"
+          <Button
+            onClick={() => navigate("/shop")}
             className="inline-flex items-center bg-green-600 hover:bg-green-700 text-white font-medium px-6 py-3 rounded-lg transition-colors"
           >
             Browse All Products
             <ChevronRight className="ml-2 h-5 w-5" />
-          </Link>
+          </Button>
         </div>
       </section>
 
       {/* Quick View Modal */}
       <Dialog open={quickViewProduct !== null} onOpenChange={(isOpen) => !isOpen && setQuickViewProduct(null)}>
-        <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto bg-white">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold">{quickViewProduct?.name}</DialogTitle>
+            <DialogDescription>
+              Quick view of {quickViewProduct?.name}
+            </DialogDescription>
             <DialogClose className="absolute right-4 top-4">
               <X className="h-4 w-4" />
             </DialogClose>
@@ -251,7 +262,7 @@ export default function FeaturedProducts() {
                 <div className="mt-auto flex gap-3">
                   <button
                     onClick={() => handleAddToCart(quickViewProduct)}
-                    className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                    className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                   >
                     <ShoppingCart className="h-4 w-4" />
                     Add to Cart

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { useVendor } from "../hooks/use-vendor"
+import { VendorLayout } from "../components/vendor-layout"
 import { updateVendorStore, deactivateVendorStore } from "../lib/firebase-vendors"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Button } from "../components/ui/button"
@@ -97,6 +98,7 @@ export default function StoreSettingsPage() {
 
     setIsDeactivating(true)
     try {
+      const { deleteVendorStore } = await import("../lib/firebase-vendors")
       await deleteVendorStore(user.uid, activeStore.id)
       await refreshStores()
       alert("Store has been deactivated successfully")
@@ -132,15 +134,12 @@ export default function StoreSettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <VendorLayout 
+      title="Store Settings" 
+      description="Manage your store information and preferences"
+    >
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Store Settings</h1>
-          <p className="text-gray-600 mt-1">
-            Manage your store information and preferences
-          </p>
-        </div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
         <div className="mt-4 sm:mt-0 flex gap-3">
           <Button asChild variant="outline">
             <Link to={`/vendor/${activeStore.id}`}>
@@ -348,6 +347,6 @@ export default function StoreSettingsPage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </VendorLayout>
   )
 }

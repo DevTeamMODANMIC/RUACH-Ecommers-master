@@ -18,7 +18,6 @@ import {
   Phone,
   Mail,
   FileText,
-  Star,
   ChevronRight
 } from "lucide-react"
 
@@ -73,30 +72,6 @@ const businessTypes = [
     icon: "🏢",
     description: "Office pantry supplies and corporate catering",
     benefits: ["Regular deliveries", "Invoice billing", "Account management"]
-  }
-]
-
-const testimonials = [
-  {
-    name: "James Okonkwo",
-    business: "Taste of Lagos Restaurant",
-    content: "RUACH's bulk ordering has transformed our supply chain. We save 20% on ingredients and never run out of stock.",
-    rating: 5,
-    savings: "20% cost reduction"
-  },
-  {
-    name: "Sarah Ahmed",
-    business: "Afro Foods Market",
-    content: "The dedicated account manager and flexible payment terms help us manage cash flow better.",
-    rating: 5,
-    savings: "30-day payment terms"
-  },
-  {
-    name: "Michael Chen",
-    business: "Global Catering Services", 
-    content: "Custom packaging with our logo has enhanced our brand presence at events.",
-    rating: 5,
-    savings: "Custom branding"
   }
 ]
 
@@ -203,7 +178,7 @@ export default function BulkOrdersServicePage() {
                   Get Custom Quote
                 </Button>
                 <Button size="lg" variant="outline" asChild className="border-green-600 text-green-600 hover:bg-green-50 px-8 py-6 text-lg rounded-full">
-                  <a href="https://wa.me/2348160662997" target="_blank" rel="noopener noreferrer">
+                  <a href="https://wa.me/2347054915173" target="_blank" rel="noopener noreferrer">
                     <Phone className="mr-2 h-5 w-5" />
                     Speak with Expert
                   </a>
@@ -215,8 +190,7 @@ export default function BulkOrdersServicePage() {
                 <img
                   src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=600&auto=format&fit=crop&q=80"
                   alt="Bulk Orders and Wholesale"
-                  fill
-                  className="object-cover"
+                  className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
               </div>
@@ -326,39 +300,6 @@ export default function BulkOrdersServicePage() {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Success Stories from Our Business Partners
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow">
-                <CardContent className="pt-6">
-                  <div className="flex items-center mb-4">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="h-4 w-4 text-yellow-400 fill-current" />
-                    ))}
-                  </div>
-                  <p className="text-gray-700 mb-4 italic">"{testimonial.content}"</p>
-                  <div className="mb-3">
-                    <p className="font-semibold text-gray-900">{testimonial.name}</p>
-                    <p className="text-sm text-gray-600">{testimonial.business}</p>
-                  </div>
-                  <div className="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium">
-                    {testimonial.savings}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* How It Works */}
       <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-4">
@@ -452,7 +393,7 @@ export default function BulkOrdersServicePage() {
                         type="tel"
                         value={formData.phone}
                         onChange={(e) => handleInputChange('phone', e.target.value)}
-                        placeholder="+234 800 000 0000"
+                        placeholder="+2347054915173"
                         required
                       />
                     </div>
@@ -517,7 +458,7 @@ export default function BulkOrdersServicePage() {
               </Link>
             </Button>
             <Button size="lg" variant="outline" asChild className="border-white text-white hover:bg-white hover:text-green-600 px-8 py-6 text-lg rounded-full">
-              <a href="https://wa.me/2348160662997" target="_blank" rel="noopener noreferrer">
+              <a href="https://wa.me/2347054915173" target="_blank" rel="noopener noreferrer">
                 <Phone className="mr-2 h-5 w-5" />
                 Call Sales Team
               </a>

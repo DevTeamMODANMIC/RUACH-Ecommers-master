@@ -1,6 +1,6 @@
 import type React from "react"
 import { useState } from "react"
-import { useRouter } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import { Link } from "react-router-dom";
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
@@ -21,6 +21,10 @@ export default function LoginPage() {
   const { toast } = useToast()
   const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
+  
+  // Get redirect parameter from URL
+  const urlParams = new URLSearchParams(window.location.search)
+  const redirectTo = urlParams.get('redirect') || '/'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -31,10 +35,13 @@ export default function LoginPage() {
       await login(email, password)
 
       toast({
-        title: "Welcome back!",
-        description: "You have been successfully logged in.",
+        title: "🎉 Welcome back!",
+        description: "You have been successfully logged in to your account.",
+        variant: "success",
       })
-      navigate("/admin")
+      
+      // Redirect to the intended page or home
+      navigate(redirectTo)
     } catch (error: any) {
       toast({
         title: "Login failed",
@@ -50,24 +57,26 @@ export default function LoginPage() {
 
   const handleGoogleLogin = async () => {
     try {
-
-      const getGoogleLoing = await loginWithGoogle()
-      console.log("getGoogleLoing", getGoogleLoing)
+      const getGoogleLogin = await loginWithGoogle()
+      console.log("getGoogleLogin", getGoogleLogin)
 
       toast({
-        title: "Welcome!",
+        title: "🎉 Welcome to RUACH-EStore!",
         description: "You have been successfully logged in with Google.",
+        variant: "success",
       })
 
-      const targetEmail = "enochehimika@gamil.com"
-      // STORE LOCAL STOREAGE.
-      localStorage.setItem("masterMail", targetEmail)
+      // Check if user has specific admin privileges
+      const adminEmail = "enochehimika@gmail.com" // Fixed typo
+      localStorage.setItem("masterMail", adminEmail)
       
-      if (getGoogleLoing?.email === targetEmail){
-        console.log("getGoogleLoing", getGoogleLoing)
+      // Only redirect to admin if they're actually an admin and redirect parameter allows it
+      if (getGoogleLogin && getGoogleLogin.email === adminEmail && redirectTo.includes('/admin')) {
+        console.log("Admin user detected, redirecting to admin")
         navigate("/admin")
-      }else{
-        navigate("/vendor/dashboard")
+      } else {
+        // For all other users, go to intended destination or home
+        navigate(redirectTo)
       }
       
 

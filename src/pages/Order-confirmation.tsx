@@ -1,19 +1,18 @@
 import { useEffect, useState } from "react"
-import { useSearchParams } from "react-router-dom"
-import { Link } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom"
 
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge"
 import { Separator } from "../components/ui/separator"
-import { CheckCircle, Download, Mail, Truck, Calendar, ArrowRight, Loader2 } from "lucide-react"
+import { CheckCircle, Download, Mail, Truck, Calendar, Loader2 } from "lucide-react"
 import { useSafeCurrency } from "../hooks/use-safe-currency"
 import { getOrder, listenToOrder } from "../lib/firebase-orders"
 import { Order } from "../types"
 import { useAuth } from "../components/auth-provider"
 
 export default function OrderConfirmationPage() {
-  const searchParams = useSearchParams()
+  const [searchParams] = useSearchParams()
   const orderId = searchParams.get("orderId")
   const { formatPrice } = useSafeCurrency()
   const { user } = useAuth()
@@ -23,7 +22,7 @@ export default function OrderConfirmationPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
+    let unsubscribe: (() => void) | undefined
 
     const fetchOrder = async () => {
       if (!orderId) {
@@ -33,16 +32,14 @@ export default function OrderConfirmationPage() {
       }
 
       try {
-        // First get the initial order data
         const initialOrder = await getOrder(orderId)
-        
+
         if (!initialOrder) {
           setLoading(false)
           setError("Order not found")
           return
         }
-        
-        // Check if the user is authorized to view this order
+
         if (user?.uid !== initialOrder.userId) {
           setLoading(false)
           setError("You are not authorized to view this order")
@@ -51,12 +48,9 @@ export default function OrderConfirmationPage() {
 
         setOrderDetails(initialOrder)
         setLoading(false)
-        
-        // Then set up real-time listener for updates
+
         unsubscribe = listenToOrder(orderId, (order) => {
-          if (order) {
-            setOrderDetails(order)
-          }
+          if (order) setOrderDetails(order)
         })
       } catch (err: any) {
         console.error("Error fetching order:", err)
@@ -67,11 +61,8 @@ export default function OrderConfirmationPage() {
 
     fetchOrder()
 
-    // Clean up the listener when the component unmounts
     return () => {
-      if (unsubscribe) {
-        unsubscribe()
-      }
+      if (unsubscribe) unsubscribe()
     }
   }, [orderId, user])
 
@@ -98,9 +89,9 @@ export default function OrderConfirmationPage() {
               {error || "We couldn't find the order you're looking for."}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button asChild>
-              <Link to="/">Return Home</Link>
-            </Button>
+              <Button asChild>
+                <Link to="/">Return Home</Link>
+              </Button>
               <Button variant="outline" asChild>
                 <Link to="/profile/orders">View All Orders</Link>
               </Button>
@@ -111,28 +102,26 @@ export default function OrderConfirmationPage() {
     )
   }
 
-  // Format the estimated delivery date
-  const estimatedDeliveryDate = orderDetails.estimatedDelivery 
-    ? new Date(orderDetails.estimatedDelivery) 
-    : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // Default to 7 days from now
+  const estimatedDeliveryDate = orderDetails.estimatedDelivery
+    ? new Date(orderDetails.estimatedDelivery)
+    : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
-  // Get status badge color
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
-      case 'pending':
-        return "bg-yellow-100 text-yellow-800";
-      case 'processing':
-        return "bg-blue-100 text-blue-800";
-      case 'shipped':
-        return "bg-purple-100 text-purple-800";
-      case 'delivered':
-        return "bg-green-100 text-green-800";
-      case 'cancelled':
-        return "bg-red-100 text-red-800";
+      case "pending":
+        return "bg-yellow-100 text-yellow-800"
+      case "processing":
+        return "bg-blue-100 text-blue-800"
+      case "shipped":
+        return "bg-purple-100 text-purple-800"
+      case "delivered":
+        return "bg-green-100 text-green-800"
+      case "cancelled":
+        return "bg-red-100 text-red-800"
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 text-gray-800"
     }
-  };
+  }
 
   return (
     <div className="min-h-screen py-8">
@@ -180,7 +169,7 @@ export default function OrderConfirmationPage() {
                   <div>
                     <span className="text-muted-foreground">Payment Method:</span>
                     <div className="font-medium">
-                      {orderDetails.paymentMethod} 
+                      {orderDetails.paymentMethod}
                       {orderDetails.paymentId && ` (ID: ${orderDetails.paymentId.slice(-6)})`}
                     </div>
                   </div>
@@ -203,17 +192,16 @@ export default function OrderConfirmationPage() {
                     <div key={item.productId} className="flex items-center gap-4 p-4 border rounded-lg">
                       <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center overflow-hidden">
                         {item.image && !imageError[item.productId] ? (
-                          <div className="relative w-full h-full">
-                            <img 
-                              src={imageError[item.productId] ? "/product_images/unknown-product.jpg" : item.image} 
-                              alt={item.name}
-                              fill
-                              className="object-cover"
-                              onError={() => setImageError(prev => ({ ...prev, [item.productId]: true }))}
-                            />
-                          </div>
+                          <img
+                            src={imageError[item.productId] ? "/product_images/unknown-product.jpg" : item.image}
+                            alt={item.name}
+                            className="object-cover w-full h-full"
+                            onError={() =>
+                              setImageError((prev) => ({ ...prev, [item.productId]: true }))
+                            }
+                          />
                         ) : (
-                        <span className="text-2xl">📦</span>
+                          <span className="text-2xl">📦</span>
                         )}
                       </div>
                       <div className="flex-1">
@@ -241,7 +229,9 @@ export default function OrderConfirmationPage() {
                 <div>
                   <h4 className="font-medium mb-2">Delivery Address</h4>
                   <div className="text-sm text-muted-foreground">
-                    <div>{orderDetails.shippingAddress.firstName} {orderDetails.shippingAddress.lastName}</div>
+                    <div>
+                      {orderDetails.shippingAddress.firstName} {orderDetails.shippingAddress.lastName}
+                    </div>
                     <div>{orderDetails.shippingAddress.address1}</div>
                     <div>
                       {orderDetails.shippingAddress.city}, {orderDetails.shippingAddress.postalCode}
@@ -323,14 +313,16 @@ export default function OrderConfirmationPage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start gap-3">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                      orderDetails.status === 'processing' || orderDetails.status === 'shipped' || orderDetails.status === 'delivered' 
-                        ? 'bg-green-100' 
-                        : 'bg-muted'
-                    }`}>
-                      {orderDetails.status === 'processing' || orderDetails.status === 'shipped' || orderDetails.status === 'delivered' ? (
+                    <div
+                      className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                        ["processing", "shipped", "delivered"].includes(orderDetails.status)
+                          ? "bg-green-100"
+                          : "bg-muted"
+                      }`}
+                    >
+                      {["processing", "shipped", "delivered"].includes(orderDetails.status) ? (
                         <CheckCircle className="h-3 w-3 text-green-600" />
                       ) : (
                         <span className="h-3 w-3" />
@@ -341,14 +333,16 @@ export default function OrderConfirmationPage() {
                       <div className="text-muted-foreground">Your order is being prepared</div>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start gap-3">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                      orderDetails.status === 'shipped' || orderDetails.status === 'delivered' 
-                        ? 'bg-green-100' 
-                        : 'bg-muted'
-                    }`}>
-                      {orderDetails.status === 'shipped' || orderDetails.status === 'delivered' ? (
+                    <div
+                      className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                        ["shipped", "delivered"].includes(orderDetails.status)
+                          ? "bg-green-100"
+                          : "bg-muted"
+                      }`}
+                    >
+                      {["shipped", "delivered"].includes(orderDetails.status) ? (
                         <CheckCircle className="h-3 w-3 text-green-600" />
                       ) : (
                         <span className="h-3 w-3" />
@@ -359,14 +353,14 @@ export default function OrderConfirmationPage() {
                       <div className="text-muted-foreground">On its way to you</div>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start gap-3">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                      orderDetails.status === 'delivered' 
-                        ? 'bg-green-100' 
-                        : 'bg-muted'
-                    }`}>
-                      {orderDetails.status === 'delivered' ? (
+                    <div
+                      className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                        orderDetails.status === "delivered" ? "bg-green-100" : "bg-muted"
+                      }`}
+                    >
+                      {orderDetails.status === "delivered" ? (
                         <CheckCircle className="h-3 w-3 text-green-600" />
                       ) : (
                         <span className="h-3 w-3" />

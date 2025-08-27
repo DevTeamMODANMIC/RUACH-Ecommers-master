@@ -95,7 +95,7 @@ export function DashboardQuickActions({ userType, showViewAll = false }: Dashboa
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {actions.map((action, index) => (
             <Button asChild variant="outline" className="h-auto p-4 justify-start" key={index}>
-              <Link href={action.link}>
+              <Link to={action.link}>
                 <div className="text-left">
                   <div className="font-medium">{action.title}</div>
                   <div className="text-sm text-gray-500">{action.description}</div>

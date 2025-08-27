@@ -38,6 +38,7 @@ import {
   AlertDialogTrigger,
 } from "../components/ui/alert-dialog"
 import { Link } from "react-router-dom";
+import { VendorLayout } from "../components/vendor-layout"
 
 
 interface ProductItem {
@@ -175,23 +176,18 @@ export default function VendorProductsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">My Products</h1>
-          <p className="text-gray-600 mt-1">
-            Manage your product inventory and listings
-          </p>
-        </div>
-        <div className="mt-4 sm:mt-0">
-          <Button asChild>
-            <Link to="/vendor/dashboard/products/new">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Product
-            </Link>
-          </Button>
-        </div>
+    <VendorLayout 
+      title="My Products" 
+      description="Manage your product inventory and listings"
+    >
+      {/* Quick Add Button */}
+      <div className="mb-6 flex justify-end">
+        <Button asChild>
+          <Link to="/vendor/dashboard/products/new">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Product
+          </Link>
+        </Button>
       </div>
 
       {/* Stats Cards */}
@@ -327,8 +323,7 @@ export default function VendorProductsPage() {
                     <img
                       src={product.cloudinaryImages?.[0]?.url || product.images[0]}
                       alt={product.name}
-                      fill
-                      className="object-cover rounded-t-lg"
+                      className="w-full h-full object-cover rounded-t-lg"
                     />
                   ) : (
                     <div className="flex items-center justify-center h-full">
@@ -426,6 +421,6 @@ export default function VendorProductsPage() {
           ))}
         </div>
       )}
-    </div>
+    </VendorLayout>
   )
 } 

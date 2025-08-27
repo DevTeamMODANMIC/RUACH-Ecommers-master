@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { useSearchParams, useRouter } from "react-router-dom"
+import { useSearchParams,, useNavigate } from "react-router-dom"
 import Link from "react-router-dom"
 import ProductGrid from "../components/product-grid"
 import { Product } from "../types"
@@ -679,7 +679,7 @@ export default function ShopPage() {
                   )}
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-full sm:max-w-md overflow-y-auto">
+              <SheetContent side="left" className="w-full sm:max-w-md overflow-y-auto bg-white">
                 <SheetHeader className="mb-6">
                   <SheetTitle>Filters</SheetTitle>
                   <SheetDescription>

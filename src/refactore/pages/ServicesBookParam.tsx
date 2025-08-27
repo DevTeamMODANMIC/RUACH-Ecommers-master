@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { useParams, useRouter } from "react-router-dom"
+import { useParams,, useNavigate } from "react-router-dom"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Input } from "../components/ui/input"

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { useRouter, useParams } from "react-router-dom"
+import { useParams, useNavigate } from "react-router-dom"
 import { useVendor } from "../hooks/use-vendor"
 import { getProduct, updateProduct } from "../lib/firebase-products"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
@@ -12,6 +12,7 @@ import { Checkbox } from "../components/ui/checkbox"
 import { ArrowLeft, Save, Loader2 } from "lucide-react"
 import { useToast } from "../components/ui/use-toast"
 import { Link } from "react-router-dom";
+import { VendorLayout } from "../components/vendor-layout"
 
 import CloudinaryUploadWidget from "../components/cloudinary-upload-widget"
 
@@ -205,7 +206,10 @@ export default function EditProductPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <VendorLayout 
+      title="Edit Product" 
+      description="Update your product information and details"
+    >
       {/* Header */}
       <div className="flex items-center gap-4 mb-8">
         <Link to="/vendor/dashboard/products">
@@ -384,8 +388,7 @@ export default function EditProductPage() {
                               <img
                                 src={imageError[img.url] ? "/product_images/unknown-product.jpg" : img.url}
                                 alt={`Product ${index + 1}`}
-                                fill
-                                className="object-cover rounded border"
+                                className="w-full h-24 object-cover rounded border"
                                 onError={() => setImageError(prev => ({ ...prev, [img.url]: true }))}
                               />
                             )}
@@ -484,6 +487,6 @@ export default function EditProductPage() {
           </div>
         </div>
       </form>
-    </div>
+    </VendorLayout>
   )
 }

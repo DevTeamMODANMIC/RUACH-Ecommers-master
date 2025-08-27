@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { useSearchParams, useRouter } from "react-router-dom"
+import { useSearchParams, useNavigate } from "react-router-dom"
 import { Link } from "react-router-dom";
 import ProductGrid from "../components/product-grid"
 import { Product } from "../types"
@@ -31,7 +31,7 @@ import {
 import { Badge } from "../components/ui/badge"
 
 // Centralized categories for consistency across the site
-import { MAIN_CATEGORIES as categories, normalizeCategoryId, bucketProductToMainCategory } from "../lib/categories";
+import { MAIN_CATEGORIES as categories, MainCategoryId, normalizeCategoryId, bucketProductToMainCategory } from "../lib/categories";
 
 // Define price ranges
 const priceRanges = [
@@ -64,7 +64,7 @@ const sortOptions = [
 ];
 
 export default function ShopPage() {
-  const searchParams = useSearchParams()
+  const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   
   // Get category from URL or default to "all"
@@ -72,7 +72,7 @@ export default function ShopPage() {
   // Get search term from URL
   const searchParam = searchParams.get("search") || ""
   
-  const [selectedCategory, setSelectedCategory] = useState(categoryParam)
+  const [selectedCategory, setSelectedCategory] = useState<MainCategoryId>(categoryParam)
   const [selectedPriceRange, setSelectedPriceRange] = useState("all")
   const [selectedSort, setSelectedSort] = useState("popularity")
   const [searchTerm, setSearchTerm] = useState(searchParam)
@@ -356,11 +356,11 @@ export default function ShopPage() {
       params.delete("search")
     }
     
-    router.replace(`/shop?${params.toString()}`)
-  }, [selectedCategory, searchTerm, router, searchParams])
+    navigate(`/shop?${params.toString()}`, { replace: true })
+  }, [selectedCategory, searchTerm, navigate, searchParams])
   
   // Handle category change
-  const handleCategoryChange = (categoryId: string) => {
+  const handleCategoryChange = (categoryId: MainCategoryId) => {
     setSelectedCategory(categoryId)
   }
   
@@ -679,7 +679,7 @@ export default function ShopPage() {
                   )}
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-full sm:max-w-md overflow-y-auto">
+              <SheetContent side="left" className="w-full sm:max-w-md overflow-y-auto bg-white">
                 <SheetHeader className="mb-6">
                   <SheetTitle>Filters</SheetTitle>
                   <SheetDescription>

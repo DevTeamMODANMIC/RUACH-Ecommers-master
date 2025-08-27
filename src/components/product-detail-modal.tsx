@@ -5,7 +5,7 @@ import { Badge } from "../components/ui/badge";
 import { Heart, ShoppingCart, Minus, Plus } from "lucide-react";
 import { useCart } from "../components/cart-provider";
 import { formatCurrency } from "../lib/utils";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "../components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "../components/ui/dialog";
 import { useWishlist } from "../hooks/use-wishlist";
 import { Separator } from "../components/ui/separator";
 import CloudinaryImage from "../components/cloudinary-image";
@@ -42,6 +42,7 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
         product.images?.[0] ||
         "/placeholder.jpg",
       quantity,
+      options: {},
     });
   };
 
@@ -66,9 +67,12 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto bg-white">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">{product.name}</DialogTitle>
+          <DialogDescription>
+            View detailed information about {product.name}
+          </DialogDescription>
           <DialogClose />
         </DialogHeader>
 

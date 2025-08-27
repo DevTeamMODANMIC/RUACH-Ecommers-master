@@ -215,8 +215,71 @@ export const getServiceProvider = async (providerId: string): Promise<ServicePro
   }
 }
 
+// In-memory cache for service provider data
+const serviceProviderCache = new Map<string, { data: ServiceProvider | null, timestamp: number }>()
+const CACHE_TTL = 30000 // 30 seconds cache
+const MAX_RETRIES = 3
+const RETRY_DELAY = 1000 // 1 second
+
+// Active request tracking to prevent duplicate queries
+const activeRequests = new Map<string, Promise<ServiceProvider | null>>()
+
+// Helper function to check if data is in cache and not expired
+const getCachedServiceProvider = (ownerId: string): ServiceProvider | null | undefined => {
+  const cached = serviceProviderCache.get(ownerId)
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    console.log("💾 Firebase: Using cached service provider for:", ownerId)
+    return cached.data
+  }
+  return undefined
+}
+
+// Helper function to cache service provider data
+const cacheServiceProvider = (ownerId: string, data: ServiceProvider | null) => {
+  serviceProviderCache.set(ownerId, { data, timestamp: Date.now() })
+}
+
+// Retry logic with exponential backoff
+const retryWithBackoff = async <T>(
+  fn: () => Promise<T>,
+  maxRetries: number,
+  baseDelay: number,
+  context: string
+): Promise<T> => {
+  let lastError: any
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn()
+    } catch (error: any) {
+      lastError = error
+      
+      // Don't retry on certain errors
+      if (error?.message?.includes('aborted') || 
+          error?.code === 'permission-denied' ||
+          error?.message?.includes('Invalid ownerId')) {
+        throw error
+      }
+      
+      if (attempt === maxRetries) {
+        console.error(`💥 Firebase: ${context} failed after ${maxRetries} attempts:`, error)
+        break
+      }
+      
+      const delay = baseDelay * Math.pow(2, attempt - 1) // Exponential backoff
+      console.warn(`⚠️ Firebase: ${context} attempt ${attempt} failed, retrying in ${delay}ms:`, error?.message)
+      await new Promise(resolve => setTimeout(resolve, delay))
+    }
+  }
+  
+  throw lastError
+}
+
 // Get service provider by owner ID
-export const getServiceProviderByOwnerId = async (ownerId: string): Promise<ServiceProvider | null> => {
+export const getServiceProviderByOwnerId = async (
+  ownerId: string, 
+  abortController?: AbortController
+): Promise<ServiceProvider | null> => {
   try {
     console.log("🔍 Firebase: Querying service provider by ownerId:", ownerId)
     
@@ -224,100 +287,115 @@ export const getServiceProviderByOwnerId = async (ownerId: string): Promise<Serv
       throw new Error('Invalid ownerId provided')
     }
     
-    // Add timeout to prevent hanging
-    const queryPromise = (async () => {
-      try {
-        const q = query(collection(db, "serviceProviders"), where("ownerId", "==", ownerId))
-        console.log("🔍 Firebase: Query created, executing...")
-        
-        const snapshot = await getDocs(q)
-        console.log("📊 Firebase: Query executed, results:", {
-          empty: snapshot.empty,
-          size: snapshot.size,
-          docs: snapshot.docs.length
-        })
-        
-        if (snapshot.empty) {
-          console.log("❌ Firebase: No service provider found for ownerId:", ownerId)
-          return null
+    // Check cache first
+    const cached = getCachedServiceProvider(ownerId)
+    if (cached !== undefined) {
+      return cached
+    }
+    
+    // Check if there's already an active request for this ownerId
+    if (activeRequests.has(ownerId)) {
+      console.log("🔄 Firebase: Reusing active request for ownerId:", ownerId)
+      return await activeRequests.get(ownerId)!
+    }
+    
+    // Create new request with retry logic
+    const requestPromise = retryWithBackoff(
+      async () => {
+        // Check if request was aborted
+        if (abortController?.signal.aborted) {
+          throw new Error('Request was aborted')
         }
         
-        const doc = snapshot.docs[0]
-        const data = doc.data()
-        console.log("✅ Firebase: Service provider found:", {
-          id: doc.id,
-          name: data.name,
-          ownerId: data.ownerId
+        // Create a timeout promise that's shorter than the overall timeout
+        const queryPromise = (async () => {
+          const q = query(collection(db, "serviceProviders"), where("ownerId", "==", ownerId))
+          console.log("🔍 Firebase: Executing service provider query...")
+          
+          const snapshot = await getDocs(q)
+          
+          // Check if request was aborted after query
+          if (abortController?.signal.aborted) {
+            throw new Error('Request was aborted')
+          }
+          
+          console.log("📊 Firebase: Service provider query executed:", {
+            empty: snapshot.empty,
+            size: snapshot.size,
+            docs: snapshot.docs.length
+          })
+          
+          if (snapshot.empty) {
+            console.log("❌ Firebase: No service provider found for ownerId:", ownerId)
+            return null
+          }
+          
+          const doc = snapshot.docs[0]
+          const data = doc.data()
+          console.log("✅ Firebase: Service provider found:", {
+            id: doc.id,
+            name: data.name,
+            ownerId: data.ownerId
+          })
+          
+          return {
+            id: doc.id,
+            ...data
+          } as ServiceProvider
+        })()
+        
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          const timeoutId = setTimeout(() => {
+            console.error("⏰ Firebase: Service provider query timeout after 15 seconds")
+            reject(new Error('Database connection timeout. Please check your internet connection and try again.'))
+          }, 15000) // Increased to 15 seconds
+          
+          // Clear timeout if request is aborted
+          if (abortController) {
+            abortController.signal.addEventListener('abort', () => {
+              clearTimeout(timeoutId)
+              reject(new Error('Request was aborted'))
+            })
+          }
         })
         
-        return {
-          id: doc.id,
-          ...data
-        } as ServiceProvider
-      } catch (queryError: any) {
-        console.error("💥 Firebase: Error in query execution for service provider:", {
-          queryError: queryError,
-          queryErrorString: JSON.stringify(queryError, Object.getOwnPropertyNames(queryError)),
-          queryErrorMessage: queryError?.message || 'No message',
-          queryErrorCode: queryError?.code || 'no_code',
-          queryErrorName: queryError?.name || 'no_name',
-          ownerId,
-          queryErrorStack: queryError?.stack || 'No stack trace'
-        })
-        throw queryError
-      }
-    })()
+        return await Promise.race([queryPromise, timeoutPromise])
+      },
+      MAX_RETRIES,
+      RETRY_DELAY,
+      `Service provider query for ${ownerId}`
+    )
     
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      console.log("⏰ Firebase: Setting up timeout for 8 seconds")
-      setTimeout(() => {
-        console.error("⏰ Firebase: Query timeout after 8 seconds")
-        reject(new Error('Database query timeout after 8 seconds'))
-      }, 8000)
-    })
+    // Store the active request
+    activeRequests.set(ownerId, requestPromise)
     
-    console.log("🏁 Firebase: Starting Promise.race between query and timeout")
-    const result = await Promise.race([queryPromise, timeoutPromise])
-    console.log("✅ Firebase: Promise.race completed successfully")
-    return result
+    try {
+      const result = await requestPromise
+      
+      // Cache the result
+      cacheServiceProvider(ownerId, result)
+      
+      console.log("✅ Firebase: Service provider query completed successfully")
+      return result
+    } finally {
+      // Clean up active request
+      activeRequests.delete(ownerId)
+    }
     
   } catch (error: any) {
-    // Enhanced error logging to capture more details
-    console.error("💥 Firebase: Error fetching service provider by owner ID:", {
-      error: error,
-      errorString: JSON.stringify(error, Object.getOwnPropertyNames(error)),
-      errorType: typeof error,
-      errorMessage: error?.message || 'No message',
-      errorCode: error?.code || 'no_code',
-      errorName: error?.name || 'no_name',
-      ownerId,
-      stack: error?.stack || 'No stack trace',
-      // Additional error properties that might exist in Firebase errors
-      errorConstructor: error?.constructor?.name,
-      errorKeys: error ? Object.keys(error) : 'No keys',
-      errorHasMessage: 'message' in error,
-      errorHasCode: 'code' in error,
-      errorToString: error?.toString(),
-      // Try to get Firebase-specific error details
-      firebaseErrorDetails: error?.details || error?.customData || error?.serverResponse || 'No Firebase details',
-      // Check if this is a timeout error
-      isTimeoutError: error?.message?.includes('timeout'),
-      // Check if this is a Firebase error
-      isFirebaseError: error?.code !== undefined,
-      // Try to stringify the error in different ways
-      errorJSON: JSON.stringify(error),
-      errorStringifyAll: JSON.stringify(error, Object.getOwnPropertyNames(error)),
-      // Check if error has a message property
-      hasMessageProperty: Object.prototype.hasOwnProperty.call(error, 'message'),
-      // Try to access error properties directly
-      directMessage: error.message,
-      directCode: error.code,
-      directName: error.name,
-      directStack: error.stack
-    })
+    // Don't log error if request was aborted
+    if (!error?.message?.includes('aborted')) {
+      console.error("💥 Firebase: Error fetching service provider by owner ID:", {
+        errorMessage: error?.message || 'No message',
+        errorCode: error?.code || 'no_code',
+        ownerId
+      })
+    }
     
-    // Handle specific Firebase errors
-    if (error?.code === 'failed-precondition') {
+    // Handle specific Firebase errors gracefully
+    if (error?.message?.includes('aborted')) {
+      throw new Error('Request was cancelled')
+    } else if (error?.code === 'failed-precondition') {
       throw new Error("Database index required - please contact support")
     } else if (error?.code === 'permission-denied') {
       throw new Error("Permission denied - please check your login status")
@@ -551,4 +629,59 @@ export const getServiceProviderStats = async () => {
       inactiveProviders: 0,
     }
   }
+}
+
+// Cache management functions
+export const clearServiceProviderCache = (ownerId?: string) => {
+  if (ownerId) {
+    serviceProviderCache.delete(ownerId)
+    console.log("🗑️ Firebase: Cleared cache for ownerId:", ownerId)
+  } else {
+    serviceProviderCache.clear()
+    console.log("🗑️ Firebase: Cleared all service provider cache")
+  }
+}
+
+export const getServiceProviderCacheStats = () => {
+  const now = Date.now()
+  const valid = Array.from(serviceProviderCache.values()).filter(cached => now - cached.timestamp < CACHE_TTL).length
+  const expired = serviceProviderCache.size - valid
+  
+  return {
+    total: serviceProviderCache.size,
+    valid,
+    expired,
+    cacheTTL: CACHE_TTL
+  }
+}
+
+// Global error testing function for debugging
+if (typeof window !== 'undefined') {
+  (window as any).testServiceProviderConnection = async (ownerId: string = 'test-user-id') => {
+    try {
+      console.log("🧪 Testing service provider connection with ownerId:", ownerId)
+      
+      // Clear cache first
+      clearServiceProviderCache(ownerId)
+      
+      const startTime = Date.now()
+      const result = await getServiceProviderByOwnerId(ownerId)
+      const endTime = Date.now()
+      
+      console.log(`✅ Service provider connection test completed in ${endTime - startTime}ms:`, {
+        ownerId,
+        found: !!result,
+        result: result ? { id: result.id, name: result.name } : null,
+        cacheStats: getServiceProviderCacheStats()
+      })
+      
+      return result
+    } catch (error: any) {
+      console.error("❌ Service provider connection test failed:", error?.message || error)
+      throw error
+    }
+  }
+  
+  ;(window as any).clearServiceProviderCache = clearServiceProviderCache
+  ;(window as any).getServiceProviderCacheStats = getServiceProviderCacheStats
 }

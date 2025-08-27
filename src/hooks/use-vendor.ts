@@ -134,10 +134,22 @@ export function useVendor() {
 
   const loading = authLoading || vendorLoading
 
-  // TEMPORARY BYPASS: Allow any logged-in user to access vendor dashboard
-  // This allows users to register as vendors even if they don't have stores yet
-  // Revert to `!!activeStore?.approved` for production.
-  const isVendor = !!user
+  // Check if user is actually a registered vendor (has stores)
+  // This replaces the temporary bypass that allowed any logged-in user
+  const isVendor = !!user && allStores.length > 0
+  
+  // Debug logging for vendor status
+  if (user && !loading) {
+    console.log('Vendor Status Debug:', {
+      userId: user.uid,
+      userEmail: user.email,
+      hasStores: allStores.length > 0,
+      storeCount: allStores.length,
+      isVendor,
+      activeStore: activeStore?.shopName,
+      loading
+    })
+  }
 
   return { 
     vendor: activeStore, // Current active store (backward compatibility)

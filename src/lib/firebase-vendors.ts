@@ -291,3 +291,22 @@ export const deleteVendorStore = async (ownerId: string, storeId: string) => {
 export const deactivateVendorStore = async (vendorId: string) => {
   // your logic here
 };
+
+/**
+ * Delete a vendor (admin function)
+ */
+export const deleteVendor = async (vendorId: string): Promise<void> => {
+  try {
+    // First get the vendor to get the owner ID
+    const vendor = await getVendor(vendorId);
+    if (!vendor) {
+      throw new Error('Vendor not found');
+    }
+    
+    // Use the existing deleteVendorStore function
+    await deleteVendorStore(vendor.ownerId, vendorId);
+  } catch (error) {
+    console.error('Error deleting vendor:', error);
+    throw error;
+  }
+};

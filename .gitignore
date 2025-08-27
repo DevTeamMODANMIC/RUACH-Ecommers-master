@@ -1,3 +1,68 @@
+node_modules/
+dist/
+build/
+out/
+bin/
+obj/
+*.o
+*.exe
+*.log
+logs/
+.env
+.env.local
+.env.production
+.env.development
+env/
+venv/
+ENV/
+.DS_Store
+.idea/
+*.iml
+.vscode/
+.vscode/extensions.json
+.temp/
+*.tmp
+coverage/
+CMakeFiles/
+CMakeCache.txt
+yarn-error.log
+npm-debug.log
+*~
+*.bak
+*.swp
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*.local
+>>>>>>> 22e1179c1da2199f9f7c0a7fb74042a5fe9614f9
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+<<<<<<< HEAD
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.development
+
+# Firebase
+.firebase/
+firebase-debug.log
+.sass-cache/
+.vite_opt_cache/
+test-results/
+*.coverage
+*.lcov
+*.user
+*.code-workspace
+pnpm-lock.yaml
+*.pyc
+__pycache__
+>>>>>>> 22e1179c1da2199f9f7c0a7fb74042a5fe9614f9
+
 <<<<<<< HEAD
 # Logs
 logs
@@ -18,6 +83,73 @@ dist-ssr
 !.vscode/extensions.json
 .idea
 .DS_Store
+node_modules/
+dist/
+build/
+out/
+bin/
+obj/
+*.o
+*.exe
+*.log
+logs/
+.env
+.env.local
+.env.production
+.env.development
+env/
+venv/
+ENV/
+.DS_Store
+.idea/
+*.iml
+.vscode/
+.vscode/extensions.json
+.temp/
+*.tmp
+coverage/
+CMakeFiles/
+CMakeCache.txt
+yarn-error.log
+npm-debug.log
+*~
+*.bak
+*.swp
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*.local
+>>>>>>> 22e1179c1da2199f9f7c0a7fb74042a5fe9614f9
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+<<<<<<< HEAD
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.development
+
+# Firebase
+.firebase/
+firebase-debug.log
+.sass-cache/
+.vite_opt_cache/
+test-results/
+*.coverage
+*.lcov
+*.user
+*.code-workspace
+pnpm-lock.yaml
+*.pyc
+__pycache__
+>>>>>>> 22e1179c1da2199f9f7c0a7fb74042a5fe9614f9
+
+# Refactore folder - exclude from commits
+src/refactore/
 =======
 node_modules/
 dist/

@@ -8,6 +8,7 @@ export function useRouter() {
   return {
     push: (path: string) => navigate(path),
     replace: (path: string) => navigate(path, { replace: true }),
+    navigate: (path: string) => navigate(path),
     back: () => navigate(-1),
     forward: () => navigate(1),
     pathname: location.pathname,

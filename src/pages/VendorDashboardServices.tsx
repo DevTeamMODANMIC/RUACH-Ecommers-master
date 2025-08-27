@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { Link } from "react-router-dom";
+import { VendorLayout } from "../components/vendor-layout"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge"
@@ -122,19 +123,20 @@ export default function ServicesManagement() {
   }
 
   return (
-    <div className="space-y-6">
+    <VendorLayout 
+      title="My Services" 
+      description="Manage your service offerings and pricing"
+    >
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">My Services</h1>
-          <p className="text-gray-600">Manage your service offerings and pricing</p>
+          <Button className="bg-blue-600 hover:bg-blue-700" asChild>
+            <Link to="/vendor/dashboard/services/add">
+              <Plus className="h-4 w-4 mr-2" />
+              Add New Service
+            </Link>
+          </Button>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700" asChild>
-          <Link to="/vendor/dashboard/services/add">
-            <Plus className="h-4 w-4 mr-2" />
-            Add New Service
-          </Link>
-        </Button>
       </div>
 
       {/* Stats Cards */}
@@ -352,6 +354,6 @@ export default function ServicesManagement() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </VendorLayout>
   )
 }

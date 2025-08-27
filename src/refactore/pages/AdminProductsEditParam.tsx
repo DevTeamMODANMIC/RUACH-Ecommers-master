@@ -1,4 +1,4 @@
-import { useRouter } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import Link from "react-router-dom"
 import { ArrowLeft } from "lucide-react"
 

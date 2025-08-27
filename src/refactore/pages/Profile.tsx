@@ -666,7 +666,7 @@ export default function ProfilePage() {
             
             {/* Address Dialog */}
             <Dialog open={addressDialogOpen} onOpenChange={setAddressDialogOpen}>
-              <DialogContent className="sm:max-w-[500px]">
+              <DialogContent className="sm:max-w-[500px] bg-white">
                 <DialogHeader>
                   <DialogTitle>{currentAddress ? "Edit Address" : "Add New Address"}</DialogTitle>
                 </DialogHeader>

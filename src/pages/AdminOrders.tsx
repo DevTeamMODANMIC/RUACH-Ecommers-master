@@ -15,7 +15,8 @@ import {
   AlertTriangle,
   Clock,
   Truck,
-  Home
+  Home,
+  ArrowLeft
 } from "lucide-react"
 import { Input } from "../components/ui/input"
 import { 
@@ -27,13 +28,12 @@ import {
 } from "../components/ui/select"
 import { useAuth } from "../components/auth-provider"
 import { useCurrency } from "../components/currency-provider"
-import { getAllOrders, listenToAllOrders, updateOrder } from "../lib/firebase-orders"
-import { Order } from "../types"
+import { getAllOrders, listenToAllOrders, updateOrder, type Order } from "../lib/firebase-orders"
 import { useToast } from "../hooks/use-toast"
 import { RequireAdmin } from "../components/require-admin"
 
 export default function AdminOrdersPage() {
-  const { user, isAdmin } = useAuth()
+  const { user } = useAuth()
   const { formatPrice } = useCurrency()
   const { toast } = useToast()
   
@@ -50,11 +50,6 @@ export default function AdminOrdersPage() {
     let unsubscribe: (() => void) | undefined;
 
     const loadOrders = async () => {
-      if (!isAdmin) {
-        setLoading(false)
-        return
-      }
-
       try {
         // First get initial orders
         const initialOrders = await getAllOrders(100)
@@ -86,7 +81,7 @@ export default function AdminOrdersPage() {
         unsubscribe()
       }
     }
-  }, [isAdmin, toast])
+  }, [toast])
 
   // Filter and sort orders
   const filteredOrders = orders
@@ -157,8 +152,17 @@ export default function AdminOrdersPage() {
   };
 
   // Function to format date
-  const formatDate = (timestamp: string | number | null) => {
+  const formatDate = (timestamp: string | number | Date | null) => {
     if (!timestamp) return "Unknown date";
+    
+    // Handle Firebase Timestamp
+    if (typeof timestamp === 'object' && timestamp !== null && 'toDate' in timestamp) {
+      return (timestamp as any).toDate().toLocaleDateString("en-GB", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    }
     
     return new Date(timestamp).toLocaleDateString("en-GB", {
       year: "numeric",
@@ -215,6 +219,48 @@ export default function AdminOrdersPage() {
 
   return (
     <RequireAdmin>
+      {/* Admin Navigation Header */}
+      <div className="bg-white border-b shadow-sm">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Link 
+                to="/admin" 
+                className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span className="font-medium">Back to Admin Dashboard</span>
+              </Link>
+              <div className="text-gray-300">|</div>
+              <div className="flex items-center space-x-1 text-sm text-gray-500">
+                <Home className="h-4 w-4" />
+                <span>/</span>
+                <Link to="/admin" className="hover:text-gray-700">Admin</Link>
+                <span>/</span>
+                <span className="text-gray-900 font-medium">Orders</span>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Link to="/admin/products">
+                <Button variant="outline" size="sm">
+                  Products
+                </Button>
+              </Link>
+              <Link to="/admin/vendors">
+                <Button variant="outline" size="sm">
+                  Vendors
+                </Button>
+              </Link>
+              <Link to="/admin/service-providers">
+                <Button variant="outline" size="sm">
+                  Service Providers
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+      
       <div className="p-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
@@ -344,8 +390,7 @@ export default function AdminOrdersPage() {
                               <img 
                                 src={item.image} 
                                 alt={item.name}
-                                fill
-                                className="object-cover"
+                                className="w-full h-full object-cover"
                                 onError={() => {
                                   // Handle error with a state variable instead
                                   setImageError(prev => ({ ...prev, [item.productId]: true }));

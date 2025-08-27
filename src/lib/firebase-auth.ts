@@ -10,7 +10,7 @@ import {
   EmailAuthProvider,
   reauthenticateWithCredential,
 } from "firebase/auth"
-import { doc, setDoc, getDoc, updateDoc } from "firebase/firestore"
+import { doc, setDoc, getDoc, updateDoc, collection, getDocs, query, orderBy } from "firebase/firestore"
 import { auth, db } from "./firebase"
 // Don't import firebase-admin in this client-side file
 
@@ -163,6 +163,43 @@ export const updateUserProfile = async (uid: string, updates: Partial<UserProfil
   try {
     await updateDoc(doc(db, "users", uid), {
       ...updates,
+      updatedAt: new Date(),
+    })
+  } catch (error: any) {
+    throw new Error(error.message)
+  }
+}
+
+// Admin function to get all users
+export const getAllUsers = async (): Promise<UserProfile[]> => {
+  try {
+    const q = query(collection(db, "users"), orderBy("createdAt", "desc"))
+    const snapshot = await getDocs(q)
+    return snapshot.docs.map(doc => {
+      const data = doc.data()
+      return {
+        uid: doc.id,
+        email: data.email || '',
+        name: data.name || '',
+        phone: data.phone,
+        address: data.address,
+        preferences: data.preferences,
+        role: data.role,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt),
+        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt),
+      } as UserProfile
+    })
+  } catch (error: any) {
+    console.error("Error getting all users:", error)
+    throw new Error(error.message)
+  }
+}
+
+// Admin function to update user role
+export const updateUserRole = async (uid: string, role: "admin" | "user" | "vendor") => {
+  try {
+    await updateDoc(doc(db, "users", uid), {
+      role,
       updatedAt: new Date(),
     })
   } catch (error: any) {

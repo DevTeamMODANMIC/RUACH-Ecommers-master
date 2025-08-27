@@ -30,6 +30,7 @@ import { useAuth } from "../../src/components/auth-provider";
 import { useWishlist } from "../../src/hooks/use-wishlist";
 import ClientOnly from "../../src/components/client-only";
 import { useVendor } from "../../src/hooks/use-vendor";
+import { useServiceProvider } from "../../src/hooks/use-service-provider";
 
 // We'll use CSS classes instead of inline styles
 
@@ -72,6 +73,7 @@ export default function Header() {
   const [logoError, setLogoError] = useState(false);
   const { user, logout } = useAuth();
   const { isVendor } = useVendor();
+  const { isServiceProvider } = useServiceProvider();
 
   // Handle scroll effect
   useEffect(() => {
@@ -409,6 +411,18 @@ export default function Header() {
                               </Link>
                             </li>
                           )}
+                          {isServiceProvider && (
+                            <li>
+                              <Link
+                                to="/service-provider/dashboard"
+                                className="flex items-center px-3 py-1.5 text-gray-700 hover:bg-green-50 hover:text-green-700 text-xs"
+                                onClick={() => setActiveDropdown(null)}
+                              >
+                                <Package className="h-3 w-3 mr-1.5 text-gray-500" />
+                                Service Provider
+                              </Link>
+                            </li>
+                          )}
                           <li>
                             <button
                               onClick={handleLogout}
@@ -647,6 +661,26 @@ export default function Header() {
                     <Package className="h-4 w-4" />
                     <span>My Orders</span>
                   </Link>
+                  {isVendor && (
+                    <Link
+                      to="/vendor/dashboard"
+                      className="flex items-center py-2 space-x-2 text-gray-700"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Package className="h-4 w-4" />
+                      <span>Vendor Dashboard</span>
+                    </Link>
+                  )}
+                  {isServiceProvider && (
+                    <Link
+                      to="/service-provider/dashboard"
+                      className="flex items-center py-2 space-x-2 text-gray-700"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Package className="h-4 w-4" />
+                      <span>Service Provider</span>
+                    </Link>
+                  )}
                   <button
                     onClick={handleLogout}
                     className="flex items-center py-2 space-x-2 text-red-600 w-full text-left"

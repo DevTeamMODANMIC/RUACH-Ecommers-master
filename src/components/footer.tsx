@@ -1,6 +1,3 @@
-
-
-// import Link from "next/link"
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import {
   Facebook,
@@ -46,9 +43,6 @@ export default function Footer() {
               <p className="text-sm leading-relaxed mb-6">
                 Your trusted source for authentic products –delivered with care and quality assurance.
               </p>
-              <p className="text-sm leading-relaxed mb-6">
-                Partnered with Modanmic.
-              </p>
               <div className="flex space-x-4">
                 {[
                   { Icon: Facebook, href: "#", label: "Facebook" },
@@ -68,7 +62,7 @@ export default function Footer() {
             </div>
 
             {/* Quick links */}
-            <div className="w-full sm:w-1/2 lg:w-1/4 text-center sm:text-left">
+            <div className="w-full sm:w-1/2 lg:w-1/5 text-center sm:text-left">
               <h3 className="text-lg font-semibold text-white mb-4">Quick Links</h3>
               <ul className="space-y-2 text-sm">
                 {[
@@ -87,8 +81,29 @@ export default function Footer() {
               </ul>
             </div>
 
+            {/* Services */}
+            <div className="w-full sm:w-1/2 lg:w-1/5 text-center sm:text-left">
+              <h3 className="text-lg font-semibold text-white mb-4">Our Services</h3>
+              <ul className="space-y-2 text-sm">
+                {[
+                  { href: "/services", label: "All Services" },
+                  { href: "/services/delivery", label: "Fast Delivery" },
+                  { href: "/services/bulk-orders", label: "Bulk Orders" },
+                  { href: "/services/vendor-onboarding", label: "Vendor Onboarding" },
+                  { href: "/services/customer-support", label: "24/7 Support" },
+                  { href: "/request-service", label: "Request Service" },
+                ].map(({ href, label }) => (
+                  <li key={label}>
+                    <Link to={href} className="hover:text-white transition-transform transform hover:scale-110">
+                      {label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
             {/* Customer Service */}
-            <div className="w-full sm:w-1/2 lg:w-1/4 text-center sm:text-left">
+            <div className="w-full sm:w-1/2 lg:w-1/5 text-center sm:text-left">
               <h3 className="text-lg font-semibold text-white mb-4">Customer Service</h3>
               <ul className="space-y-2 text-sm">
                 {[
@@ -108,7 +123,7 @@ export default function Footer() {
             </div>
 
             {/* Newsletter */}
-            <div className="w-full sm:w-1/2 lg:w-1/4 text-center sm:text-left">
+            <div className="w-full sm:w-1/2 lg:w-2/5 text-center sm:text-left">
               <h3 className="text-lg font-semibold text-white mb-4">Stay Updated with RUACH E-STORE</h3>
               <p className="text-sm leading-relaxed mb-4">
                 Get exclusive updates on new products, special discounts, and latest arrivals from our trusted vendors delivered straight to your inbox.
@@ -163,7 +178,7 @@ export default function Footer() {
 
           {/* Bottom bar */}
           <div className="flex flex-col md:flex-row justify-between items-center border-t border-gray-700 pt-6 mt-10 text-sm text-gray-400 gap-4">
-            <p className="mb-4 md:mb-0">© {currentYear} RUACH E-STORE. Partnered with Modanmic.</p>
+            <p className="mb-4 md:mb-0">© {currentYear} RUACH E-STORE. Powered by MODANMIC.</p>
             <div className="flex items-center flex-wrap justify-center md:justify-start gap-4">
               <span>We Accept</span>
               <img src="/visa.svg" alt="Visa" className="h-6 w-auto" />

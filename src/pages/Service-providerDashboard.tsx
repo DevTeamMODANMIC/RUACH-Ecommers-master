@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Link } from "react-router-dom";
+import { Link } from "react-router-dom"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge"
@@ -22,17 +22,23 @@ import {
   BarChart3,
   Sparkles,
   Wrench,
-  ArrowUpRight
+  ArrowUpRight,
+  RefreshCw,
+  Wifi,
+  WifiOff
 } from "lucide-react"
 import { ServiceProvider, Service, ServiceBooking } from "../types"
 import { useAuth } from "../components/auth-provider"
-import { getServiceProviderByOwnerId } from "../lib/firebase-service-providers"
+import { useAdmin } from "../hooks/use-admin"
+import { useServiceProvider } from "../hooks/use-service-provider"
 import { getServicesByProviderId } from "../lib/firebase-services"
+import { clearServiceProviderCache } from "../lib/firebase-service-providers"
 import { DashboardHeader } from "../components/dashboard-header"
 import { DashboardStatsCard } from "../components/dashboard-stats-card"
 import { DashboardQuickActions } from "../components/dashboard-quick-actions"
 import { DashboardWelcome } from "../components/dashboard-welcome"
-import { useRouter } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
+import { ServiceProviderLayout } from "../components/service-provider-layout"
 
 // Helper function to get time-based greeting
 const getTimeBasedGreeting = () => {
@@ -44,157 +50,138 @@ const getTimeBasedGreeting = () => {
 
 export default function ServiceProviderDashboard() {
   const { user } = useAuth()
+  const { isAdmin } = useAdmin()
+  const { serviceProvider, loading: serviceProviderLoading, error: serviceProviderError, retryCount, refreshServiceProvider } = useServiceProvider()
   const navigate = useNavigate()
-  const [provider, setProvider] = useState<ServiceProvider | null>(null)
   const [services, setServices] = useState<Service[]>([])
   const [recentBookings, setRecentBookings] = useState<ServiceBooking[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [servicesLoading, setServicesLoading] = useState(false)
+  const [servicesError, setServicesError] = useState<string | null>(null)
   const [showSecretMessage, setShowSecretMessage] = useState(false)
+  const [isOnline, setIsOnline] = useState(navigator.onLine)
+
+  // Track online status
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true)
+    const handleOffline = () => setIsOnline(false)
+    
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+    
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
+
+  // Add global test function for debugging
+  useEffect(() => {
+    // @ts-ignore - Adding to window for debugging
+    window.testFirebaseConnection = async () => {
+      try {
+        console.log("🔍 Testing Firebase connection...")
+        const { collection, getDocs } = await import('firebase/firestore')
+        const { db } = await import('../lib/firebase')
+        
+        console.log("Firebase config:", {
+          hasDb: !!db,
+          projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID
+        })
+        
+        // Simple collection access test
+        const servicesRef = collection(db, "services")
+        const result = await getDocs(servicesRef)
+        console.log("✅ Firebase connection successful! Services collection returned:", result.size, "docs")
+        return true
+      } catch (error: any) {
+        console.error("❌ Firebase connection failed:", error)
+        return false
+      }
+    }
+
+    return () => {
+      // @ts-ignore
+      delete window.testFirebaseConnection
+    }
+  }, [])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Check for Ctrl+Shift+G shortcut (only on service provider dashboard)
+      // Check for Ctrl+Shift+G shortcut - navigate to service provider dashboard
       if (e.ctrlKey && e.shiftKey && e.key === 'G') {
         e.preventDefault()
-        navigate('/admin/service-providers')
-        setShowSecretMessage(true)
-        setTimeout(() => setShowSecretMessage(false), 3000)
+        
+        // Navigate to service provider dashboard for authenticated users
+        if (user) {
+          navigate('/service-provider/dashboard')
+          setShowSecretMessage(true)
+          setTimeout(() => setShowSecretMessage(false), 3000)
+        }
+        // Only authenticated users can access service provider dashboard
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [router])
+  }, [navigate, user])
 
+  // Load services when service provider is available
   useEffect(() => {
-    // Don't do anything if auth is still loading
-    if (user === undefined) {
-      return
-    }
-
-    if (!user) {
-      setIsLoading(false)
-      setError("Please log in to access the service provider dashboard")
+    if (!serviceProvider?.id) {
+      setServices([])
       return
     }
 
     let isMounted = true
     const controller = new AbortController()
 
-    const loadServiceProvider = async () => {
+    const loadServices = async () => {
       try {
-        setIsLoading(true)
-        setError(null)
+        setServicesLoading(true)
+        setServicesError(null)
         
-        console.log("🔍 Loading service provider for user:", user.uid)
+        console.log("🔍 Loading services for provider:", serviceProvider.id)
         
-        // Create timeout with shorter duration for better UX
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Request timeout after 8 seconds')), 8000)
-        })
+        const servicesData = await getServicesByProviderId(serviceProvider.id, controller)
         
-        console.log("🔍 Calling getServiceProviderByOwnerId...")
-        const dataPromise = getServiceProviderByOwnerId(user.uid)
-        
-        console.log("🏁 Starting Promise.race between dataPromise and timeoutPromise")
-        const serviceProvider = await Promise.race([dataPromise, timeoutPromise]) as ServiceProvider | null
-        
-        console.log("✅ Promise.race completed, serviceProvider:", serviceProvider)
-        
-        if (!isMounted) return
-        
-        console.log("📊 Service provider result:", serviceProvider)
-        
-        if (!serviceProvider) {
-          console.log("❌ No service provider found for user:", user.uid)
-          setError(null) // Don't treat this as an error
-          setProvider(null)
-        } else {
-          console.log("✅ Service provider found:", serviceProvider.name)
-          setProvider(serviceProvider)
-          
-          // Load services in parallel without blocking
-          console.log("🔍 Loading services for provider:", serviceProvider.id)
-          Promise.allSettled([
-            getServicesByProviderId(serviceProvider.id)
-          ]).then(([servicesResult]) => {
-            if (!isMounted) return
-            
-            if (servicesResult.status === 'fulfilled') {
-              console.log("📋 Services loaded:", servicesResult.value.length)
-              setServices(servicesResult.value)
-            } else {
-              console.error("⚠️ Error loading services:", servicesResult.reason)
-              setServices([])
-            }
-          })
+        if (isMounted) {
+          console.log("📋 Services loaded:", servicesData.length)
+          setServices(servicesData)
           
           // Mock recent bookings for now
           setRecentBookings([])
         }
-      } catch (err: any) {
-        console.error("💥 Error loading service provider:", {
-          error: err,
-          errorString: JSON.stringify(err, Object.getOwnPropertyNames(err)),
-          errorType: typeof err,
-          errorMessage: err?.message || 'No message',
-          errorCode: err?.code || 'no_code',
-          errorName: err?.name || 'no_name',
-          userId: user?.uid,
-          stack: err?.stack || 'No stack trace',
-          // Additional error properties that might exist in Firebase errors
-          errorConstructor: err?.constructor?.name,
-          errorKeys: err ? Object.keys(err) : 'No keys',
-          errorHasMessage: 'message' in err,
-          errorHasCode: 'code' in err,
-          errorToString: err?.toString(),
-          // Try to get Firebase-specific error details
-          firebaseErrorDetails: err?.details || err?.customData || err?.serverResponse || 'No Firebase details',
-          // Try to stringify the error in different ways
-          errorJSON: JSON.stringify(err),
-          errorStringifyAll: JSON.stringify(err, Object.getOwnPropertyNames(err)),
-          // Check if error has a message property
-          hasMessageProperty: Object.prototype.hasOwnProperty.call(err, 'message'),
-          // Try to access error properties directly
-          directMessage: err.message,
-          directCode: err.code,
-          directName: err.name,
-          directStack: err.stack,
-          timestamp: new Date().toISOString()
-        })
-        if (isMounted) {
-          if (err.message.includes('timeout')) {
-            setError("Loading timeout - please refresh the page or check your connection")
-          } else if (err.message.includes('permission-denied')) {
-            setError("Access denied - please check your permissions")
-          } else if (err.message.includes('unavailable')) {
-            setError("Service temporarily unavailable - please try again later")
-          } else {
-            setError(err.message || "Failed to load service provider data")
-          }
+      } catch (error: any) {
+        if (isMounted && !error?.message?.includes('aborted')) {
+          console.error("⚠️ Error loading services:", error)
+          setServicesError(error?.message || 'Failed to load services')
+          setServices([])
         }
       } finally {
         if (isMounted) {
-          console.log("🏁 Service provider loading completed")
-          setIsLoading(false)
+          setServicesLoading(false)
         }
       }
     }
 
-    // Add a small delay to ensure auth has stabilized
-    const timeoutId = setTimeout(() => {
-      if (isMounted) {
-        loadServiceProvider()
-      }
-    }, 100)
+    loadServices()
 
     return () => {
       isMounted = false
       controller.abort()
-      clearTimeout(timeoutId)
     }
-  }, [user])
+  }, [serviceProvider?.id])
+
+  // Handle refresh with cache clearing
+  const handleRefresh = async (clearCache = false) => {
+    if (clearCache && user?.uid) {
+      clearServiceProviderCache(user.uid)
+    }
+    await refreshServiceProvider(clearCache)
+  }
+
+  const isLoading = serviceProviderLoading || servicesLoading
+  const error = serviceProviderError || servicesError
 
   if (isLoading) {
     return (
@@ -202,6 +189,15 @@ export default function ServiceProviderDashboard() {
         <div className="text-center">
           <div className="h-8 w-8 border-4 border-t-blue-500 border-l-blue-600 border-r-blue-600 border-b-blue-700 rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-600">Loading dashboard...</p>
+          <p className="text-sm text-gray-400 mt-2">
+            {retryCount > 0 ? `Retry attempt ${retryCount}...` : 'This should take no more than 15 seconds'}
+          </p>
+          {!isOnline && (
+            <div className="mt-3 flex items-center justify-center text-red-600">
+              <WifiOff className="h-4 w-4 mr-2" />
+              <span className="text-sm">You appear to be offline</span>
+            </div>
+          )}
         </div>
       </div>
     )
@@ -214,9 +210,22 @@ export default function ServiceProviderDashboard() {
           <CardHeader className="text-center">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
             <CardTitle>Error Loading Dashboard</CardTitle>
+            {!isOnline && (
+              <div className="flex items-center justify-center text-red-600 mt-2">
+                <WifiOff className="h-4 w-4 mr-2" />
+                <span className="text-sm">You appear to be offline</span>
+              </div>
+            )}
           </CardHeader>
           <CardContent className="text-center">
             <p className="text-gray-600 mb-6">{error}</p>
+            
+            {retryCount > 0 && (
+              <div className="bg-blue-50 p-3 rounded text-sm text-blue-800 mb-4">
+                <p className="font-medium">Retry attempt {retryCount}</p>
+                <p>System is automatically retrying the connection...</p>
+              </div>
+            )}
             
             {/* Debug Info for development */}
             {process.env.NODE_ENV === 'development' && user && (
@@ -224,14 +233,53 @@ export default function ServiceProviderDashboard() {
                 <p><strong>User ID:</strong> {user.uid}</p>
                 <p><strong>Email:</strong> {user.email}</p>
                 <p><strong>Display Name:</strong> {user.displayName || 'Not set'}</p>
+                <p><strong>Online:</strong> {isOnline ? 'Yes' : 'No'}</p>
+                <p><strong>Retry Count:</strong> {retryCount}</p>
                 <p><strong>Error:</strong> {error}</p>
               </div>
             )}
             
             <div className="flex flex-col gap-3">
-              <Button variant="outline" onClick={() => window.location.reload()}>
-                Try Again
+              <Button 
+                variant="outline" 
+                onClick={() => handleRefresh(false)}
+                disabled={!isOnline}
+              >
+                {isOnline ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Try Again
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="h-4 w-4 mr-2" />
+                    Offline
+                  </>
+                )}
               </Button>
+              
+              <Button 
+                variant="outline" 
+                onClick={() => handleRefresh(true)}
+                disabled={!isOnline}
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Clear Cache & Retry
+              </Button>
+              
+              {error.includes('timeout') && isOnline && (
+                <div className="bg-blue-50 p-3 rounded text-sm text-blue-800">
+                  <p className="font-medium mb-1">Connection timeout</p>
+                  <p>If this keeps happening, try:</p>
+                  <ul className="list-disc list-inside text-xs mt-1 space-y-1">
+                    <li>Check your internet connection</li>
+                    <li>Refresh the page</li>
+                    <li>Clear browser cache</li>
+                    <li>Try again in a few minutes</li>
+                  </ul>
+                </div>
+              )}
+              
               {process.env.NODE_ENV === 'development' && (
                 <Button variant="outline" asChild>
                   <Link to="/debug/firebase">
@@ -246,7 +294,7 @@ export default function ServiceProviderDashboard() {
     )
   }
 
-  if (!provider) {
+  if (!serviceProvider) {
     return (
       <DashboardWelcome 
         userType="service-provider" 
@@ -262,19 +310,19 @@ export default function ServiceProviderDashboard() {
     return (
       <DashboardWelcome 
         userType="service-provider" 
-        userName={provider.name || 'Service Provider'}
+        userName={serviceProvider.name || 'Service Provider'}
       />
     )
   }
 
   // Calculate dashboard stats from real data
   const stats = {
-    totalBookings: provider.totalBookings || 0,
-    completedBookings: Math.floor((provider.totalBookings || 0) * 0.85),
+    totalBookings: serviceProvider.totalBookings || 0,
+    completedBookings: Math.floor((serviceProvider.totalBookings || 0) * 0.85),
     pendingBookings: recentBookings.filter(b => b.status === "pending").length,
     activeServices: services.filter(s => s.isActive).length,
-    monthlyEarnings: ((provider.totalBookings || 0) * 15000) * 0.7, // Estimated monthly earnings
-    rating: provider.rating || 0,
+    monthlyEarnings: ((serviceProvider.totalBookings || 0) * 15000) * 0.7, // Estimated monthly earnings
+    rating: serviceProvider.rating || 0,
     responseRate: 98
   }
 
@@ -309,18 +357,19 @@ export default function ServiceProviderDashboard() {
       icon: Star,
       color: "text-indigo-600",
       bgColor: "bg-indigo-50",
-      change: `${provider.reviewCount || 0} reviews`
+      change: `${serviceProvider.reviewCount || 0} reviews`
     }
   ]
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <DashboardHeader
-        title={`${getTimeBasedGreeting()}, ${provider.name || 'Service Provider'}!`}
-        subtitle="Here's what's happening with your services today."
-        userType="service-provider"
-      />
+    <ServiceProviderLayout title="Dashboard" description="Manage your service provider business">
+      <div className="space-y-8">
+        {/* Header */}
+        <DashboardHeader
+          title={`${getTimeBasedGreeting()}, ${serviceProvider.name || 'Service Provider'}!`}
+          subtitle="Here's what's happening with your services today."
+          userType="service-provider"
+        />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -406,10 +455,10 @@ export default function ServiceProviderDashboard() {
                   variant="outline" 
                   size="sm"
                   onClick={async () => {
-                    if (!provider?.id) return
+                    if (!serviceProvider?.id) return
                     try {
                       console.log('🔄 Refreshing services...')
-                      const refreshedServices = await getServicesByProviderId(provider.id)
+                      const refreshedServices = await getServicesByProviderId(serviceProvider.id)
                       console.log('📊 Refreshed services:', refreshedServices.length)
                       setServices(refreshedServices)
                       alert(`Found ${refreshedServices.length} services`)
@@ -435,7 +484,7 @@ export default function ServiceProviderDashboard() {
                 {process.env.NODE_ENV === 'development' && (
                   <div className="p-3 bg-blue-50 border border-blue-200 rounded text-xs mb-4">
                     <p><strong>🔍 Services Debug Information:</strong></p>
-                    <p>Provider ID: {provider?.id || 'Not loaded'}</p>
+                    <p>Provider ID: {serviceProvider?.id || 'Not loaded'}</p>
                     <p>Total Services Found: {services.length}</p>
                     <p>User UID: {user?.uid || 'Not authenticated'}</p>
                     
@@ -467,9 +516,9 @@ export default function ServiceProviderDashboard() {
                       <button 
                         onClick={async () => {
                           console.log('🔄 Manual service refresh clicked')
-                          if (provider?.id) {
+                          if (serviceProvider?.id) {
                             try {
-                              const refreshedServices = await getServicesByProviderId(provider.id)
+                              const refreshedServices = await getServicesByProviderId(serviceProvider.id)
                               console.log('📊 Manual refresh result:', refreshedServices)
                               setServices(refreshedServices)
                               alert(`Refreshed! Found ${refreshedServices.length} services`)
@@ -610,14 +659,14 @@ export default function ServiceProviderDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3 text-sm">
-                {provider.isApproved ? (
+                {serviceProvider.isApproved ? (
                   <>
                     <div className="p-3 bg-green-50 rounded-lg">
                       <p className="font-medium text-green-800">Profile Approved</p>
                       <p className="text-green-600">Your service provider profile is active</p>
                       <p className="text-xs text-green-500 mt-1">You can now receive bookings</p>
                     </div>
-                    {!provider.isActive && (
+                    {!serviceProvider.isActive && (
                       <div className="p-3 bg-orange-50 rounded-lg">
                         <p className="font-medium text-orange-800">Profile Inactive</p>
                         <p className="text-orange-600">Activate your profile to receive bookings</p>
@@ -645,6 +694,8 @@ export default function ServiceProviderDashboard() {
         </div>
       </div>
       
+      </div>
+      
       {/* Secret message overlay */}
       {showSecretMessage && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
@@ -654,6 +705,6 @@ export default function ServiceProviderDashboard() {
           </div>
         </div>
       )}
-    </div>
+    </ServiceProviderLayout>
   )
 }

@@ -353,7 +353,7 @@ export default function BulkOrderPage() {
                   <p className="text-sm">
                     Email: <span className="font-medium">support..ruachestore.com.ng</span>
                     <br />
-                    Phone: <span className="font-medium">+2348160662997</span>
+                    Phone: <span className="font-medium">+2347054915173</span>
                   </p>
                 </div>
               </div>

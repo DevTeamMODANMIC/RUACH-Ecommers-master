@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { VendorLayout } from "../components/vendor-layout"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge"
@@ -158,13 +159,12 @@ export default function BookingsManagement() {
   }
 
   return (
-    <div className="space-y-6">
+    <VendorLayout 
+      title="Bookings" 
+      description="Manage your service appointments and bookings"
+    >
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Bookings</h1>
-          <p className="text-gray-600">Manage your service appointments and bookings</p>
-        </div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div className="flex gap-2">
           <Button variant="outline">
             <Calendar className="h-4 w-4 mr-2" />
@@ -474,6 +474,6 @@ export default function BookingsManagement() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </VendorLayout>
   )
 }

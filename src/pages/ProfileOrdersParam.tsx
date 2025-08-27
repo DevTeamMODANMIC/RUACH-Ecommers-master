@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { useParams, useRouter } from "react-router-dom"
+import { useParams, useNavigate } from "react-router-dom"
 import { Link } from "react-router-dom";
 
 import { Button } from "../components/ui/button"
@@ -24,6 +24,7 @@ import { getOrder, listenToOrder, updateOrder } from "../lib/firebase-orders"
 import { Order } from "../types"
 import { useAuth } from "../components/auth-provider"
 import { useToast } from "../hooks/use-toast"
+import { useAdmin } from "../hooks/use-admin"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -38,7 +39,8 @@ export default function OrderDetailPage() {
   const navigate = useNavigate()
   const orderId = typeof params.id === 'string' ? params.id : ''
   const { formatPrice } = useCurrency()
-  const { user, isAdmin } = useAuth()
+  const { user } = useAuth()
+  const { isAdmin } = useAdmin()
   const { toast } = useToast()
   const [orderDetails, setOrderDetails] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
@@ -73,13 +75,23 @@ export default function OrderDetailPage() {
           return
         }
 
-        setOrderDetails(initialOrder)
+        setOrderDetails({
+          ...initialOrder,
+          estimatedDelivery: initialOrder.estimatedDelivery instanceof Date ? initialOrder.estimatedDelivery.getTime() : initialOrder.estimatedDelivery,
+          createdAt: initialOrder.createdAt instanceof Date ? initialOrder.createdAt.getTime() : initialOrder.createdAt,
+          updatedAt: initialOrder.updatedAt instanceof Date ? initialOrder.updatedAt.getTime() : initialOrder.updatedAt
+        })
         setLoading(false)
         
         // Then set up real-time listener for updates
         unsubscribe = listenToOrder(orderId, (order) => {
           if (order) {
-            setOrderDetails(order)
+            setOrderDetails({
+              ...order,
+              estimatedDelivery: order.estimatedDelivery instanceof Date ? order.estimatedDelivery.getTime() : order.estimatedDelivery,
+              createdAt: order.createdAt instanceof Date ? order.createdAt.getTime() : order.createdAt,
+              updatedAt: order.updatedAt instanceof Date ? order.updatedAt.getTime() : order.updatedAt
+            })
           }
         })
       } catch (err: any) {
@@ -261,8 +273,7 @@ export default function OrderDetailPage() {
                             <img 
                               src={imageError[item.productId] ? "/product_images/unknown-product.jpg" : item.image}
                               alt={item.name}
-                              fill
-                              className="object-cover"
+                              className="object-cover w-full h-full"
                               onError={() => setImageError(prev => ({ ...prev, [item.productId]: true }))}
                             />
                           </div>

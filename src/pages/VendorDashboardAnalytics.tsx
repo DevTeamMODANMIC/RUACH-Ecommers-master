@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { useVendor } from "../hooks/use-vendor"
+import { VendorLayout } from "../components/vendor-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Button } from "../components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
@@ -131,15 +132,12 @@ export default function VendorAnalyticsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <VendorLayout 
+      title="Analytics" 
+      description="Track your store's performance and insights"
+    >
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Analytics</h1>
-          <p className="text-gray-600 mt-1">
-            Track your store&apos;s performance and insights
-          </p>
-        </div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
         <div className="mt-4 sm:mt-0 flex gap-3">
           <Select value={timeRange} onValueChange={setTimeRange}>
             <SelectTrigger className="w-[140px]">
@@ -408,6 +406,6 @@ export default function VendorAnalyticsPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </VendorLayout>
   )
 } 
