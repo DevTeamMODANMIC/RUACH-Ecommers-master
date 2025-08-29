@@ -420,6 +420,13 @@ export const createServiceProvider = async (
       throw new Error("Service provider profile already exists for this user")
     }
 
+    // Check if user is already a vendor (mutual exclusivity)
+    const { getUserStores } = await import("./firebase-vendors")
+    const vendorStores = await getUserStores(providerData.ownerId)
+    if (vendorStores.length > 0) {
+      throw new Error("Cannot create service provider profile: User is already a vendor. Users can only be either a vendor or service provider, not both.")
+    }
+
     const docRef = await addDoc(collection(db, "serviceProviders"), {
       ...providerData,
       isApproved: false,  // Pending approval by default

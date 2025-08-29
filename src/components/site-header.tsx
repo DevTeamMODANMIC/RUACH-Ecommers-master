@@ -36,6 +36,7 @@ import { useAuth } from "../../src/components/auth-provider"
 import { useVendor } from "../../src/hooks/use-vendor"
 import { useServiceProvider } from "../../src/hooks/use-service-provider"
 import { VendorHeaderSwitcher } from "../../src/components/vendor-header-switcher"
+import { ServiceProviderHeaderSwitcher } from "../../src/components/service-provider-header-switcher"
 import { DesktopMegaMenu, MobileMegaMenu } from "../../src/components/mega-menu"
 import clsx from "clsx"
 
@@ -178,6 +179,9 @@ export default function HeaderImproved() {
         <div className="flex items-center space-x-3 md:space-x-4">
           {/* Vendor Store Switcher */}
           <VendorHeaderSwitcher />
+          
+          {/* Service Provider Switcher */}
+          <ServiceProviderHeaderSwitcher />
           
           <Link to="/wishlist" className="relative" aria-label="Wishlist">
             <Button variant="ghost" size="icon" className="hover:text-green-600">

@@ -57,6 +57,13 @@ export const createVendorStore = async (
       throw new Error("Maximum of 3 stores allowed per user");
     }
 
+    // Check if user is already a service provider (mutual exclusivity)
+    const { getServiceProviderByOwnerId } = await import("./firebase-service-providers")
+    const existingServiceProvider = await getServiceProviderByOwnerId(ownerId)
+    if (existingServiceProvider) {
+      throw new Error("Cannot create vendor store: User is already a service provider. Users can only be either a vendor or service provider, not both.")
+    }
+
     const vendorRef = await addDoc(collection(db, VENDORS_COLLECTION), {
       ownerId,
       ...data,
