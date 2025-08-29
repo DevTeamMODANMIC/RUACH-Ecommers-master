@@ -2,12 +2,28 @@
 
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
+<<<<<<< HEAD
+<<<<<<<< HEAD:src/pages/service-provider/dashboard/services/add/page.tsx
+=======
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
+<<<<<<< HEAD
+========
+import { Link } from "react-router-dom";
+import { Button } from "../components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
+import { Input } from "../components/ui/input"
+import { Textarea } from "../components/ui/textarea"
+import { Badge } from "../components/ui/badge"
+import { Label } from "../components/ui/label"
+>>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083:src/pages/Service-providerDashboardServicesAdd.tsx
+=======
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
 import { 
   ArrowLeft,
   Plus,
@@ -19,6 +35,10 @@ import {
   Settings,
   FileText
 } from "lucide-react"
+<<<<<<< HEAD
+<<<<<<<< HEAD:src/pages/service-provider/dashboard/services/add/page.tsx
+=======
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
 import { Service, ServiceCategory } from "@/types"
 import { useAuth } from "@/components/auth-provider"
 import { getServiceProviderByOwnerId } from "@/lib/firebase-service-providers"
@@ -39,10 +59,26 @@ const serviceCategories: { value: ServiceCategory; label: string }[] = [
   { value: "landscaping", label: "Landscaping" },
   { value: "other", label: "Other" }
 ]
+<<<<<<< HEAD
+========
+import { Service, ServiceCategory } from "../types"
+import { useAuth } from "../components/auth-provider"
+import { getServiceProviderByOwnerId } from "../lib/firebase-service-providers"
+import { createService } from "../lib/firebase-services"
+import { useVendor } from "../hooks/use-vendor"
+import { serviceCategories } from "../lib/categories"
+import { ServiceProviderLayout } from "../components/service-provider-layout"
+>>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083:src/pages/Service-providerDashboardServicesAdd.tsx
+=======
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
 
 export default function AddServicePage() {
   const navigate = useNavigate()
   const { user } = useAuth()
+<<<<<<< HEAD
+  const { isVendor } = useVendor()
+=======
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -112,12 +148,28 @@ export default function AddServicePage() {
     if (!formData.name?.trim()) return "Service name is required"
     if (!formData.description?.trim()) return "Service description is required"
     if (!formData.category) return "Service category is required"
+<<<<<<< HEAD
+    
+    // Validate pricing based on type
+    if (formData.pricingType === "fixed") {
+      if (!formData.basePrice || formData.basePrice <= 0) {
+        return "Base price must be greater than 0 for fixed pricing"
+      }
+    } else if (formData.pricingType === "hourly") {
+      if (!formData.hourlyRate || formData.hourlyRate <= 0) {
+        return "Hourly rate must be greater than 0 for hourly pricing"
+      }
+    }
+    // Custom pricing doesn't require price validation
+    
+=======
     if (formData.pricingType === "fixed" && (!formData.basePrice || formData.basePrice <= 0)) {
       return "Base price must be greater than 0 for fixed pricing"
     }
     if (formData.pricingType === "hourly" && (!formData.hourlyRate || formData.hourlyRate <= 0)) {
       return "Hourly rate must be greater than 0 for hourly pricing"
     }
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
     if (!formData.serviceAreas?.length) return "At least one service area is required"
     if (!formData.features?.length) return "At least one feature is required"
     return null
@@ -164,8 +216,15 @@ export default function AddServicePage() {
         },
         // Extended properties
         pricingType: formData.pricingType!,
+<<<<<<< HEAD
+        // Only include basePrice for fixed pricing
+        ...(formData.pricingType === "fixed" && formData.basePrice ? { basePrice: formData.basePrice } : {}),
+        // Only include hourlyRate for hourly pricing
+        ...(formData.pricingType === "hourly" && formData.hourlyRate ? { hourlyRate: formData.hourlyRate } : {}),
+=======
         basePrice: formData.pricingType === "fixed" ? formData.basePrice : undefined,
         hourlyRate: formData.pricingType === "hourly" ? formData.hourlyRate : undefined,
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
         duration: formData.duration || 60,
         serviceAreas: formData.serviceAreas!,
         features: formData.features!,
@@ -173,8 +232,22 @@ export default function AddServicePage() {
         images: formData.images || [],
         bookingRequiresApproval: formData.bookingRequiresApproval || false,
         depositRequired: formData.depositRequired || false,
+<<<<<<< HEAD
+<<<<<<<< HEAD:src/pages/service-provider/dashboard/services/add/page.tsx
         depositAmount: formData.depositAmount
         // Note: Service statistics like bookingCount, rating, reviewCount are not part of the base Service type
+========
+        // Only include depositAmount if depositRequired is true and amount is provided
+        ...(formData.depositRequired && formData.depositAmount ? { depositAmount: formData.depositAmount } : {}),
+        // Initialize statistics
+        bookingCount: 0,
+        rating: 0,
+        reviewCount: 0
+>>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083:src/pages/Service-providerDashboardServicesAdd.tsx
+=======
+        depositAmount: formData.depositAmount
+        // Note: Service statistics like bookingCount, rating, reviewCount are not part of the base Service type
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
       }
 
       // Create the service
@@ -187,8 +260,38 @@ export default function AddServicePage() {
         }
       })
 
+<<<<<<< HEAD
+      // Show success message and redirect based on user context
+      alert("Service created successfully! You'll be redirected to services page.")
+      
+      // Smart redirect: Use user role and referrer to determine best destination
+      const referrer = document.referrer
+      const currentOrigin = window.location.origin
+      
+      // First priority: User role
+      if (isVendor) {
+        navigate("/vendor/dashboard/services")
+        return
+      }
+      
+      // Second priority: Referrer path analysis
+      if (referrer && referrer.startsWith(currentOrigin)) {
+        const referrerPath = new URL(referrer).pathname
+        
+        if (referrerPath.includes('/vendor/dashboard')) {
+          navigate("/vendor/dashboard/services")
+          return
+        } else if (referrerPath.includes('/service-provider/dashboard')) {
+          navigate("/service-provider/dashboard/services")
+          return
+        }
+      }
+      
+      // Default fallback: service provider dashboard (since this is a service provider component)
+=======
       // Show success message and redirect
       alert("Service created successfully! You'll be redirected to services page.")
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
       navigate("/service-provider/dashboard/services")
 
     } catch (error: any) {
@@ -212,6 +315,10 @@ export default function AddServicePage() {
   }
 
   return (
+<<<<<<< HEAD
+<<<<<<<< HEAD:src/pages/service-provider/dashboard/services/add/page.tsx
+=======
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b">
@@ -229,6 +336,28 @@ export default function AddServicePage() {
               <p className="text-gray-600 mt-1">Create a new service offering for your customers</p>
             </div>
           </div>
+<<<<<<< HEAD
+========
+    <ServiceProviderLayout 
+      title="Add New Service" 
+      description="Create a new service offering for your customers"
+    >
+      <div className="space-y-6">
+        {/* Back Navigation */}
+        <div className="flex items-center mb-6">
+          <Button
+            variant="ghost"
+            onClick={() => navigate(-1)}
+            className="mr-4"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+>>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083:src/pages/Service-providerDashboardServicesAdd.tsx
+        </div>
+        
+        <form onSubmit={handleSubmit} className="space-y-6">
+=======
         </div>
       </div>
 
@@ -236,6 +365,7 @@ export default function AddServicePage() {
       <div className="w-full px-6 py-6">
         <div className="max-w-4xl mx-auto">
           <form onSubmit={handleSubmit} className="space-y-6">
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
             {/* Error Display */}
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
@@ -557,7 +687,11 @@ export default function AddServicePage() {
             </div>
           </form>
         </div>
+<<<<<<< HEAD
+    </ServiceProviderLayout>
+=======
       </div>
     </div>
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
   )
 }

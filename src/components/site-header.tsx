@@ -1,7 +1,6 @@
-
-
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { useState } from "react"
+import comLogog from "../a/new_logo.jpg"
 // React doesn't need Image component from Next.js
 import {
   Heart,
@@ -62,6 +61,7 @@ const primaryLinks = [
   { title: "Stores", href: "/stores" },
   { title: "Become a Vendor", href: "/vendor/register" },
   { title: "Bulk Order", href: "/bulk-order" },
+  { title: "Track Order", href: "/track-order" },
   { title: "FAQs", href: "/faq" },
 ]
 
@@ -153,7 +153,7 @@ export default function HeaderImproved() {
 
         {/* Logo */}
         <Link to="/" className="flex items-center space-x-2">
-          <img src="/images/new_logo.jpg" alt="RUACH Logo" className="h-10 w-10 rounded-full object-cover" />
+          <img src={comLogog} alt="RUACH Logo" className="h-10 w-10 rounded-full object-cover" />
           <span className="font-bold tracking-tight text-gray-900 hidden sm:inline">
             RUACH E-STORE
           </span>
@@ -246,7 +246,10 @@ export default function HeaderImproved() {
                   </DropdownMenuItem>
                 </>
               ) : (
-                <DropdownMenuItem onSelect={() => navigate("/login")} className="cursor-pointer hover:bg-gray-50 transition-colors">Sign In</DropdownMenuItem>
+                <>
+                  <DropdownMenuItem onSelect={() => navigate("/track-order")} className="cursor-pointer hover:bg-gray-50 transition-colors">Track Order</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => navigate("/login")} className="cursor-pointer hover:bg-gray-50 transition-colors">Sign In</DropdownMenuItem>
+                </>
               )}
             </DropdownMenuContent>
           </DropdownMenu>

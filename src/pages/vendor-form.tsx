@@ -1,10 +1,7 @@
-"use client"
-
 import { useAuth } from "../components/auth-provider"
 import { SubmitHandler, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-// import { useRouter } from "next/navigation"
 import { useNavigate } from 'react-router-dom'
 import { createVendorStore } from "../lib/firebase-vendors"
 import { useVendor } from "../hooks/use-vendor"
@@ -18,7 +15,7 @@ import CloudinaryUploadWidget from "../components/cloudinary-upload-widget"
 const schema = z.object({
   shopName: z.string().min(3, "Shop name is required"),
   bio: z.string().min(10, "Please provide a short description"),
-  logoUrl: z.string().url().nonempty("Logo is required"),
+  logoUrl: z.string().url("Please upload a valid logo image"),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -26,7 +23,7 @@ type FormValues = z.infer<typeof schema>
 export default function VendorForm() {
   const { user } = useAuth()
   const { allStores, canCreateMoreStores, refreshStores } = useVendor()
-  const router = useNavigate()
+  const navigate = useNavigate()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const {
@@ -54,16 +51,29 @@ export default function VendorForm() {
       return
     }
     
+    // Ensure all required fields are present
+    if (!values.shopName || !values.bio || !values.logoUrl) {
+      alert("Please fill in all required fields")
+      return
+    }
+    
     setIsSubmitting(true)
     try {
-      const storeId = await createVendorStore(user.uid, values)
+      // Type assertion to ensure we have the required fields
+      const vendorData: { shopName: string; bio: string; logoUrl: string } = {
+        shopName: values.shopName,
+        bio: values.bio,
+        logoUrl: values.logoUrl,
+      }
+      
+      const storeId = await createVendorStore(user.uid, vendorData)
       await refreshStores()
       
       const storeNumber = allStores.length + 1
       alert(
         `Your ${storeNumber === 1 ? 'first' : storeNumber === 2 ? 'second' : 'third'} store application has been submitted! We will notify you once it has been reviewed.`,
       )
-      router.push("/vendor/dashboard")
+      navigate("/vendor/dashboard")
     } catch (err: any) {
       console.error(err)
       alert(err.message)

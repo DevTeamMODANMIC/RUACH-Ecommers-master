@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Star, TrendingUp, ShoppingCart, Heart, Flame, Store, Eye, X } from "lucide-react";
 import { getProducts, type Product } from "@/lib/firebase-products";
 import { useCart } from "@/components/cart-provider";
+import { getAllOrdersNoMax } from "@/lib/firebase-orders";
 import { formatCurrency } from "@/lib/utils";
 import { useWishlist, type WishlistItem } from "@/hooks/use-wishlist";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
@@ -23,6 +24,8 @@ export default function TrendingProducts() {
       try {
         // Get trending products - just get recent products for now
         const { products: allProducts } = await getProducts({}, 12);
+        // maching learning based trending logic can go here
+
         setTrendingProducts(allProducts.slice(0, 8));
       } catch (error: unknown) {
         console.error("Error loading trending products:", error);

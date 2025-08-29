@@ -1,5 +1,3 @@
-
-
 import { useState } from "react"
 import { useVendor } from "../../src/hooks/use-vendor"
 import { Button } from "../../src/components/ui/button"
@@ -21,7 +19,6 @@ import {
 
 // Import removed - using regular img tag instead
 import { Link } from "react-router-dom"
-
 
 export function VendorHeaderSwitcher() {
   const { activeStore, allStores, switchStore, canCreateMoreStores, isVendor } = useVendor()

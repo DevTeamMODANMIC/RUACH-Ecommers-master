@@ -1,3 +1,7 @@
+import visaIcon from "../a/visa.svg";
+import mastercardIcon from "../a/mastercard.svg";
+import paypalIcon from "../a/paypal.svg";
+
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import {
   Facebook,
@@ -181,9 +185,9 @@ export default function Footer() {
             <p className="mb-4 md:mb-0">© {currentYear} RUACH E-STORE. Powered by MODANMIC.</p>
             <div className="flex items-center flex-wrap justify-center md:justify-start gap-4">
               <span>We Accept</span>
-              <img src="/visa.svg" alt="Visa" className="h-6 w-auto" />
-              <img src="/mastercard.svg" alt="Mastercard" className="h-6 w-auto" />
-              <img src="/paypal.svg" alt="Paypal" className="h-6 w-auto" />
+              <img src={visaIcon} alt="Visa" className="h-6 w-auto" />
+              <img src={mastercardIcon} alt="Mastercard" className="h-6 w-auto" />
+              <img src={paypalIcon} alt="Paypal" className="h-6 w-auto" />
               <Link
                 to="https://wa.me/2348160662997"
                 target="_blank"

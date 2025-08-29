@@ -255,7 +255,7 @@ const retryWithBackoff = async <T>(
       lastError = error
       
       // Don't retry on certain errors
-      if (error?.message?.includes('aborted') || 
+      if (error?.message?.includes('aborted') ||
           error?.code === 'permission-denied' ||
           error?.message?.includes('Invalid ownerId')) {
         throw error

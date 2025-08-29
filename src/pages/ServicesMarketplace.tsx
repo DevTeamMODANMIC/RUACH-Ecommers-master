@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react"
 import { Link } from "react-router-dom";
 import { Button } from "../components/ui/button"
-import { Card, CardContent } from "../components/ui/card"
+import { Card, CardContent, CardFooter } from "../components/ui/card"
 import { Input } from "../components/ui/input"
+import { Badge } from "../components/ui/badge"
 import { 
   Search,
   MapPin,
@@ -14,9 +15,14 @@ import {
   List,
   User,
   Calendar,
-  ArrowRight
+  ArrowRight,
+  Eye,
+  Heart,
+  BookOpen
 } from "lucide-react"
 import { Service, ServiceProvider, ServiceCategory } from "../types"
+import { getAllActiveServices } from "../lib/firebase-services"
+import { getServiceProvider } from "../lib/firebase-service-providers"
 
 // Services data will be loaded from the database
 const mockServices: (Service & { provider: ServiceProvider })[] = []
@@ -36,9 +42,83 @@ const priceRanges = [
 const locations = ["Lagos", "Abuja", "Port Harcourt", "Kano", "Ibadan", "Benin City"]
 
 export default function ServicesMarketplace() {
-  const [services, setServices] = useState(mockServices)
-  const [filteredServices, setFilteredServices] = useState(mockServices)
+  const [services, setServices] = useState<(Service & { provider: ServiceProvider })[]>([])
+  const [filteredServices, setFilteredServices] = useState<(Service & { provider: ServiceProvider })[]>([])
   const [searchQuery, setSearchQuery] = useState("")
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [hoveredServiceId, setHoveredServiceId] = useState<string | null>(null)
+
+  // Load services and providers on component mount
+  useEffect(() => {
+    const loadServicesAndProviders = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+        
+        console.log('🔍 [Marketplace] Loading all active services...')
+        
+        // Get all active services
+        const allServices = await getAllActiveServices()
+        
+        console.log('📊 [Marketplace] Services loaded:', allServices.length)
+        
+        // Get unique provider IDs
+        const providerIds = [...new Set(allServices.map(service => service.providerId))]
+        
+        console.log('👥 [Marketplace] Loading providers for', providerIds.length, 'unique providers')
+        
+        // Load all service providers
+        const providerPromises = providerIds.map(async (providerId) => {
+          try {
+            const provider = await getServiceProvider(providerId)
+            return { providerId, provider }
+          } catch (error) {
+            console.warn('⚠️ [Marketplace] Failed to load provider:', providerId, error)
+            return { providerId, provider: null }
+          }
+        })
+        
+        const providerResults = await Promise.all(providerPromises)
+        const providersMap = new Map<string, ServiceProvider>()
+        
+        providerResults.forEach(({ providerId, provider }) => {
+          if (provider) {
+            providersMap.set(providerId, provider)
+          }
+        })
+        
+        console.log('✅ [Marketplace] Loaded', providersMap.size, 'providers successfully')
+        
+        // Combine services with their providers
+        const servicesWithProviders = allServices
+          .map(service => {
+            const provider = providersMap.get(service.providerId)
+            if (!provider) {
+              console.warn('⚠️ [Marketplace] No provider found for service:', service.id, service.name)
+              return null
+            }
+            return {
+              ...service,
+              provider
+            }
+          })
+          .filter((item): item is Service & { provider: ServiceProvider } => item !== null)
+        
+        console.log('🎯 [Marketplace] Final services with providers:', servicesWithProviders.length)
+        
+        setServices(servicesWithProviders)
+        
+      } catch (err: any) {
+        console.error('💥 [Marketplace] Error loading services:', err)
+        setError(err?.message || 'Failed to load services')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    loadServicesAndProviders()
+  }, [])
   const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | "">("")
   const [selectedLocation, setSelectedLocation] = useState("")
   const [selectedPriceRange, setSelectedPriceRange] = useState("")
@@ -113,18 +193,21 @@ export default function ServicesMarketplace() {
   const ServiceCard = ({ service }: { service: Service & { provider: ServiceProvider } }) => {
     if (viewMode === "list") {
       return (
-        <Card className="hover:shadow-lg transition-shadow">
+        <Card className="group relative overflow-hidden border border-gray-200 hover:border-green-500 hover:shadow-lg transition-all duration-200">
           <CardContent className="p-6">
             <div className="flex space-x-4">
-              <img
-                src={service.images[0]?.url}
-                alt={service.name}
-                className="w-24 h-24 rounded-lg object-cover flex-shrink-0"
-              />
+              <div className="relative w-24 h-24 rounded-lg overflow-hidden flex-shrink-0">
+                <img
+                  src={service.images?.[0]?.url || '/placeholder.jpg'}
+                  alt={service.name}
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  onError={(e) => (e.currentTarget.src = '/placeholder.jpg')}
+                />
+              </div>
               <div className="flex-1">
                 <div className="flex items-start justify-between">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1 group-hover:text-green-600 transition-colors">
                       {service.name}
                     </h3>
                     <p className="text-gray-600 text-sm mb-2 line-clamp-2">
@@ -156,13 +239,19 @@ export default function ServicesMarketplace() {
                     </div>
                     <div className="flex items-center">
                       <MapPin className="h-4 w-4 mr-1" />
-                      {service.serviceAreas.slice(0, 2).join(", ")}
-                      {service.serviceAreas.length > 2 && " +more"}
+                      {service.serviceAreas && service.serviceAreas.length > 0 ? (
+                        <>
+                          {service.serviceAreas.slice(0, 2).join(", ")}
+                          {service.serviceAreas.length > 2 && " +more"}
+                        </>
+                      ) : (
+                        "Location not specified"
+                      )}
                     </div>
                   </div>
                   
                   <Link to={`/services/book/${service.id}`}>
-                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                    <Button size="sm" className="bg-green-600 hover:bg-green-700">
                       Book Now
                     </Button>
                   </Link>
@@ -175,32 +264,74 @@ export default function ServicesMarketplace() {
     }
 
     return (
-      <Card className="hover:shadow-lg transition-shadow">
-        <div className="aspect-video relative overflow-hidden rounded-t-lg">
-          <img
-            src={service.images[0]?.url}
-            alt={service.name}
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute top-3 right-3 bg-white/90 px-2 py-1 rounded text-sm font-medium">
-            {formatPrice(service)}
-          </div>
+      <Card 
+        className="group relative overflow-hidden border border-gray-200 hover:border-green-500 hover:shadow-lg transition-all duration-200 rounded-xl bg-white flex flex-col h-full"
+        onMouseEnter={() => setHoveredServiceId(service.id)}
+        onMouseLeave={() => setHoveredServiceId(null)}
+      >
+        {/* Wishlist/Favorite Button */}
+        <div className="absolute right-3 top-3 z-20">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-100 text-gray-500 hover:text-rose-500 backdrop-blur-sm shadow-sm"
+          >
+            <Heart className="h-4 w-4" />
+          </Button>
         </div>
-        <CardContent className="p-4">
-          <div className="mb-3">
-            <h3 className="font-semibold text-gray-900 mb-1 line-clamp-1">
+
+        {/* Service Image */}
+        <Link to={`/services/book/${service.id}`} className="block cursor-pointer">
+          <div className="relative h-60 bg-white overflow-hidden">
+            <img
+              src={service.images?.[0]?.url || '/placeholder.jpg'}
+              alt={service.name}
+              className="absolute inset-0 w-full h-full object-contain p-4 transition-transform duration-300 group-hover:scale-105"
+              onError={(e) => (e.currentTarget.src = '/placeholder.jpg')}
+            />
+            
+            {/* Price Badge */}
+            <div className="absolute top-3 left-3 bg-green-600 text-white px-2 py-1 rounded text-sm font-medium">
+              {formatPrice(service)}
+            </div>
+
+            {/* Hover Actions */}
+            {hoveredServiceId === service.id && (
+              <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center gap-2 transition-opacity duration-300">
+                <button
+                  className="w-10 h-10 rounded-full bg-white flex items-center justify-center hover:bg-green-500 hover:text-white transition-colors"
+                >
+                  <Eye className="h-5 w-5" />
+                </button>
+                <button
+                  className="w-10 h-10 rounded-full bg-white flex items-center justify-center hover:bg-green-500 hover:text-white transition-colors"
+                >
+                  <BookOpen className="h-5 w-5" />
+                </button>
+              </div>
+            )}
+          </div>
+        </Link>
+
+        {/* Service Content */}
+        <CardContent className="pt-4 flex-grow">
+          <Link to={`/services/book/${service.id}`} className="block cursor-pointer">
+            <h3 className="font-semibold text-lg line-clamp-2 min-h-[3.5rem] group-hover:text-green-600 transition-colors">
               {service.name}
             </h3>
-            <p className="text-gray-600 text-sm line-clamp-2 mb-2">
-              {service.description}
-            </p>
-            <div className="flex items-center text-sm text-gray-500">
-              <User className="h-4 w-4 mr-1" />
-              {service.provider.name}
-            </div>
+          </Link>
+          <p className="text-gray-600 text-sm mt-1 line-clamp-2 h-10">
+            {service.description}
+          </p>
+          
+          {/* Provider Info */}
+          <div className="flex items-center text-sm text-gray-500 mt-2">
+            <User className="h-4 w-4 mr-1" />
+            {service.provider.name}
           </div>
 
-          <div className="flex items-center justify-between mb-3">
+          {/* Rating and Duration */}
+          <div className="flex items-center justify-between mb-3 mt-2">
             <div className="flex items-center">
               <Star className="h-4 w-4 text-yellow-400 fill-current" />
               <span className="text-sm text-gray-600 ml-1">
@@ -213,18 +344,28 @@ export default function ServicesMarketplace() {
             </div>
           </div>
 
+          {/* Location */}
           <div className="flex items-center text-sm text-gray-500 mb-4">
             <MapPin className="h-4 w-4 mr-1" />
-            {service.serviceAreas.slice(0, 2).join(", ")}
-            {service.serviceAreas.length > 2 && " +more"}
+            {service.serviceAreas && service.serviceAreas.length > 0 ? (
+              <>
+                {service.serviceAreas.slice(0, 2).join(", ")}
+                {service.serviceAreas.length > 2 && " +more"}
+              </>
+            ) : (
+              "Location not specified"
+            )}
           </div>
+        </CardContent>
 
-          <Link to={`/services/book/${service.id}`} className="block">
-            <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700">
+        {/* Book Button */}
+        <CardFooter className="pt-0 mt-auto">
+          <Link to={`/services/book/${service.id}`} className="block w-full">
+            <Button size="sm" className="w-full bg-green-600 hover:bg-green-700">
               Book Service
             </Button>
           </Link>
-        </CardContent>
+        </CardFooter>
       </Card>
     )
   }
@@ -232,7 +373,7 @@ export default function ServicesMarketplace() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="py-12 bg-gradient-to-r from-blue-600 to-purple-600">
+      <div className="py-12 bg-gradient-to-r from-green-600 to-emerald-600">
         <div className="container mx-auto px-4">
           <div className="text-center text-white mb-8">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
@@ -282,7 +423,7 @@ export default function ServicesMarketplace() {
                   <button
                     onClick={() => setSelectedCategory("")}
                     className={`block w-full text-left px-3 py-2 rounded text-sm ${
-                      selectedCategory === "" ? "bg-blue-100 text-blue-700" : "hover:bg-gray-100"
+                      selectedCategory === "" ? "bg-green-100 text-green-700" : "hover:bg-gray-100"
                     }`}
                   >
                     All Categories
@@ -293,7 +434,7 @@ export default function ServicesMarketplace() {
                       onClick={() => setSelectedCategory(category.value)}
                       className={`block w-full text-left px-3 py-2 rounded text-sm ${
                         selectedCategory === category.value
-                          ? "bg-blue-100 text-blue-700"
+                          ? "bg-green-100 text-green-700"
                           : "hover:bg-gray-100"
                       }`}
                     >
@@ -330,7 +471,7 @@ export default function ServicesMarketplace() {
                   <button
                     onClick={() => setSelectedPriceRange("")}
                     className={`block w-full text-left px-3 py-2 rounded text-sm ${
-                      selectedPriceRange === "" ? "bg-blue-100 text-blue-700" : "hover:bg-gray-100"
+                      selectedPriceRange === "" ? "bg-green-100 text-green-700" : "hover:bg-gray-100"
                     }`}
                   >
                     Any Price
@@ -341,7 +482,7 @@ export default function ServicesMarketplace() {
                       onClick={() => setSelectedPriceRange(range.label)}
                       className={`block w-full text-left px-3 py-2 rounded text-sm ${
                         selectedPriceRange === range.label
-                          ? "bg-blue-100 text-blue-700"
+                          ? "bg-green-100 text-green-700"
                           : "hover:bg-gray-100"
                       }`}
                     >
@@ -390,13 +531,13 @@ export default function ServicesMarketplace() {
                 <div className="flex border border-gray-300 rounded-md">
                   <button
                     onClick={() => setViewMode("grid")}
-                    className={`p-2 ${viewMode === "grid" ? "bg-blue-100 text-blue-700" : ""}`}
+                    className={`p-2 ${viewMode === "grid" ? "bg-green-100 text-green-700" : ""}`}
                   >
                     <Grid className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => setViewMode("list")}
-                    className={`p-2 ${viewMode === "list" ? "bg-blue-100 text-blue-700" : ""}`}
+                    className={`p-2 ${viewMode === "list" ? "bg-green-100 text-green-700" : ""}`}
                   >
                     <List className="h-4 w-4" />
                   </button>
@@ -405,18 +546,38 @@ export default function ServicesMarketplace() {
             </div>
 
             {/* Services Grid/List */}
-            <div className={`${
-              viewMode === "grid" 
-                ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
-                : "space-y-4"
-            }`}>
-              {filteredServices.map((service) => (
-                <ServiceCard key={service.id} service={service} />
-              ))}
-            </div>
-
-            {/* Empty State */}
-            {filteredServices.length === 0 && (
+            {isLoading ? (
+              <div className={`${
+                viewMode === "grid" 
+                  ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
+                  : "space-y-4"
+              }`}>
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <Card key={i} className="animate-pulse border border-gray-200 rounded-xl overflow-hidden bg-white">
+                    <div className="h-60 bg-gray-100" />
+                    <CardContent className="pt-4">
+                      <div className="h-5 bg-gray-100 rounded w-3/4 mb-2" />
+                      <div className="h-4 bg-gray-100 rounded w-1/2 mb-2" />
+                      <div className="h-4 bg-gray-100 rounded w-5/6" />
+                    </CardContent>
+                    <CardFooter className="flex justify-between">
+                      <div className="h-5 bg-gray-100 rounded w-1/4" />
+                      <div className="h-9 bg-gray-100 rounded w-1/3" />
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            ) : filteredServices.length > 0 ? (
+              <div className={`${
+                viewMode === "grid" 
+                  ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
+                  : "space-y-4"
+              }`}>
+                {filteredServices.map((service) => (
+                  <ServiceCard key={service.id} service={service} />
+                ))}
+              </div>
+            ) : (
               <div className="text-center py-12">
                 <div className="text-6xl mb-4">🔍</div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
