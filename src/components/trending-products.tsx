@@ -10,6 +10,7 @@ import { getAllOrdersNoMax } from "@/lib/firebase-orders";
 import { formatCurrency } from "@/lib/utils";
 import { useWishlist, type WishlistItem } from "@/hooks/use-wishlist";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
+import { recommendProducts } from "./ML-training-tranding";
 
 export default function TrendingProducts() {
   const navigate = useNavigate();
@@ -25,8 +26,14 @@ export default function TrendingProducts() {
         // Get trending products - just get recent products for now
         const { products: allProducts } = await getProducts({}, 12);
         // maching learning based trending logic can go here
+        const getAllOrdersNoMaxs = await getAllOrdersNoMax();
+        const recomendation = recommendProducts(allProducts, getAllOrdersNoMaxs);
+        // console.log("recomendation", recomendation);
+        // just show first 8 for now 
+        const getRecommendation = recomendation.map(v=>v?.product).slice(0, 8) 
+        setTrendingProducts(getRecommendation);
+        // setTrendingProducts(allProducts.slice(0, 8));
 
-        setTrendingProducts(allProducts.slice(0, 8));
       } catch (error: unknown) {
         console.error("Error loading trending products:", error);
         setTrendingProducts([]);

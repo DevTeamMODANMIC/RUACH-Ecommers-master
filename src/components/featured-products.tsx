@@ -5,11 +5,14 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, Star, Award, TrendingUp, ChevronRight, Heart, Sparkles, Eye, X, Store } from "lucide-react";
 import { getProducts, type Product } from "@/lib/firebase-products";
+import { getAllOrdersNoMax } from "@/lib/firebase-orders";
 import { getVendor, type Vendor } from "@/lib/firebase-vendors";
 import { useCart } from "@/components/cart-provider";
 import { formatCurrency } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { useWishlist, type WishlistItem } from "@/hooks/use-wishlist";
+// import recommendProducts from "./ML-training-moduel"
+import {recommendProducts} from "./ML-training-moduel"
 
 export default function FeaturedProducts() {
   const navigate = useNavigate();
@@ -27,7 +30,22 @@ export default function FeaturedProducts() {
         setLoading(true);
         const { products: allProducts } = await getProducts({}, 20);
         const featured = allProducts.filter((p) => p.inStock).slice(0, 8);
-        setProducts(featured);
+        const getAllOrdersNoMaxs = await getAllOrdersNoMax();
+        // marching learning 
+        const train_x = allProducts // .map(val=>{productName: val?.name}) //.map(p => p.salesCount || 0);
+        const train_y = getAllOrdersNoMaxs//.map(o => o.productId);
+        
+        // console.log("train_x", train_x)
+        // console.log("train_y", train_y)
+        
+        const recomendation = recommendProducts(train_x, train_y)
+        console.log("recomendation", recomendation, "featured", featured)
+
+        const getRecommendation = recomendation.map(v=>v?.product).slice(0, 8)
+
+        setProducts(getRecommendation);
+        // setProducts(featured);
+
       } catch (error: unknown) {
         console.error("Error loading featured products:", error);
         setProducts([]);
@@ -143,7 +161,7 @@ export default function FeaturedProducts() {
 
         {products.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto px-4">
-            {products.map((product) => (
+            {products?.map((product) => (
               <Card
                 key={product.id}
                 className="group relative overflow-hidden border border-gray-200 hover:border-green-500 hover:shadow-lg transition-all duration-200 rounded-xl bg-white flex flex-col h-full"
