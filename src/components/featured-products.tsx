@@ -28,7 +28,7 @@ export default function FeaturedProducts() {
     const loadFeaturedProducts = async () => {
       try {
         setLoading(true);
-        const { products: allProducts } = await getProducts({}, 20);
+        const { products: allProducts } = await getProducts({}, 500);
         const featured = allProducts.filter((p) => p.inStock).slice(0, 8);
         const getAllOrdersNoMaxs = await getAllOrdersNoMax();
         // marching learning 

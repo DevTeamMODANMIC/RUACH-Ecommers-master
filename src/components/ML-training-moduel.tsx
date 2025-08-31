@@ -78,6 +78,7 @@ function kMeans(vectors: number[][], k = 3, maxIterations = 100) {
 }
 
 // --- Recommend products using K-means clustering ---
+// Prevents repeating products across orders
 export function recommendProducts(products, orders) {
   const productVectors = products.map(productToVector);
   const { assignments } = kMeans(productVectors, 3);
@@ -87,13 +88,25 @@ export function recommendProducts(products, orders) {
     cluster: assignments[i]
   }));
 
-  return orders.flatMap(order => {
+  const seen = new Set(); // track product IDs
+  const recommendations: any[] = [];
+
+  for (const order of orders) {
     const orderVec = orderToVector(order);
-    const clusterScores = clusteredProducts.map(p => ({
-      product: p,
-      score: euclidean(productToVector(p), orderVec),
-      cluster: p.cluster
-    }));
-    return clusterScores.sort((a, b) => a.score - b.score).slice(0, 3);
-  });
+
+    const clusterScores = clusteredProducts
+      .map(p => ({
+        product: p,
+        score: euclidean(productToVector(p), orderVec),
+        cluster: p.cluster
+      }))
+      .filter(item => !seen.has(item.product.id)) // prevent duplicates
+      .sort((a, b) => a.score - b.score)
+      .slice(0, 3);
+
+    clusterScores.forEach(item => seen.add(item.product.id)); // mark as used
+    recommendations.push(...clusterScores);
+  }
+
+  return recommendations;
 }

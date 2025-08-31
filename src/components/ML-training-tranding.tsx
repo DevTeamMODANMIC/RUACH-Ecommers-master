@@ -40,11 +40,9 @@ function markTrending(products) {
       ? product.createdAt.seconds * 1000
       : now;
 
-    // recency factor: newer products get higher chance
     const ageInDays = (now - createdAt) / (1000 * 60 * 60 * 24);
-    const recencyBoost = ageInDays < 30 ? 0.3 : 0; // boost if created < 30 days ago
+    const recencyBoost = ageInDays < 30 ? 0.3 : 0; // boost if <30 days old
 
-    // final probability = base 20% + recency
     const trendingProb = 0.2 + recencyBoost;
 
     return {
@@ -54,9 +52,8 @@ function markTrending(products) {
   });
 }
 
-// --- Recommend products using clustering ---
+// --- Recommend products without repeats ---
 export function recommendProducts(products, orders) {
-  // first, mark trending
   const trendingProducts = markTrending(products);
 
   const productVectors = trendingProducts.map(productToVector);
@@ -67,23 +64,30 @@ export function recommendProducts(products, orders) {
     cluster: assignments[i]
   }));
 
-  return orders.flatMap(order => {
+  const seen = new Set<string>(); // track used products
+  const recommendations: any[] = [];
+
+  for (const order of orders) {
     const orderVec = orderToVector(order);
 
-    const scored = clusteredProducts.map(p => ({
-      product: p,
-      score: euclidean(productToVector(p), orderVec),
-      cluster: p.cluster,
-      isTrending: p.isTrending
-    }));
-
-    return scored
+    const scored = clusteredProducts
+      .map(p => ({
+        product: p,
+        score: euclidean(productToVector(p), orderVec),
+        cluster: p.cluster,
+        isTrending: p.isTrending
+      }))
+      .filter(p => !seen.has(p.product.id)) // skip duplicates
       .sort((a, b) => {
-        // trending products come first if scores are similar
         if (a.isTrending && !b.isTrending) return -1;
         if (!a.isTrending && b.isTrending) return 1;
         return a.score - b.score;
       })
       .slice(0, 3);
-  });
+
+    scored.forEach(item => seen.add(item.product.id)); // mark as used
+    recommendations.push(...scored);
+  }
+
+  return recommendations;
 }

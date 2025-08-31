@@ -24,7 +24,7 @@ export default function TrendingProducts() {
       setLoading(true);
       try {
         // Get trending products - just get recent products for now
-        const { products: allProducts } = await getProducts({}, 12);
+        const { products: allProducts } = await getProducts({}, 500);
         // maching learning based trending logic can go here
         const getAllOrdersNoMaxs = await getAllOrdersNoMax();
         const recomendation = recommendProducts(allProducts, getAllOrdersNoMaxs);
