@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "../components/ui/select"
 import { Label } from "../components/ui/label"
-import { Loader2, X } from "lucide-react"
+import { Loader2, X, Image as ImageIcon } from "lucide-react"
 import { MAIN_CATEGORIES } from "../lib/categories"
 import { VendorLayout } from "../components/vendor-layout"
 
@@ -254,23 +254,23 @@ export default function VendorAddProductPage() {
         )}
 
         <div>
-          <Label htmlFor="stockQuantity">Stock Quantity</Label>
-          <Input
-            id="stockQuantity"
-            type="number"
-            name="stockQuantity"
-            value={formData.stockQuantity}
-            onChange={handleChange}
-          />
-        </div>
-
-        <div>
           <Label>Product Images</Label>
           <CloudinaryUploadWidget
             onUploadSuccess={handleCloudinaryUpload}
             buttonText="Upload Images"
             multiple
           />
+          
+          {/* Image upload info */}
+          <div className="mt-2 text-sm text-gray-600 flex items-center gap-2">
+            <ImageIcon className="h-4 w-4" />
+            <span>
+              {cloudinaryImages.length > 0 
+                ? `${cloudinaryImages.length} image${cloudinaryImages.length > 1 ? 's' : ''} uploaded` 
+                : 'No images uploaded yet'}
+            </span>
+          </div>
+          
           {cloudinaryImages.length > 0 && (
             <div className="mt-4 grid grid-cols-3 gap-4">
               {cloudinaryImages.map((image) => (

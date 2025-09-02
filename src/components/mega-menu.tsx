@@ -1,5 +1,4 @@
-
-
+import * as React from "react"
 import { useState } from "react"
 // import Link from "next/link"
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
@@ -199,6 +198,12 @@ interface MegaMenuProps {
   onNavigate?: () => void
 }
 
+interface MobileMegaMenuProps {
+  onNavigate?: () => void
+  isOpen?: boolean
+  onToggle?: () => void
+}
+
 // Desktop Mega Menu Component
 export function DesktopMegaMenu({ pathname, onNavigate }: MegaMenuProps) {
   return (
@@ -298,54 +303,111 @@ export function DesktopMegaMenu({ pathname, onNavigate }: MegaMenuProps) {
 }
 
 // Mobile Mega Menu Component (Accordion Style)
-export function MobileMegaMenu({ onNavigate }: { onNavigate?: () => void }) {
+export function MobileMegaMenu({ onNavigate, isOpen, onToggle }: MobileMegaMenuProps) {
+  // Check if a category has any items (not just subcategories)
+  const hasItems = (category: typeof megaMenuCategories[0]) => {
+    return category.subcategories.some(sub => sub.items.length > 0);
+  };
+
   return (
-    <div className="max-h-[350px] overflow-y-auto pr-2">
-      <div className="space-y-2">
-      <Link
-        to="/shop"
-        onClick={onNavigate}
-        className="block text-gray-700 font-medium py-2"
-      >
-        All Products
-      </Link>
-      
-      {megaMenuCategories.map((category) => (
-        <Collapsible key={category.title}>
-          <CollapsibleTrigger className="flex items-center justify-between w-full text-left py-2 text-gray-700 hover:text-green-600 transition-colors">
-            <span className="font-medium text-sm">{category.title}</span>
-            <ChevronRight className="h-4 w-4 transition-transform data-[state=open]:rotate-90" />
-          </CollapsibleTrigger>
-          <CollapsibleContent className="ml-4 space-y-2 pb-2">
-            {category.subcategories.map((subcategory) => (
-              <div key={subcategory.name}>
-                <Link
-                  to={`/shop?category=${category.title.toLowerCase().replace(/\s+/g, '-')}&subcategory=${subcategory.name.toLowerCase().replace(/\s+/g, '-')}`}
-                  onClick={onNavigate}
-                  className="block text-sm text-gray-600 hover:text-green-600 py-1 transition-colors"
-                >
-                  {subcategory.name}
-                </Link>
-                {subcategory.items.length > 0 && (
-                  <div className="ml-3 space-y-1">
-                    {subcategory.items.map((item) => (
-                      <Link
-                        key={item}
-                        to={`/shop?search=${encodeURIComponent(item)}`}
-                        onClick={onNavigate}
-                        className="block text-xs text-gray-500 hover:text-green-600 py-0.5 transition-colors"
-                      >
-                        {item}
-                      </Link>
-                    ))}
-                  </div>
+    <div className="scroll-shadow">
+      <Collapsible open={true} onOpenChange={() => {}}>
+        <CollapsibleTrigger asChild>
+          <Link
+            to="/shop"
+            onClick={(e) => {
+              e.preventDefault();
+              // Don't close the menu when clicking on Shop
+              if (onToggle) {
+                onToggle();
+              }
+            }}
+            className="flex items-center justify-between w-full py-2 px-4 text-gray-700 font-medium transition-all duration-300 backdrop-blur-sm hover:bg-gray-50/80"
+          >
+            <span>All Products</span>
+            <ChevronRight className="h-4 w-4 transition-transform duration-300 data-[state=open]:rotate-90" />
+          </Link>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="space-y-1 mt-1">
+            {megaMenuCategories.map((category) => (
+              <React.Fragment key={category.title}>
+                {hasItems(category) ? (
+                  <Collapsible defaultOpen={true}>
+                    <CollapsibleTrigger asChild>
+                      <div className="flex items-center justify-between w-full py-2 px-4 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors mt-2">
+                        <span className="font-medium text-sm">{category.title}</span>
+                        <ChevronRight className="h-4 w-4 transition-transform duration-300 data-[state=open]:rotate-90" />
+                      </div>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="ml-4 space-y-1 mt-2">
+                        {category.subcategories.map((subcategory) => (
+                          <React.Fragment key={subcategory.name}>
+                            {subcategory.items.length > 0 ? (
+                              <Collapsible defaultOpen={true}>
+                                <CollapsibleTrigger asChild>
+                                  <div className="flex items-center justify-between w-full py-1.5 px-3 text-gray-600 hover:bg-gray-100 rounded-md transition-colors text-sm">
+                                    {subcategory.name}
+                                    <ChevronRight className="h-4 w-4 transition-transform duration-300 data-[state=open]:rotate-90" />
+                                  </div>
+                                </CollapsibleTrigger>
+                                <CollapsibleContent>
+                                  <div className="ml-3 space-y-1 mt-1">
+                                    {subcategory.items.map((item) => (
+                                      <Link
+                                        key={item}
+                                        to={`/shop?search=${encodeURIComponent(item)}`}
+                                        onClick={() => {
+                                          if (onNavigate) {
+                                            onNavigate();
+                                          }
+                                        }}
+                                        className="block text-sm text-gray-600 hover:text-green-600 hover:bg-gray-50 rounded-md py-1.5 px-3 transition-colors"
+                                      >
+                                        {item}
+                                      </Link>
+                                    ))}
+                                  </div>
+                                </CollapsibleContent>
+                              </Collapsible>
+                            ) : (
+                              <Link
+                                to={`/shop?category=${category.title.toLowerCase().replace(/\s+/g, '-')}&subcategory=${subcategory.name.toLowerCase().replace(/\s+/g, '-')}`}
+                                onClick={() => {
+                                  // Don't close the menu when navigating to a subcategory
+                                  if (onNavigate) {
+                                    onNavigate();
+                                  }
+                                }}
+                                className="block text-sm text-gray-600 hover:text-green-600 hover:bg-gray-50 rounded-md py-1.5 px-3 transition-colors"
+                              >
+                                {subcategory.name}
+                              </Link>
+                            )}
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                ) : (
+                  <Link
+                    to={`/shop?search=${encodeURIComponent(category.title)}`}
+                    onClick={() => {
+                      if (onNavigate) {
+                        onNavigate();
+                      }
+                    }}
+                    className="block py-2 px-4 text-gray-700 hover:text-green-600 hover:bg-gray-50 rounded-md transition-colors"
+                  >
+                    {category.title}
+                  </Link>
                 )}
-              </div>
+              </React.Fragment>
             ))}
-          </CollapsibleContent>
-        </Collapsible>
-      ))}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
-    </div>
-  )
+  );
 }

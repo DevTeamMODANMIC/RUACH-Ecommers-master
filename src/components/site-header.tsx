@@ -9,10 +9,14 @@ import {
   X,
   Search,
   ChevronDown,
+  ChevronRight,
   Phone,
   LogOut,
   Package,
   User,
+  ArrowLeft,
+  Layers,
+  DollarSign
 } from "lucide-react"
 import { Input } from "../../src/components/ui/input"
 import { Button } from "../../src/components/ui/button"
@@ -76,6 +80,7 @@ export default function HeaderImproved() {
   const { isVendor } = useVendor()
   const { isServiceProvider } = useServiceProvider()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [categoriesOpen, setCategoriesOpen] = useState(true) // Default to open
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -84,6 +89,19 @@ export default function HeaderImproved() {
     setSearch("")
   }
 
+  const handleNavigate = () => {
+    // Only close the mobile menu when navigating to a specific page
+    setMobileOpen(false)
+  }
+
+  const handleCategoriesToggle = () => {
+    setCategoriesOpen(!categoriesOpen)
+  }
+
+  const handleCategoryClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setCategoriesOpen(true);
+  }
   return (
     <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur shadow-sm">
       {/* Top Utility Bar */}
@@ -113,7 +131,7 @@ export default function HeaderImproved() {
               <Menu className="h-6 w-6" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="pr-0 bg-white/95 backdrop-blur-md border-r border-gray-200/50 shadow-2xl">
+          <SheetContent side="left" className="pr-0 bg-white/95 backdrop-blur-md border-r border-gray-200/50 shadow-2xl overflow-y-auto mobile-menu-scrollbar">
             <SheetHeader className="px-6 bg-gray-50/80 backdrop-blur-sm border-b border-gray-200/50 mb-4">
               <SheetTitle>Menu</SheetTitle>
             </SheetHeader>
@@ -122,7 +140,14 @@ export default function HeaderImproved() {
                 <Link
                   key={link.title}
                   to={link.href}
-                  onClick={() => setMobileOpen(false)}
+                  onClick={(e) => {
+                    if (link.title === "Shop") {
+                      // Always navigate to the shop page when clicking on Shop
+                      handleNavigate();
+                    } else {
+                      setMobileOpen(false);
+                    }
+                  }}
                   className={clsx(
                     "block py-3 px-4 rounded-lg transition-all duration-300 backdrop-blur-sm", 
                     pathname === link.href 
@@ -134,8 +159,11 @@ export default function HeaderImproved() {
                 </Link>
               ))}
               <div className="bg-gray-50/50 backdrop-blur-sm rounded-lg p-4 border border-gray-200/30">
-                <p className="uppercase text-xs text-gray-500 mb-3 font-medium">Categories</p>
-                <MobileMegaMenu onNavigate={() => setMobileOpen(false)} />
+                <MobileMegaMenu 
+                  onNavigate={handleNavigate}
+                  isOpen={categoriesOpen}
+                  onToggle={handleCategoriesToggle}
+                />
               </div>
 
               {/* Mobile Vendor CTA */}

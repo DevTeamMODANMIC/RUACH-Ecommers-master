@@ -1,11 +1,9 @@
-
-
 import { useState, useEffect } from "react"
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Star, Eye, ShoppingCart, Heart, X, Store, User } from "lucide-react"
+import { Star, Eye, ShoppingCart, Heart, X, Store, User, Images } from "lucide-react"
 import { useCart } from "@/components/cart-provider"
 import { formatCurrency } from "@/lib/utils"
 import { useWishlist, type WishlistItem } from "@/hooks/use-wishlist"
@@ -194,6 +192,14 @@ export default function ProductGrid({ products, isLoading = false }: ProductGrid
                 {product.new && (
                   <div className="absolute bottom-4 left-4 z-20">
                     <Badge className="bg-blue-500 hover:bg-blue-600">New Arrival</Badge>
+                  </div>
+                )}
+                
+                {/* Multiple images indicator */}
+                {product.images && product.images.length > 1 && (
+                  <div className="absolute top-2 left-2 z-10 bg-black/70 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
+                    <Images className="h-3 w-3" />
+                    <span>{product.images.length}</span>
                   </div>
                 )}
             
