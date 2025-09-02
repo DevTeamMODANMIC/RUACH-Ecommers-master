@@ -1,15 +1,17 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import { useAuth } from "@/components/auth-provider"
-import { getServiceProviderByOwnerId, clearServiceProviderCache } from "@/lib/firebase-service-providers"
-import { ServiceProvider } from "@/types"
+import { useAuth } from "../components/auth-provider"
+import { getServiceProviderByOwnerId, clearServiceProviderCache } from "../lib/firebase-service-providers"
+import { ServiceProvider } from "../types"
+import { getUserStores } from "../lib/firebase-vendors"
 
 export function useServiceProvider() {
   const { user, isLoading: authLoading } = useAuth()
   const [serviceProvider, setServiceProvider] = useState<ServiceProvider | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isVendor, setIsVendor] = useState(false)
   const abortControllerRef = useRef<AbortController | null>(null)
   const retryCountRef = useRef(0)
   const maxRetries = 2
@@ -17,6 +19,19 @@ export function useServiceProvider() {
   const fetchServiceProviderData = async (userId: string, retryCount = 0) => {
     try {
       console.log(`Fetching service provider data for user: ${userId} (attempt ${retryCount + 1})`);
+      
+      // First check if user is a vendor (mutual exclusivity)
+      const vendorStores = await getUserStores(userId)
+      const userIsVendor = vendorStores.length > 0
+      setIsVendor(userIsVendor)
+      
+      if (userIsVendor) {
+        console.log("User is a vendor - cannot be a service provider")
+        setServiceProvider(null)
+        setError(null)
+        retryCountRef.current = 0
+        return
+      }
       
       // Create new abort controller for this request
       if (abortControllerRef.current) {
@@ -123,13 +138,27 @@ export function useServiceProvider() {
   }
 
   const loading = authLoading || isLoading
-  const isServiceProvider = !!serviceProvider
+  const isServiceProvider = !!serviceProvider && !isVendor
+
+  // Debug logging for service provider status
+  if (user && !loading) {
+    console.log('Service Provider Status Debug:', {
+      userId: user.uid,
+      userEmail: user.email,
+      hasServiceProvider: !!serviceProvider,
+      isVendor,
+      isServiceProvider,
+      providerName: serviceProvider?.name,
+      loading
+    })
+  }
 
   return { 
     serviceProvider,
     isServiceProvider, 
     loading,
     error,
+    isVendor,
     retryCount: retryCountRef.current,
     refreshServiceProvider
   }
