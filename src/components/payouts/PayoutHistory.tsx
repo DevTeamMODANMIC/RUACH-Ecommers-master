@@ -72,7 +72,7 @@ export default function PayoutHistory() {
                 <div>
                   <div className="font-medium">{formatCurrency(payout.amount)}</div>
                   <div className="text-sm text-gray-500">
-                    {payout.periodStart.toDate().toLocaleDateString()} - {payout.periodEnd.toDate().toLocaleDateString()}
+                    {payout.periodStart.toLocaleDateString()} - {payout.periodEnd.toLocaleDateString()}
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
