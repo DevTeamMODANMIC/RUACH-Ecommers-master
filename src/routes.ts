@@ -12,6 +12,7 @@ import AdminProductsImport from './pages/AdminProductsImport'
 import AdminServiceProviders from './pages/AdminService-providers'
 import AdminUsers from './pages/AdminUsers'
 import AdminVendors from './pages/AdminVendors'
+import AdminPayouts from './pages/AdminPayouts'
 import BulkOrder from './pages/Bulk-order'
 import Cart from './pages/Cart'
 import Checkout from './pages/Checkout.tsx'
@@ -27,6 +28,7 @@ import Faq from './pages/Faq'
 import ForgotPassword from './pages/Forgot-password'
 import Index from './pages/Index'
 import Login from './pages/Login'
+import MyBookings from './pages/MyBookings'
 import OrderConfirmation from './pages/Order-confirmation'
 import OrderTrackingDetail from './pages/OrderTrackingDetail'
 import PaymentSuccessful from './pages/Payment-successful'
@@ -75,6 +77,7 @@ import VendorDashboardProductsParamEdit from './pages/VendorDashboardProductsPar
 import VendorDashboardProfile from './pages/VendorDashboardProfile'
 import VendorDashboardReviews from './pages/VendorDashboardReviews'
 import VendorDashboardSettings from './pages/VendorDashboardSettings'
+import VendorDashboardPayouts from './pages/VendorDashboardPayouts'
 import VendorParam from './pages/VendorParam'
 import VendorRegister from './pages/VendorRegister'
 import VendorStores from './pages/VendorStores'
@@ -101,6 +104,7 @@ const routes: RouteDef[] = [
   { path: '/admin/service-providers', Component: AdminServiceProviders },
   { path: '/admin/users', Component: AdminUsers },
   { path: '/admin/vendors', Component: AdminVendors },
+  { path: '/admin/payouts', Component: AdminPayouts },
   { path: '/bulk-order', Component: BulkOrder },
   { path: '/cart', Component: Cart },
   { path: '/checkout', Component: Checkout },
@@ -115,6 +119,7 @@ const routes: RouteDef[] = [
   { path: '/faq', Component: Faq },
   { path: '/forgot-password', Component: ForgotPassword },
   { path: '/login', Component: Login },
+  { path: '/my-bookings', Component: MyBookings },
   { path: '/order-confirmation', Component: OrderConfirmation },
   { path: '/payment-successful', Component: PaymentSuccessful },
   { path: '/privacy-policy', Component: PrivacyPolicy },
@@ -164,6 +169,7 @@ const routes: RouteDef[] = [
   { path: '/vendor/dashboard/profile', Component: VendorDashboardProfile },
   { path: '/vendor/dashboard/reviews', Component: VendorDashboardReviews },
   { path: '/vendor/dashboard/settings', Component: VendorDashboardSettings },
+  { path: '/vendor/dashboard/payouts', Component: VendorDashboardPayouts },
   { path: '/vendor/:vendorId', Component: VendorParam },
   { path: '/wishlist', Component: Wishlist }
 ]

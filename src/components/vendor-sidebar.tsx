@@ -18,7 +18,8 @@ import {
   Menu,
   Eye,
   ArrowLeft,
-  Layers
+  Layers,
+  DollarSign
 } from "lucide-react"
 
 interface NavItem {
@@ -111,6 +112,11 @@ export function VendorSidebar() {
           title: "Settings",
           href: "/vendor/dashboard/settings",
           icon: Settings
+        },
+        {
+          title: "Payouts",
+          href: "/vendor/dashboard/payouts",
+          icon: DollarSign
         }
       ]
     }

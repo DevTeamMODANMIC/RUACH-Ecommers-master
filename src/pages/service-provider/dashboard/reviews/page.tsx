@@ -16,22 +16,57 @@ import {
   ThumbsUp,
   Download
 } from "lucide-react"
+import { collection, query, where, orderBy, getDocs, updateDoc, doc } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import { useAuth } from "@/components/auth-provider"
 
-// Reviews data will be loaded from the database
-const mockReviews: any[] = []
+// Remove mock data - we'll load from database
+// const mockReviews: any[] = []
 
 export default function ServiceProviderReviewsPage() {
-  const [reviews, setReviews] = useState(mockReviews)
-  const [filteredReviews, setFilteredReviews] = useState(mockReviews)
+  const [reviews, setReviews] = useState<any[]>([])
+  const [filteredReviews, setFilteredReviews] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [ratingFilter, setRatingFilter] = useState<"all" | "5" | "4" | "3" | "2" | "1">("all")
   const [selectedReview, setSelectedReview] = useState<string | null>(null)
   const [responseText, setResponseText] = useState("")
   const [isLoading, setIsLoading] = useState(true)
+  const { user } = useAuth()
 
+  // Fetch reviews from Firebase
   useEffect(() => {
-    setTimeout(() => setIsLoading(false), 1000)
-  }, [])
+    const fetchReviews = async () => {
+      if (!user) return
+      
+      try {
+        setIsLoading(true)
+        const q = query(
+          collection(db, "serviceReviews"),
+          where("providerId", "==", user.uid),
+          orderBy("createdAt", "desc")
+        )
+        
+        const querySnapshot = await getDocs(q)
+        const reviewsData: any[] = []
+        
+        querySnapshot.forEach((doc) => {
+          reviewsData.push({
+            id: doc.id,
+            ...doc.data()
+          })
+        })
+        
+        setReviews(reviewsData)
+        setFilteredReviews(reviewsData)
+      } catch (error) {
+        console.error("Error fetching reviews:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    fetchReviews()
+  }, [user])
 
   useEffect(() => {
     let filtered = [...reviews]
@@ -52,22 +87,36 @@ export default function ServiceProviderReviewsPage() {
     setFilteredReviews(filtered)
   }, [reviews, searchQuery, ratingFilter])
 
-  const handleResponse = (reviewId: string) => {
+  const handleResponse = async (reviewId: string) => {
     if (!responseText.trim()) return
 
-    setReviews(reviews.map(review =>
-      review.id === reviewId
-        ? {
-            ...review,
-            providerResponse: {
-              message: responseText.trim(),
-              createdAt: Date.now()
+    try {
+      // Update in Firebase
+      const reviewRef = doc(db, "serviceReviews", reviewId)
+      await updateDoc(reviewRef, {
+        providerResponse: {
+          message: responseText.trim(),
+          createdAt: Date.now()
+        }
+      })
+
+      // Update local state
+      setReviews(reviews.map(review =>
+        review.id === reviewId
+          ? {
+              ...review,
+              providerResponse: {
+                message: responseText.trim(),
+                createdAt: Date.now()
+              }
             }
-          }
-        : review
-    ))
-    setResponseText("")
-    setSelectedReview(null)
+          : review
+      ))
+      setResponseText("")
+      setSelectedReview(null)
+    } catch (error) {
+      console.error("Error responding to review:", error)
+    }
   }
 
   const getStarRating = (rating: number) => {

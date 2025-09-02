@@ -231,6 +231,7 @@ export default function HeaderImproved() {
                 <>
                   <DropdownMenuItem onSelect={() => navigate("/profile")} className="cursor-pointer hover:bg-gray-50 transition-colors">Profile</DropdownMenuItem>
                   <DropdownMenuItem onSelect={() => navigate("/profile/orders")} className="cursor-pointer hover:bg-gray-50 transition-colors">Orders</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => navigate("/my-bookings")} className="cursor-pointer hover:bg-gray-50 transition-colors">My Bookings</DropdownMenuItem>
                   {isVendor && (
                     <DropdownMenuItem onSelect={() => navigate("/vendor/dashboard")} className="cursor-pointer hover:bg-gray-50 transition-colors">
                       Vendor Dashboard

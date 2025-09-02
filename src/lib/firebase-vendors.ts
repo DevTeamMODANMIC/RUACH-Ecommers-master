@@ -21,6 +21,7 @@ const VENDORS_COLLECTION = "vendors";
 const VENDOR_OWNERS_COLLECTION = "vendorOwners";
 const PRODUCTS_COLLECTION = "products";
 const ORDERS_COLLECTION = "orders";
+const PAYOUTS_COLLECTION = "payouts";
 
 /** Vendor model */
 export interface Vendor {
@@ -34,6 +35,15 @@ export interface Vendor {
   isActive: boolean;
   status?: "pending" | "approved" | "rejected";
   rejected?: boolean;
+  payoutSettings?: {
+    bankName: string;
+    accountNumber: string;
+    accountName: string;
+    routingNumber?: string;
+    swiftCode?: string;
+    payoutFrequency: "weekly" | "biweekly" | "monthly";
+    minimumPayout: number;
+  };
 }
 
 /** Vendor owner model */

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardFooter } from "../components/ui/card"
 import { Input } from "../components/ui/input"
@@ -18,7 +18,8 @@ import {
   ArrowRight,
   Eye,
   Heart,
-  BookOpen
+  BookOpen,
+  X
 } from "lucide-react"
 import { Service, ServiceProvider, ServiceCategory } from "../types"
 import { getAllActiveServices } from "../lib/firebase-services"
@@ -42,12 +43,28 @@ const priceRanges = [
 const locations = ["Lagos", "Abuja", "Port Harcourt", "Kano", "Ibadan", "Benin City"]
 
 export default function ServicesMarketplace() {
+  const location = useLocation()
   const [services, setServices] = useState<(Service & { provider: ServiceProvider })[]>([])
   const [filteredServices, setFilteredServices] = useState<(Service & { provider: ServiceProvider })[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [hoveredServiceId, setHoveredServiceId] = useState<string | null>(null)
+  const [selectedProviderId, setSelectedProviderId] = useState("")
+
+  // Parse URL parameters on component mount
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search)
+    const providerId = searchParams.get('provider')
+    const category = searchParams.get('category')
+    
+    if (providerId) {
+      setSelectedProviderId(providerId)
+    }
+    if (category) {
+      setSelectedCategory(category as ServiceCategory)
+    }
+  }, [location.search])
 
   // Load services and providers on component mount
   useEffect(() => {
@@ -143,6 +160,11 @@ export default function ServicesMarketplace() {
       filtered = filtered.filter(service => service.category === selectedCategory)
     }
 
+    // Provider filter
+    if (selectedProviderId) {
+      filtered = filtered.filter(service => service.providerId === selectedProviderId)
+    }
+
     // Location filter
     if (selectedLocation) {
       filtered = filtered.filter(service => 
@@ -178,7 +200,7 @@ export default function ServicesMarketplace() {
     })
 
     setFilteredServices(filtered)
-  }, [searchQuery, selectedCategory, selectedLocation, selectedPriceRange, sortBy, services])
+  }, [searchQuery, selectedCategory, selectedLocation, selectedPriceRange, sortBy, services, selectedProviderId])
 
   const formatPrice = (service: Service) => {
     if (service.pricingType === "custom") {
@@ -377,10 +399,13 @@ export default function ServicesMarketplace() {
         <div className="container mx-auto px-4">
           <div className="text-center text-white mb-8">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              Find Professional Services
+              Browse Professional Services
             </h1>
             <p className="text-xl max-w-2xl mx-auto">
-              Connect with verified service providers across Nigeria
+              {selectedProviderId 
+                ? "Services from your selected provider"
+                : "Discover and book services from verified professionals across Nigeria"
+              }
             </p>
           </div>
 
@@ -496,6 +521,26 @@ export default function ServicesMarketplace() {
 
           {/* Main Content */}
           <div className="flex-1">
+            {/* Active Filters */}
+            {selectedProviderId && (
+              <div className="mb-4">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-gray-600">Filtered by provider:</span>
+                  <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full flex items-center gap-1">
+                    <span>
+                      {services.find(s => s.providerId === selectedProviderId)?.provider.name || 'Selected Provider'}
+                    </span>
+                    <button
+                      onClick={() => setSelectedProviderId("")}
+                      className="hover:bg-blue-200 rounded-full p-0.5"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Controls */}
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center space-x-4">
@@ -592,6 +637,7 @@ export default function ServicesMarketplace() {
                     setSelectedCategory("")
                     setSelectedLocation("")
                     setSelectedPriceRange("")
+                    setSelectedProviderId("")
                   }}
                   variant="outline"
                 >

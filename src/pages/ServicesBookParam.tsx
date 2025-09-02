@@ -19,23 +19,30 @@ import {
   AlertCircle
 } from "lucide-react"
 import { Service, ServiceProvider, ServiceBooking, UserAddress } from "../types"
-
-// Service data will be loaded from the database based on serviceId
-const mockService: Service | null = null
-
-const mockProvider: ServiceProvider | null = null
+import { getService } from "../lib/firebase-services"
+import { getServiceProvider } from "../lib/firebase-service-providers"
+import { createBooking } from "../lib/firebase-bookings"
+import { generateAvailableSlots, TimeSlot, formatTimeForDisplay } from "../lib/availability"
+import { useAuth } from "../components/auth-provider"
+import { toast } from "sonner"
+import BookingSuccessModal from "../components/booking-success-modal"
 
 export default function ServiceBookingPage() {
   const params = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const serviceId = params.serviceId as string
 
-  const [service] = useState<Service | null>(mockService)
-  const [provider] = useState<ServiceProvider | null>(mockProvider)
+  const [service, setService] = useState<Service | null>(null)
+  const [provider, setProvider] = useState<ServiceProvider | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState("")
   const [selectedTime, setSelectedTime] = useState("")
   const [bookingStep, setBookingStep] = useState(1) // 1: Service Info, 2: Schedule, 3: Details, 4: Payment
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [completedBooking, setCompletedBooking] = useState<Partial<ServiceBooking> | null>(null)
 
   const [bookingForm, setBookingForm] = useState({
     customerName: "",
@@ -55,7 +62,78 @@ export default function ServiceBookingPage() {
     agreedPrice: 0
   })
 
-  const [availableSlots, setAvailableSlots] = useState<any[]>([])
+  const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([])
+
+  // Load service and provider data
+  useEffect(() => {
+    const loadServiceData = async () => {
+      if (!serviceId) {
+        setError("No service ID provided")
+        setIsLoading(false)
+        return
+      }
+
+      try {
+        setIsLoading(true)
+        setError(null)
+
+        console.log('🔍 Loading service:', serviceId)
+        
+        // Load service data
+        const serviceData = await getService(serviceId)
+        
+        if (!serviceData) {
+          setError("Service not found or is no longer available")
+          setIsLoading(false)
+          return
+        }
+
+        // Check if service is active
+        if (!serviceData.isActive) {
+          setError("This service is currently not available for booking")
+          setIsLoading(false)
+          return
+        }
+
+        console.log('✅ Service loaded:', serviceData.name)
+        setService(serviceData)
+
+        // Load provider data
+        console.log('🔍 Loading provider:', serviceData.providerId)
+        const providerData = await getServiceProvider(serviceData.providerId)
+        
+        if (!providerData) {
+          setError("Service provider not found")
+          setIsLoading(false)
+          return
+        }
+
+        // Check if provider is active and approved
+        if (!providerData.isActive || !providerData.isApproved) {
+          setError("This service provider is currently not available")
+          setIsLoading(false)
+          return
+        }
+
+        console.log('✅ Provider loaded:', providerData.name)
+        setProvider(providerData)
+
+        // Load available time slots
+        console.log('🔍 Loading available slots...')
+        const slots = await generateAvailableSlots(providerData.id, 14)
+        setAvailableSlots(slots)
+        console.log('✅ Available slots loaded:', slots.length)
+
+      } catch (err: any) {
+        console.error('💥 Error loading service data:', err)
+        setError(err.message || 'Failed to load service data')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadServiceData()
+  }, [serviceId])
 
   useEffect(() => {
     if (service?.basePrice) {
@@ -65,7 +143,17 @@ export default function ServiceBookingPage() {
 
   const handleBookingSubmit = async () => {
     if (!selectedDate || !selectedTime || !bookingForm.customerName) {
-      alert("Please fill in all required fields")
+      toast.error("Please fill in all required fields", {
+        description: "Make sure to select a date, time, and provide your contact information."
+      })
+      return
+    }
+
+    if (!user) {
+      toast.error("Authentication required", {
+        description: "Please log in to make a booking."
+      })
+      navigate("/login")
       return
     }
 
@@ -73,13 +161,16 @@ export default function ServiceBookingPage() {
     
     try {
       if (!service || !provider) {
-        alert("Service or provider information is not available")
+        toast.error("Service information unavailable", {
+          description: "Unable to load service or provider details. Please try again."
+        })
         return
       }
 
-      const booking: Partial<ServiceBooking> = {
+      const bookingData: Omit<ServiceBooking, "id" | "createdAt" | "updatedAt"> = {
         serviceId: service.id,
         providerId: service.providerId,
+        customerId: user.uid,
         customerName: bookingForm.customerName,
         customerEmail: bookingForm.customerEmail,
         customerPhone: bookingForm.customerPhone,
@@ -100,17 +191,38 @@ export default function ServiceBookingPage() {
         depositAmount: service.depositAmount
       }
 
-      console.log("Submitting booking:", booking)
+      console.log("Submitting booking:", bookingData)
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      // Create the booking in Firebase
+      const bookingId = await createBooking(bookingData)
       
-      alert("Booking submitted successfully! You will receive confirmation via email.")
-      navigate("/services")
+      console.log("✅ Booking created with ID:", bookingId)
       
-    } catch (error) {
+      // Store the completed booking data
+      setCompletedBooking({
+        ...bookingData,
+        id: bookingId
+      })
+      
+      // Show the success modal
+      setShowSuccessModal(true)
+      
+      // Also show a quick toast notification
+      toast.success("🎉 Booking Submitted!", {
+        description: "Your booking has been processed successfully.",
+        duration: 3000
+      })
+      
+    } catch (error: any) {
       console.error("Booking error:", error)
-      alert("Failed to submit booking. Please try again.")
+      toast.error("❌ Booking Failed", {
+        description: error.message || "Something went wrong while processing your booking. Please try again.",
+        duration: 5000,
+        action: {
+          label: "Retry",
+          onClick: () => handleBookingSubmit()
+        }
+      })
     } finally {
       setIsSubmitting(false)
     }
@@ -209,27 +321,35 @@ export default function ServiceBookingPage() {
                 Available Dates
               </label>
               <div className="grid grid-cols-3 gap-3">
-                {availableSlots.map((slot) => (
-                  <button
-                    key={slot.date}
-                    type="button"
-                    onClick={() => {
-                      setSelectedDate(slot.date)
-                      setSelectedTime("") // Reset time when date changes
-                    }}
-                    className={`p-3 text-sm border rounded-lg transition-colors ${
-                      selectedDate === slot.date
-                        ? "border-blue-500 bg-blue-50 text-blue-700"
-                        : "border-gray-300 hover:border-blue-300"
-                    }`}
-                  >
-                    {new Date(slot.date).toLocaleDateString("en-US", {
-                      weekday: "short",
-                      month: "short", 
-                      day: "numeric"
-                    })}
-                  </button>
-                ))}
+                {availableSlots.length > 0 ? (
+                  availableSlots.map((slot) => (
+                    <button
+                      key={slot.date}
+                      type="button"
+                      onClick={() => {
+                        setSelectedDate(slot.date)
+                        setSelectedTime("") // Reset time when date changes
+                      }}
+                      className={`p-3 text-sm border rounded-lg transition-colors ${
+                        selectedDate === slot.date
+                          ? "border-blue-500 bg-blue-50 text-blue-700"
+                          : "border-gray-300 hover:border-blue-300"
+                      }`}
+                    >
+                      {new Date(slot.date).toLocaleDateString("en-US", {
+                        weekday: "short",
+                        month: "short", 
+                        day: "numeric"
+                      })}
+                    </button>
+                  ))
+                ) : (
+                  <div className="col-span-3 text-center py-8 text-gray-500">
+                    <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>No available dates at the moment</p>
+                    <p className="text-sm">Please check back later</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -250,7 +370,7 @@ export default function ServiceBookingPage() {
                           : "border-gray-300 hover:border-blue-300"
                       }`}
                     >
-                      {time}
+                      {formatTimeForDisplay(time)}
                     </button>
                   ))}
                 </div>
@@ -262,7 +382,7 @@ export default function ServiceBookingPage() {
                 <div className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
                   <span className="text-green-800 font-medium">
-                    Selected: {new Date(selectedDate).toLocaleDateString()} at {selectedTime}
+                    Selected: {new Date(selectedDate).toLocaleDateString()} at {formatTimeForDisplay(selectedTime)}
                   </span>
                 </div>
               </div>
@@ -428,7 +548,7 @@ export default function ServiceBookingPage() {
                 <div className="flex justify-between">
                   <span>Date & Time:</span>
                   <span className="font-medium">
-                    {new Date(selectedDate).toLocaleDateString()} at {selectedTime}
+                    {new Date(selectedDate).toLocaleDateString()} at {formatTimeForDisplay(selectedTime)}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -518,19 +638,73 @@ export default function ServiceBookingPage() {
     }
   }
 
-  // Show loading or error state if service/provider data is not available
-  if (!service || !provider) {
+  // Check if user is authenticated
+  if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="text-gray-500 mb-4">
-            <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Service Not Found</h3>
-            <p className="text-gray-600">The requested service could not be found or is no longer available.</p>
+            <User className="h-12 w-12 mx-auto mb-4 text-blue-400" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Login Required</h3>
+            <p className="text-gray-600">Please log in to book this service.</p>
           </div>
-          <Button onClick={() => navigate('/services')} variant="outline">
-            Back to Services
-          </Button>
+          <div className="space-x-4">
+            <Button onClick={() => navigate('/login')} className="bg-blue-600 hover:bg-blue-700">
+              Login
+            </Button>
+            <Button onClick={() => navigate('/services')} variant="outline">
+              Back to Services
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Loading Service...</h3>
+          <p className="text-gray-600">Please wait while we load the service details.</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-gray-500 mb-4">
+            <AlertCircle className="h-12 w-12 mx-auto mb-4 text-red-400" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Service Not Found</h3>
+            <p className="text-gray-600">{error}</p>
+          </div>
+          <div className="space-x-4">
+            <Button onClick={() => window.location.reload()} variant="outline">
+              Try Again
+            </Button>
+            <Button onClick={() => navigate('/services')} variant="outline">
+              Back to Services
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show loading state if service/provider data is not available
+  if (!service || !provider) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Loading...</h3>
+          <p className="text-gray-600">Preparing service details...</p>
         </div>
       </div>
     )
@@ -625,6 +799,21 @@ export default function ServiceBookingPage() {
           </Card>
         </div>
       </div>
+
+      {/* Success Modal */}
+      {showSuccessModal && completedBooking && service && provider && (
+        <BookingSuccessModal
+          isOpen={showSuccessModal}
+          onClose={() => setShowSuccessModal(false)}
+          booking={completedBooking}
+          service={service}
+          provider={provider}
+          onViewBookings={() => {
+            setShowSuccessModal(false)
+            navigate("/my-bookings")
+          }}
+        />
+      )}
     </div>
   )
 }

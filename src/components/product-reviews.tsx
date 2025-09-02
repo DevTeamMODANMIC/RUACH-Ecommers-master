@@ -1,5 +1,3 @@
-
-
 import { useState, useEffect } from "react"
 
 import { Button } from "../../src/components/ui/button"
@@ -252,11 +250,10 @@ export function ProductReviews({ productId, productName, availableCountries }: P
                       <div className="flex gap-2 flex-wrap">
                         {review.images.map((image, index) => (
                           <div key={index} className="relative w-20 h-20 rounded-lg overflow-hidden border">
-                            <Image
+                            <img
                               src={image || "/placeholder.svg"}
                               alt={`Review image ${index + 1}`}
-                              fill
-                              className="object-cover"
+                              className="object-cover w-full h-full"
                             />
                           </div>
                         ))}

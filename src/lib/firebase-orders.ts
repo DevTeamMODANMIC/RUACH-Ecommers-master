@@ -23,6 +23,7 @@ export interface OrderItem {
   price: number;
   total: number;
   options?: Record<string, string>;
+  vendorId?: string; // Add vendorId to track which vendor the item belongs to
 }
 
 export interface ShippingAddress {
@@ -78,8 +79,29 @@ export const createOrder = async (
       .substr(2, 9)
       .toUpperCase()}`;
 
+    // Enhance order items with vendor information
+    const enhancedItems = await Promise.all(
+      orderData.items.map(async (item) => {
+        // Get product to retrieve vendorId
+        try {
+          const productDoc = await getDoc(doc(db, "products", item.productId));
+          if (productDoc.exists()) {
+            const productData = productDoc.data();
+            return {
+              ...item,
+              vendorId: productData.vendorId || undefined
+            };
+          }
+        } catch (error) {
+          console.error(`Error fetching product ${item.productId}:`, error);
+        }
+        return item;
+      })
+    );
+
     const order: Omit<Order, "id"> = {
       ...orderData,
+      items: enhancedItems,
       orderNumber,
       createdAt: new Date(),
       updatedAt: new Date(),
