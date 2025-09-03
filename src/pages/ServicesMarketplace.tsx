@@ -272,11 +272,18 @@ export default function ServicesMarketplace() {
                     </div>
                   </div>
                   
-                  <Link to={`/services/book/${service.id}`}>
-                    <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                      Book Now
-                    </Button>
-                  </Link>
+                  <div className="flex space-x-2">
+                    <Link to={`/services/detail/${service.id}`}>
+                      <Button size="sm" variant="outline">
+                        View Details
+                      </Button>
+                    </Link>
+                    <Link to={`/services/book/${service.id}`}>
+                      <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                        Book Now
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>
@@ -303,7 +310,7 @@ export default function ServicesMarketplace() {
         </div>
 
         {/* Service Image */}
-        <Link to={`/services/book/${service.id}`} className="block cursor-pointer">
+        <Link to={`/services/detail/${service.id}`} className="block cursor-pointer">
           <div className="relative h-60 bg-white overflow-hidden">
             <img
               src={service.images?.[0]?.url || '/placeholder.jpg'}
@@ -311,6 +318,16 @@ export default function ServicesMarketplace() {
               className="absolute inset-0 w-full h-full object-contain p-4 transition-transform duration-300 group-hover:scale-105"
               onError={(e) => (e.currentTarget.src = '/placeholder.jpg')}
             />
+            
+            {/* Multiple Images Indicator */}
+            {service.images && service.images.length > 1 && (
+              <div className="absolute bottom-3 right-3 bg-black/70 text-white text-xs px-2 py-1 rounded-full flex items-center">
+                <span className="mr-1">{service.images.length}</span>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+                </svg>
+              </div>
+            )}
             
             {/* Price Badge */}
             <div className="absolute top-3 left-3 bg-green-600 text-white px-2 py-1 rounded text-sm font-medium">
@@ -337,7 +354,7 @@ export default function ServicesMarketplace() {
 
         {/* Service Content */}
         <CardContent className="pt-4 flex-grow">
-          <Link to={`/services/book/${service.id}`} className="block cursor-pointer">
+          <Link to={`/services/detail/${service.id}`} className="block cursor-pointer">
             <h3 className="font-semibold text-lg line-clamp-2 min-h-[3.5rem] group-hover:text-green-600 transition-colors">
               {service.name}
             </h3>
@@ -382,11 +399,18 @@ export default function ServicesMarketplace() {
 
         {/* Book Button */}
         <CardFooter className="pt-0 mt-auto">
-          <Link to={`/services/book/${service.id}`} className="block w-full">
-            <Button size="sm" className="w-full bg-green-600 hover:bg-green-700">
-              Book Service
-            </Button>
-          </Link>
+          <div className="flex space-x-2">
+            <Link to={`/services/detail/${service.id}`} className="flex-1">
+              <Button size="sm" variant="outline" className="w-full">
+                View Details
+              </Button>
+            </Link>
+            <Link to={`/services/book/${service.id}`} className="flex-1">
+              <Button size="sm" className="w-full bg-green-600 hover:bg-green-700">
+                Book
+              </Button>
+            </Link>
+          </div>
         </CardFooter>
       </Card>
     )

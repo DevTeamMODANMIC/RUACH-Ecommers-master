@@ -115,11 +115,23 @@ export default function ServicesMarketplace() {
         <Card className="hover:shadow-lg transition-shadow">
           <CardContent className="p-6">
             <div className="flex space-x-4">
-              <img
-                src={service.images?.[0]?.url || '/placeholder.jpg'}
-                alt={service.name}
-                className="w-24 h-24 rounded-lg object-cover flex-shrink-0"
-              />
+              <div className="relative w-24 h-24 rounded-lg overflow-hidden flex-shrink-0">
+                <img
+                  src={service.images?.[0]?.url || '/placeholder.jpg'}
+                  alt={service.name}
+                  className="w-full h-full object-cover"
+                />
+                
+                {/* Multiple Images Indicator for List View */}
+                {service.images && service.images.length > 1 && (
+                  <div className="absolute bottom-1 right-1 bg-black/70 text-white text-xs px-1 py-0.5 rounded flex items-center">
+                    <span className="mr-0.5">{service.images.length}</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
+              </div>
               <div className="flex-1">
                 <div className="flex items-start justify-between">
                   <div>
@@ -166,6 +178,11 @@ export default function ServicesMarketplace() {
                     </div>
                   </div>
                   
+                  <Link to={`/services/detail/${service.id}`}>
+                    <Button size="sm" variant="outline" className="mr-2">
+                      View Details
+                    </Button>
+                  </Link>
                   <Link to={`/services/book/${service.id}`}>
                     <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
                       Book Now
@@ -187,6 +204,17 @@ export default function ServicesMarketplace() {
             alt={service.name}
             className="w-full h-full object-cover"
           />
+          
+          {/* Multiple Images Indicator */}
+          {service.images && service.images.length > 1 && (
+            <div className="absolute bottom-3 right-3 bg-black/70 text-white text-xs px-2 py-1 rounded-full flex items-center">
+              <span className="mr-1">{service.images.length}</span>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+              </svg>
+            </div>
+          )}
+          
           <div className="absolute top-3 right-3 bg-white/90 px-2 py-1 rounded text-sm font-medium">
             {formatPrice(service)}
           </div>
@@ -230,11 +258,18 @@ export default function ServicesMarketplace() {
             )}
           </div>
 
-          <Link to={`/services/book/${service.id}`} className="block">
-            <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700">
-              Book Service
-            </Button>
-          </Link>
+          <div className="flex space-x-2">
+            <Link to={`/services/detail/${service.id}`} className="flex-1">
+              <Button size="sm" variant="outline" className="w-full">
+                View Details
+              </Button>
+            </Link>
+            <Link to={`/services/book/${service.id}`} className="flex-1">
+              <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700">
+                Book
+              </Button>
+            </Link>
+          </div>
         </CardContent>
       </Card>
     )
