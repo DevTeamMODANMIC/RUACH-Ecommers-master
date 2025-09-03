@@ -96,9 +96,10 @@ export const MAIN_CATEGORIES: CategoryItem[] = [
     id: "fashion", 
     name: "Fashion",
     subcategories: [
-      { id: "mens-fashion", name: "Men's Fashion", items: ["Shirts", "Trousers", "Shoes", "Accessories"] },
-      { id: "womens-fashion", name: "Women's Fashion", items: ["Dresses", "Tops", "Shoes", "Bags"] },
-      { id: "kids-fashion", name: "Kids' Fashion", items: ["Boys Clothing", "Girls Clothing", "Baby Clothes"] }
+      { id: "mens-fashion", name: "Men's Fashion", items: ["Shirts", "Trousers", "Accessories"] },
+      { id: "womens-fashion", name: "Women's Fashion", items: ["Dresses", "Tops", "Bags"] },
+      { id: "kids-fashion", name: "Kids' Fashion", items: ["Boys Clothing", "Girls Clothing", "Baby Clothes"] },
+      { id: "shoes", name: "Shoes", items: ["Men's Shoes", "Women's Shoes", "Kids Shoes", "Sports Shoes", "Casual Shoes", "Formal Shoes"] }
     ]
   },
   { 

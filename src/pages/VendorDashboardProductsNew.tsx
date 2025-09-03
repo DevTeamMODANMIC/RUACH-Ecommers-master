@@ -18,6 +18,15 @@ import { Loader2, X, Image as ImageIcon } from "lucide-react"
 import { MAIN_CATEGORIES } from "../lib/categories"
 import { VendorLayout } from "../components/vendor-layout"
 
+// Define size options for different categories
+const SIZE_OPTIONS = {
+  shoes: ["36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46"],
+  kidsShoes: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"],
+  clothing: ["XS", "S", "M", "L", "XL", "XXL", "XXXL"],
+  kids: ["0-6M", "6-12M", "1-2Y", "2-3Y", "3-4Y", "4-5Y", "5-6Y", "6-7Y", "7-8Y", "8-9Y", "9-10Y", "10-12Y", "12-14Y", "14-16Y"],
+  default: ["One Size"]
+}
+
 export default function VendorAddProductPage() {
   const categories = MAIN_CATEGORIES.filter(
     (c) => c.id !== "all" && c.subcategories && c.subcategories.length > 0
@@ -39,6 +48,7 @@ export default function VendorAddProductPage() {
     subcategory: "",
     inStock: true,
     stockQuantity: "100",
+    size: "" // Add size field
   })
 
   const handleChange = (
@@ -54,6 +64,57 @@ export default function VendorAddProductPage() {
   const handleRemoveCloudinaryImage = (publicId: string) => {
     setCloudinaryImages((prev) => prev.filter((img) => img.publicId !== publicId))
   }
+
+  // Determine which size options to show based on subcategory
+  const getSizeOptions = () => {
+    // Check if subcategory is shoes
+    if (formData.subcategory === "shoes") {
+      return SIZE_OPTIONS.shoes
+    } 
+    // Check if subcategory is kids shoes
+    else if (formData.subcategory === "kids-fashion") {
+      // For kids fashion, we need to determine if it's shoes or clothing
+      // We'll show kids clothing sizes by default, but this could be enhanced
+      // to detect specific items within the subcategory
+      // For now, we'll use a simple approach - if the product name contains
+      // shoe-related keywords, show kids shoe sizes
+      const lowerName = formData.name.toLowerCase();
+      const shoeKeywords = ["shoe", "sneaker", "boot", "sandal", "slipper", "footwear"];
+      const isKidsShoe = shoeKeywords.some(keyword => lowerName.includes(keyword));
+      
+      return isKidsShoe ? SIZE_OPTIONS.kidsShoes : SIZE_OPTIONS.kids
+    }
+    // Check if subcategory is other fashion
+    else if (["mens-fashion", "womens-fashion"].includes(formData.subcategory)) {
+      return SIZE_OPTIONS.clothing
+    }
+    
+    return SIZE_OPTIONS.default
+  }
+
+  // Check if size selection should be shown
+  const shouldShowSizeSelection = () => {
+    // Show size selection for fashion subcategories
+    return formData.category === "fashion" && 
+      ["mens-fashion", "womens-fashion", "kids-fashion", "shoes"].includes(formData.subcategory)
+  }
+
+  // Get current size options (memoized to prevent unnecessary re-renders)
+  const currentSizeOptions = getSizeOptions();
+
+  // Reset size when subcategory or product name changes to ensure correct size options are shown
+  useEffect(() => {
+    // Only reset size if we're showing size selection
+    if (shouldShowSizeSelection()) {
+      // Get current size options based on subcategory and product name
+      const sizeOptions = getSizeOptions();
+      
+      // If current size is not in the new options, reset it
+      if (formData.size && !sizeOptions.includes(formData.size)) {
+        setFormData(prev => ({ ...prev, size: "" }));
+      }
+    }
+  }, [formData.subcategory, formData.name, formData.category]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -74,6 +135,12 @@ export default function VendorAddProductPage() {
       return
     }
 
+    // For fashion categories that require size, require size selection
+    if (shouldShowSizeSelection() && !formData.size) {
+      alert("Please select a size for fashion products.")
+      return
+    }
+
     setSubmitting(true)
     try {
       const selectedCategory = categories.find((cat) => cat.id === formData.category)
@@ -84,6 +151,12 @@ export default function VendorAddProductPage() {
       const finalDisplayCategory = selectedSubcategory
         ? selectedSubcategory.name
         : formData.subcategory
+
+      // Prepare tags including size if applicable
+      const tags = []
+      if (formData.size) {
+        tags.push(`size:${formData.size}`)
+      }
 
       const productData = {
         name: formData.name,
@@ -98,7 +171,7 @@ export default function VendorAddProductPage() {
         stockQuantity: parseInt(formData.stockQuantity),
         origin: "Nigeria",
         availableCountries: ["Nigeria"],
-        tags: [],
+        tags, // Include tags with size information
         reviews: { average: 0, count: 0 },
         vendorId: activeStore.id,
       }
@@ -115,6 +188,9 @@ export default function VendorAddProductPage() {
   }
 
   if (!activeStore) return <div>Loading store information...</div>
+
+  // Check if size selection should be shown
+  const showSizeSelection = shouldShowSizeSelection()
 
   return (
     <VendorLayout 
@@ -169,7 +245,7 @@ export default function VendorAddProductPage() {
             <Select
               value={formData.category || ""}
               onValueChange={(value) => {
-                setFormData((prev) => ({ ...prev, category: value, subcategory: "" }))
+                setFormData((prev) => ({ ...prev, category: value, subcategory: "", size: "" }))
               }}
             >
               <SelectTrigger>
@@ -207,7 +283,7 @@ export default function VendorAddProductPage() {
               <Select
                 value={formData.subcategory || ""}
                 onValueChange={(value) => {
-                  setFormData((prev) => ({ ...prev, subcategory: value }))
+                  setFormData((prev) => ({ ...prev, subcategory: value, size: "" }))
                 }}
               >
                 <SelectTrigger>
@@ -233,6 +309,39 @@ export default function VendorAddProductPage() {
                       </SelectItem>
                     ))
                   })()}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
+
+        {/* Size selection for fashion categories */}
+        {showSizeSelection && (
+          <div className="bg-gray-50 p-4 rounded-lg space-y-4">
+            <div className="space-y-2">
+              <h3 className="text-md font-semibold text-gray-700">Product Size</h3>
+              <p className="text-sm text-gray-600">
+                Select the size for your fashion product.
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="size">Size *</Label>
+              <Select
+                value={formData.size || ""}
+                onValueChange={(value) => {
+                  setFormData((prev) => ({ ...prev, size: value }))
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a size" />
+                </SelectTrigger>
+                <SelectContent>
+                  {currentSizeOptions.map((size) => (
+                    <SelectItem key={size} value={size}>
+                      {size}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

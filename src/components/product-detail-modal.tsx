@@ -25,6 +25,15 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
 
   if (!product) return null;
 
+  // Extract size from tags if it exists
+  let size = "";
+  if (product.tags && Array.isArray(product.tags)) {
+    const sizeTag = product.tags.find((tag: string) => tag.startsWith("size:"));
+    if (sizeTag) {
+      size = sizeTag.replace("size:", "");
+    }
+  }
+
   // Get all available images (cloudinaryImages takes precedence over images)
   const allImages = product.cloudinaryImages && product.cloudinaryImages.length > 0 
     ? product.cloudinaryImages 
@@ -49,7 +58,7 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
         product.images?.[0] ||
         "/placeholder.jpg",
       quantity,
-      options: {},
+      options: size ? { size } : {},
     });
   };
 
@@ -64,7 +73,7 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
         product.images?.[0] ||
         "/placeholder.jpg",
       category: product.category || product.displayCategory,
-      inStock: !product.outOfStock,
+      inStock: !product.outOfStock
     });
   };
 
@@ -210,6 +219,13 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
               <p className="text-gray-600 mt-1">
                 {product.displayCategory || product.category}
               </p>
+
+              {/* Size */}
+              {size && (
+                <p className="text-gray-600 mt-1">
+                  <span className="font-medium">Size:</span> {size}
+                </p>
+              )}
 
               {/* Price */}
               <div className="mt-4">

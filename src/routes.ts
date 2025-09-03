@@ -55,6 +55,7 @@ import ServicesCustomerSupport from './pages/ServicesCustomer-support'
 import ServicesDelivery from './pages/ServicesDelivery'
 import ServicesMarketplace from './pages/ServicesMarketplace'
 import ServicesVendorOnboarding from './pages/ServicesVendor-onboarding'
+import ServicesDetail from './pages/services/detail/[serviceId]/page'
 import ShippingAndDelivery from './pages/Shipping-and-delivery'
 import Shop from './pages/Shop'
 import TrackOrder from './pages/TrackOrder'
@@ -137,6 +138,7 @@ const routes: RouteDef[] = [
   { path: '/services/customer-support', Component: ServicesCustomerSupport },
   { path: '/services/delivery', Component: ServicesDelivery },
   { path: '/services/marketplace', Component: ServicesMarketplace },
+  { path: '/services/detail/:serviceId', Component: ServicesDetail },
   { path: '/services/vendor-onboarding', Component: ServicesVendorOnboarding },
   { path: '/shipping-and-delivery', Component: ShippingAndDelivery },
   { path: '/shop', Component: Shop },

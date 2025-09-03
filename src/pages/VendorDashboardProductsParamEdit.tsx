@@ -17,6 +17,15 @@ import { VendorLayout } from "../components/vendor-layout"
 import CloudinaryUploadWidget from "../components/cloudinary-upload-widget"
 import { MAIN_CATEGORIES } from "../lib/categories"
 
+// Define size options for different categories
+const SIZE_OPTIONS = {
+  shoes: ["36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46"],
+  kidsShoes: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"],
+  clothing: ["XS", "S", "M", "L", "XL", "XXL", "XXXL"],
+  kids: ["0-6M", "6-12M", "1-2Y", "2-3Y", "3-4Y", "4-5Y", "5-6Y", "6-7Y", "7-8Y", "8-9Y", "9-10Y", "10-12Y", "12-14Y", "14-16Y"],
+  default: ["One Size"]
+}
+
 interface ProductFormData {
   name: string
   description: string
@@ -32,6 +41,7 @@ interface ProductFormData {
   weight?: string
   dimensions?: string
   discount?: number
+  size?: string // Add size field
 }
 
 // Use centralized categories to match shop page filtering
@@ -77,7 +87,19 @@ export default function VendorEditProductPage() {
           return
         }
         
-        setProduct(productData)
+        // Extract size from tags if it exists
+        let size = ""
+        if (productData.tags && Array.isArray(productData.tags)) {
+          const sizeTag = productData.tags.find((tag: string) => tag.startsWith("size:"))
+          if (sizeTag) {
+            size = sizeTag.replace("size:", "")
+          }
+        }
+        
+        setProduct({
+          ...productData,
+          size // Add size to the product state
+        })
       } catch (error) {
         console.error("Error fetching product:", error)
         toast({
@@ -111,6 +133,40 @@ export default function VendorEditProductPage() {
       ...product,
       [name]: value
     })
+  }
+  
+  // Check if size selection should be shown
+  const shouldShowSizeSelection = (category: string, subcategory: string) => {
+    // Show size selection for fashion subcategories
+    return category === "fashion" && 
+      ["mens-fashion", "womens-fashion", "kids-fashion", "shoes"].includes(subcategory)
+  }
+  
+  // Determine which size options to show based on subcategory
+  const getSizeOptions = (subcategory: string, productName: string = "") => {
+    // Check if subcategory is shoes
+    if (subcategory === "shoes") {
+      return SIZE_OPTIONS.shoes
+    } 
+    // Check if subcategory is kids fashion
+    else if (subcategory === "kids-fashion") {
+      // For kids fashion, we need to determine if it's shoes or clothing
+      // We'll show kids clothing sizes by default, but this could be enhanced
+      // to detect specific items within the subcategory
+      // For now, we'll use a simple approach - if the product name contains
+      // shoe-related keywords, show kids shoe sizes
+      const lowerName = productName.toLowerCase();
+      const shoeKeywords = ["shoe", "sneaker", "boot", "sandal", "slipper", "footwear"];
+      const isKidsShoe = shoeKeywords.some(keyword => lowerName.includes(keyword));
+      
+      return isKidsShoe ? SIZE_OPTIONS.kidsShoes : SIZE_OPTIONS.kids
+    } 
+    // Check if subcategory is other fashion
+    else if (["mens-fashion", "womens-fashion"].includes(subcategory)) {
+      return SIZE_OPTIONS.clothing
+    }
+    
+    return SIZE_OPTIONS.default
   }
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -157,6 +213,26 @@ export default function VendorEditProductPage() {
         return
       }
       
+      // For fashion categories that require size, require size selection
+      const showSizeSelection = shouldShowSizeSelection(product.category, product.subcategory || product.category)
+      if (showSizeSelection && !product.size) {
+        toast({
+          title: "Validation Error",
+          description: "Please select a size for fashion products.",
+          variant: "destructive"
+        })
+        return
+      }
+      
+      // Prepare tags including size if applicable
+      let tags = product.tags || []
+      if (product.size) {
+        // Remove any existing size tags
+        tags = tags.filter((tag: string) => !tag.startsWith("size:"))
+        // Add the new size tag
+        tags.push(`size:${product.size}`)
+      }
+      
       // Prepare update data
       const updateData = {
         ...product,
@@ -166,7 +242,8 @@ export default function VendorEditProductPage() {
         dimensions: product.dimensions ? JSON.stringify(product.dimensions) : undefined,
         discount: product.discount,
         vendorId: vendor.id,
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        tags // Include updated tags with size information
       }
       
       await updateProduct(productId, updateData)
@@ -224,6 +301,9 @@ export default function VendorEditProductPage() {
       </div>
     )
   }
+  
+  // Check if size selection should be shown
+  const showSizeSelection = shouldShowSizeSelection(product.category, product.subcategory || product.category)
   
   return (
     <VendorLayout 
@@ -351,6 +431,39 @@ export default function VendorEditProductPage() {
                   />
                 </div>
               </div>
+              
+              {/* Size selection for fashion categories */}
+              {showSizeSelection && (
+                <div className="bg-gray-50 p-4 rounded-lg space-y-4">
+                  <div className="space-y-2">
+                    <h3 className="text-md font-semibold text-gray-700">Product Size</h3>
+                    <p className="text-sm text-gray-600">
+                      Select the size for your fashion product.
+                    </p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="size">Size *</Label>
+                    <Select
+                      value={product.size || ""}
+                      onValueChange={(value) => {
+                        setProduct((prev: any) => ({ ...prev, size: value }))
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a size" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getSizeOptions(product.category, product.name).map((size) => (
+                          <SelectItem key={size} value={size}>
+                            {size}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
