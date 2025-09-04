@@ -26,24 +26,12 @@ export function VendorHeaderSwitcher() {
   const { isServiceProvider } = useServiceProvider()
   const [isLoading, setIsLoading] = useState(false)
 
-  // Debug logging
-  console.log('VendorHeaderSwitcher Debug:', {
-    isVendor,
-    isServiceProvider,
-    hasActiveStore: !!activeStore,
-    storeCount: allStores.length,
-    activeStoreName: activeStore?.shopName,
-    canCreateMore: canCreateMoreStores
-  })
-
   // Don't show if user is a service provider (mutual exclusivity)
   if (isServiceProvider) {
-    console.log('VendorHeaderSwitcher hidden - user is a service provider')
     return null
   }
 
   if (!isVendor || allStores.length === 0) {
-    console.log('VendorHeaderSwitcher hidden - no vendor status or stores')
     return null
   }
 

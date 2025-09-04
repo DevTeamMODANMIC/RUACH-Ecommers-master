@@ -18,15 +18,12 @@ export function useServiceProvider() {
 
   const fetchServiceProviderData = async (userId: string, retryCount = 0) => {
     try {
-      console.log(`Fetching service provider data for user: ${userId} (attempt ${retryCount + 1})`);
-      
       // First check if user is a vendor (mutual exclusivity)
       const vendorStores = await getUserStores(userId)
       const userIsVendor = vendorStores.length > 0
       setIsVendor(userIsVendor)
       
       if (userIsVendor) {
-        console.log("User is a vendor - cannot be a service provider")
         setServiceProvider(null)
         setError(null)
         retryCountRef.current = 0
@@ -40,8 +37,6 @@ export function useServiceProvider() {
       abortControllerRef.current = new AbortController()
       
       const provider = await getServiceProviderByOwnerId(userId, abortControllerRef.current)
-      
-      console.log("Service provider found:", provider)
       
       setServiceProvider(provider)
       setError(null)
@@ -59,7 +54,6 @@ export function useServiceProvider() {
           (error?.message?.includes('timeout') || 
            error?.message?.includes('unavailable') ||
            error?.message?.includes('network'))) {
-        console.log(`Retrying service provider fetch (${retryCount + 1}/${maxRetries})...`)
         retryCountRef.current = retryCount + 1
         
         // Wait a bit before retrying
@@ -140,18 +134,8 @@ export function useServiceProvider() {
   const loading = authLoading || isLoading
   const isServiceProvider = !!serviceProvider && !isVendor
 
-  // Debug logging for service provider status
-  if (user && !loading) {
-    console.log('Service Provider Status Debug:', {
-      userId: user.uid,
-      userEmail: user.email,
-      hasServiceProvider: !!serviceProvider,
-      isVendor,
-      isServiceProvider,
-      providerName: serviceProvider?.name,
-      loading
-    })
-  }
+  // Service provider status is determined by whether we have a service provider object
+  // and the user is not a vendor (mutual exclusivity)
 
   return { 
     serviceProvider,

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -7,7 +7,6 @@ import { Star, Eye, ShoppingCart, Heart, X, Store, User, Images } from "lucide-r
 import { useCart } from "@/components/cart-provider"
 import { formatCurrency } from "@/lib/utils"
 import { useWishlist, type WishlistItem } from "@/hooks/use-wishlist"
-import ProductDetailModal from "@/components/product-detail-modal"
 import { getVendor, type Vendor } from "@/lib/firebase-vendors"
 
 interface Product {
@@ -38,11 +37,10 @@ interface ProductGridProps {
 
 export default function ProductGrid({ products, isLoading = false }: ProductGridProps) {
   const [hoveredProductId, setHoveredProductId] = useState<string | null>(null);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [vendors, setVendors] = useState<Record<string, Vendor>>({});
   const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
+  const navigate = useNavigate();
 
   // Fetch vendor information for products
   useEffect(() => {
@@ -85,6 +83,7 @@ export default function ProductGrid({ products, isLoading = false }: ProductGrid
 
   const handleAddToCart = (product: Product, e?: React.MouseEvent) => {
     if (e) e.preventDefault();
+    e?.stopPropagation();
     addToCart({
       productId: product.id,
       name: product.name,
@@ -99,12 +98,14 @@ export default function ProductGrid({ products, isLoading = false }: ProductGrid
 
   const handleProductClick = (product: Product, e?: React.MouseEvent) => {
     if (e) e.preventDefault();
-    setSelectedProduct(product);
-    setIsModalOpen(true);
+    e?.stopPropagation();
+    // Navigate to product detail page instead of opening modal
+    navigate(`/products/${product.id}`);
   };
 
   const handleToggleWishlist = (product: Product, e?: React.MouseEvent) => {
     if (e) e.preventDefault();
+    e?.stopPropagation();
     
     const wishlistItem: WishlistItem = {
       id: product.id,
@@ -302,9 +303,9 @@ export default function ProductGrid({ products, isLoading = false }: ProductGrid
                         <Star 
                           key={i} 
                           className={`h-4 w-4 ${
-                            i < Math.floor(product.rating) 
+                            i < Math.floor(product.rating!) 
                               ? "text-amber-400 fill-amber-400" 
-                              : i < product.rating 
+                              : i < product.rating! 
                                 ? "text-amber-400 fill-amber-400" 
                                 : "text-gray-300"
                           }`}
@@ -342,13 +343,6 @@ export default function ProductGrid({ products, isLoading = false }: ProductGrid
           );
         })}
       </div>
-      
-      {/* Product Detail Modal */}
-      <ProductDetailModal
-        product={selectedProduct}
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
     </>
   );
 }
