@@ -112,127 +112,109 @@ export function ServiceProviderSidebar() {
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
-      {/* Service Provider Info Header */}
-      <div className="p-4 border-b bg-gradient-to-r from-green-50 to-blue-50">
-        <div className="flex items-center gap-3">
-          {serviceProvider.profileImage?.url ? (
-            <img
-              src={serviceProvider.profileImage.url}
-              alt={serviceProvider.name}
-              className="w-10 h-10 rounded-lg object-cover border-2 border-white shadow-sm"
-            />
-          ) : (
-            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-blue-600 rounded-lg flex items-center justify-center">
-              <Wrench className="h-6 w-6 text-white" />
-            </div>
-          )}
-          <div className="min-w-0 flex-1">
-            <h2 className="font-semibold text-sm text-gray-900 truncate">
-              {serviceProvider.name}
-            </h2>
-            <div className="flex items-center gap-2 mt-1">
-              <Badge 
-                variant={serviceProvider.isApproved ? "default" : "secondary"}
-                className="text-xs h-4 px-1"
-              >
-                {serviceProvider.isApproved ? "Active" : "Pending"}
-              </Badge>
+      {/* Header */}
+      <div className="p-6 border-b border-gray-200">
+        <div className="flex items-center">
+          <div className="flex-shrink-0">
+            <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
+              <Wrench className="h-5 w-5 text-white" />
             </div>
           </div>
-        </div>
-        
-        {/* Quick Service Actions */}
-        <div className="mt-3 flex gap-2">
-          <Button asChild variant="outline" size="sm" className="flex-1 text-xs h-7">
-            <Link to={`/services/${serviceProvider.id}`}>
-              <Eye className="h-3 w-3 mr-1" />
-              View Profile
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="sm" className="flex-1 text-xs h-7">
-            <Link to="/service-provider/dashboard/services/add">
-              <Plus className="h-3 w-3 mr-1" />
-              Add Service
-            </Link>
-          </Button>
+          <div className="ml-3">
+            <h2 className="text-lg font-semibold text-gray-900">Service Provider</h2>
+            {serviceProvider && (
+              <p className="text-sm text-gray-600 truncate">{serviceProvider.name}</p>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Navigation */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
-        {navigationSections.map((section, sectionIndex) => (
-          <div key={sectionIndex}>
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+      <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
+        {navigationSections.map((section) => (
+          <div key={section.title}>
+            <h3 className="px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
               {section.title}
             </h3>
-            <nav className="space-y-1">
-              {section.items.map((item, itemIndex) => {
+            <div className="space-y-1">
+              {section.items.map((item) => {
+                const Icon = item.icon
                 const active = isActive(item.href)
-                const isDisabled = item.disabled
+                
+                if (item.disabled) {
+                  return (
+                    <div
+                      key={item.title}
+                      className="flex items-center px-2 py-2 text-sm font-medium text-gray-400 cursor-not-allowed"
+                    >
+                      <Icon className="mr-3 h-5 w-5" />
+                      {item.title}
+                      {item.badge && (
+                        <Badge variant="secondary" className="ml-auto">
+                          {item.badge}
+                        </Badge>
+                      )}
+                    </div>
+                  )
+                }
+
                 return (
                   <Link
-                    key={itemIndex}
+                    key={item.title}
                     to={item.href}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors",
-                      isDisabled 
-                        ? "opacity-50 cursor-not-allowed"
-                        : active
-                        ? "bg-green-100 text-green-700 font-medium"
-                        : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                      "group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors",
+                      active
+                        ? "bg-green-100 text-green-900"
+                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                     )}
-                    onClick={(e) => {
-                      if (isDisabled) {
-                        e.preventDefault()
-                        return
-                      }
-                    }}
                   >
-                    <item.icon className={cn("h-4 w-4", active ? "text-green-700" : "text-gray-500")} />
-                    <span className="flex-1">{item.title}</span>
+                    <Icon
+                      className={cn(
+                        "mr-3 h-5 w-5",
+                        active ? "text-green-500" : "text-gray-400 group-hover:text-gray-500"
+                      )}
+                    />
+                    {item.title}
                     {item.badge && (
-                      <Badge variant="secondary" className="text-xs h-4 px-1">
+                      <Badge variant="secondary" className="ml-auto">
                         {item.badge}
-                      </Badge>
-                    )}
-                    {isDisabled && (
-                      <Badge variant="outline" className="text-xs h-4 px-1">
-                        Soon
                       </Badge>
                     )}
                   </Link>
                 )
               })}
-            </nav>
+            </div>
           </div>
         ))}
-      </div>
+      </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t bg-gray-50">
-        <Button asChild variant="ghost" size="sm" className="w-full justify-start">
-          <Link to="/">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Store
-          </Link>
-        </Button>
+      <div className="p-4 border-t border-gray-200">
+        <div className="flex items-center justify-between text-xs text-gray-500">
+          <span>Service Provider Portal</span>
+          <span>v1.0</span>
+        </div>
       </div>
     </div>
   )
 
-  return (
-    /* Desktop Sidebar - Visible on all screen sizes for better accessibility */
-    <div className="flex w-64 bg-white border-r border-gray-200 flex-col">
-      {showLoadingState ? (
+  if (showLoadingState) {
+    return (
+      <div className="w-64 h-full bg-white border-r border-gray-200">
         <div className="flex items-center justify-center h-full">
-          <div className="text-center p-4">
-            <div className="h-6 w-6 border-2 border-t-blue-500 border-l-blue-600 border-r-blue-600 border-b-blue-700 rounded-full animate-spin mx-auto mb-2" />
-            <p className="text-sm text-gray-600">Loading...</p>
+          <div className="text-center">
+            <div className="h-6 w-6 border-2 border-t-green-500 border-l-green-600 border-r-green-600 border-b-green-700 rounded-full animate-spin mx-auto mb-2" />
+            <p className="text-xs text-gray-500">Loading...</p>
           </div>
         </div>
-      ) : (
-        <SidebarContent />
-      )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="w-64 h-full bg-white border-r border-gray-200">
+      <SidebarContent />
     </div>
   )
 }

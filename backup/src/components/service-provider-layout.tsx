@@ -1,10 +1,10 @@
 import { ReactNode, useState } from "react"
-import { useServiceProvider } from "../hooks/use-service-provider"
-import { ServiceProviderSidebar } from "./service-provider-sidebar"
-import { Navigate } from "react-router-dom"
+import { Navigate, useNavigate, useLocation } from "react-router-dom"
 import { Button } from "./ui/button"
-import { Menu } from "lucide-react"
+import { Menu, ArrowLeft, Home } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet"
+import { useServiceProvider } from "../hooks/use-service-provider"
+import { ServiceProviderSidebar } from "./service-provider-sidebar.tsx"
 
 interface ServiceProviderLayoutProps {
   children: ReactNode
@@ -15,6 +15,12 @@ interface ServiceProviderLayoutProps {
 export function ServiceProviderLayout({ children, title, description }: ServiceProviderLayoutProps) {
   const { isServiceProvider, serviceProvider, loading } = useServiceProvider()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const navigate = useNavigate()
+  const location = useLocation()
+  
+  // Check if we're on the main dashboard page
+  const isDashboardHome = location.pathname === '/service-provider/dashboard'
+  const showBackButton = !isDashboardHome
 
   // Show loading state while checking service provider status
   if (loading) {
@@ -35,7 +41,9 @@ export function ServiceProviderLayout({ children, title, description }: ServiceP
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <ServiceProviderSidebar />
+      <div className="hidden md:block">
+        <ServiceProviderSidebar />
+      </div>
       
       <div className="flex-1 flex flex-col">
         {/* Mobile Header */}
@@ -51,8 +59,20 @@ export function ServiceProviderLayout({ children, title, description }: ServiceP
                 <ServiceProviderSidebar />
               </SheetContent>
             </Sheet>
-            <h1 className="font-semibold text-gray-900">{title || "Dashboard"}</h1>
-            <div></div> {/* Spacer for center alignment */}
+            <div className="flex items-center gap-2 flex-1">
+              {showBackButton && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate('/service-provider/dashboard')}
+                  className="text-gray-600"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              )}
+              <h1 className="font-semibold text-gray-900">{title || "Dashboard"}</h1>
+            </div>
+            <div></div> {/* Spacer for alignment */}
           </div>
         </div>
         
@@ -60,12 +80,27 @@ export function ServiceProviderLayout({ children, title, description }: ServiceP
         {(title || description) && (
           <div className="hidden md:block bg-white border-b border-gray-200 px-6 py-4">
             <div className="max-w-7xl mx-auto">
-              {title && (
-                <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-              )}
-              {description && (
-                <p className="text-gray-600 mt-1">{description}</p>
-              )}
+              <div className="flex items-center gap-4">
+                {showBackButton && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigate('/service-provider/dashboard')}
+                    className="text-gray-600 hover:text-gray-900"
+                  >
+                    <Home className="h-4 w-4 mr-2" />
+                    Back to Dashboard
+                  </Button>
+                )}
+                <div className="flex-1">
+                  {title && (
+                    <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+                  )}
+                  {description && (
+                    <p className="text-gray-600 mt-1">{description}</p>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         )}

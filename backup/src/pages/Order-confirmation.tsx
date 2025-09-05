@@ -5,10 +5,11 @@ import { Button } from "../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge"
 import { Separator } from "../components/ui/separator"
-import { CheckCircle, Download, Mail, Truck, Calendar, Loader2 } from "lucide-react"
+import { CheckCircle, Download, Mail, Truck, Calendar, Loader2, ArrowRight } from "lucide-react"
 import { useSafeCurrency } from "../hooks/use-safe-currency"
 import { getOrder, listenToOrder } from "../lib/firebase-orders"
-import { Order } from "../types"
+// Use the Order interface directly from firebase-orders to avoid type conflicts
+import { Order } from "../lib/firebase-orders"
 import { useAuth } from "../components/auth-provider"
 
 export default function OrderConfirmationPage() {
@@ -133,7 +134,7 @@ export default function OrderConfirmationPage() {
           </div>
           <h1 className="text-3xl font-bold mb-2">Order Confirmed!</h1>
           <p className="text-lg text-muted-foreground">
-            Thank you for your order. We’ve received your payment and will process your order shortly.
+            Thank you for your order. We've received your payment and will process your order shortly.
           </p>
         </div>
 
@@ -292,6 +293,16 @@ export default function OrderConfirmationPage() {
                     Track Order
                   </Link>
                 </Button>
+                <div className="mt-4 p-3 border border-blue-200 bg-blue-50 rounded-md text-sm text-blue-800">
+                  <p className="font-medium">Not logged in?</p>
+                  <p className="text-xs mb-2">You can still track your order using your order number and email address.</p>
+                  <Button size="sm" variant="outline" className="w-full bg-white" asChild>
+                    <Link to="/track-order">
+                      <ArrowRight className="h-3.5 w-3.5 mr-1" />
+                      Track as Guest
+                    </Link>
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 

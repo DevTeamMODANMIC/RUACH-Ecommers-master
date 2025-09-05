@@ -1,6 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
+<<<<<<< HEAD
+<<<<<<<< HEAD:src/pages/service-provider/dashboard/services/[id]/edit/page.tsx
+<<<<<<<< HEAD:src/pages/service-provider/dashboard/services/[id]/edit/page.tsx
+=======
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
 import { useNavigate, useParams } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,6 +13,21 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
+<<<<<<< HEAD
+========
+========
+>>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083:src/pages/Service-providerDashboardServicesParamEdit.tsx
+import { useNavigate } from "react-router-dom"
+import { Link } from "react-router-dom";
+import { Button } from "../components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
+import { Input } from "../components/ui/input"
+import { Textarea } from "../components/ui/textarea"
+import { Badge } from "../components/ui/badge"
+import { Label } from "../components/ui/label"
+>>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083:src/pages/Service-providerDashboardServicesParamEdit.tsx
+=======
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
 import { 
   ArrowLeft,
   Plus,

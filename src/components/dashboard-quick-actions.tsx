@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Button } from "./ui/button"
-import {Link} from "react-router-dom"
+import { Link } from "react-router-dom"
 import { 
   Plus, 
   Eye, 
@@ -26,9 +26,10 @@ interface QuickAction {
 interface DashboardQuickActionsProps {
   userType: "vendor" | "service-provider"
   showViewAll?: boolean
+  vendorId?: string // Add vendorId prop for vendor storefront link
 }
 
-export function DashboardQuickActions({ userType, showViewAll = false }: DashboardQuickActionsProps) {
+export function DashboardQuickActions({ userType, showViewAll = false, vendorId }: DashboardQuickActionsProps) {
   const actions: QuickAction[] = userType === "vendor" 
     ? [
         {
@@ -53,7 +54,7 @@ export function DashboardQuickActions({ userType, showViewAll = false }: Dashboa
           title: "View Storefront",
           description: "See your public store",
           icon: Eye,
-          link: "/vendor/dashboard"
+          link: vendorId ? `/vendor/${vendorId}` : "/vendor/dashboard" // Use vendor's public page if ID available
         }
       ]
     : [

@@ -1,4 +1,5 @@
-;
+
+import comLogog from "../a/new_logo.jpg"
 
 import {Link} from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -138,7 +139,7 @@ export default function Header() {
               {!logoError ? (
                 <div className="mr-2 flex items-center">
                   <img
-                    src="/logo/logo.png"
+                    src={comLogog}
                     alt="Ruach Logo"
                     width={120}
                     height={40}

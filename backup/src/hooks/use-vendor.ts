@@ -162,4 +162,4 @@ export function useVendor() {
     refreshStores,
     canCreateMoreStores: allStores.length < 3
   }
-} 
+}

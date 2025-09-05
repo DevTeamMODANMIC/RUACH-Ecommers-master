@@ -1,5 +1,3 @@
-
-
 import type React from "react"
 
 import { useState } from "react"
@@ -10,18 +8,19 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "../../src/components/ui/dialog"
-import { Button } from "../../src/components/ui/button"
-import { Input } from "../../src/components/ui/input"
-import { Label } from "../../src/components/ui/label"
-import { Textarea } from "../../src/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../src/components/ui/select"
-import { RadioGroup, RadioGroupItem } from "../../src/components/ui/radio-group"
-import { Checkbox } from "../../src/components/ui/checkbox"
-import { BulkPricingTiers } from "../../src/components/bulk-pricing-tiers"
-import { useCurrency } from "../../src/components/currency-provider"
-import { useToast } from "../../src/hooks/use-toast"
+} from "../components/ui/dialog"
+import { Button } from "../components/ui/button"
+import { Input } from "../components/ui/input"
+import { Label } from "../components/ui/label"
+import { Textarea } from "../components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
+import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group"
+import { Checkbox } from "../components/ui/checkbox"
+import { BulkPricingTiers } from "../components/bulk-pricing-tiers"
+import { useCurrency } from "../components/currency-provider"
+import { useToast } from "../hooks/use-toast"
 import { Package2, Building2, Truck } from "lucide-react"
+import { createBulkOrder } from "../lib/firebase-bulk-orders" // Import the new Firebase function
 
 interface BulkOrderModalProps {
   isOpen: boolean
@@ -30,9 +29,10 @@ interface BulkOrderModalProps {
   productName: string
   basePrice: number
   country: string
+  vendorId?: string
 }
 
-export function BulkOrderModal({ isOpen, onClose, productId, productName, basePrice, country }: BulkOrderModalProps) {
+export function BulkOrderModal({ isOpen, onClose, productId, productName, basePrice, country, vendorId }: BulkOrderModalProps) {
   const [quantity, setQuantity] = useState(10)
   const [businessType, setBusinessType] = useState("retailer")
   const [deliveryOption, setDeliveryOption] = useState("standard")
@@ -85,13 +85,56 @@ export function BulkOrderModal({ isOpen, onClose, productId, productName, basePr
   const handleSubmit = async () => {
     setIsSubmitting(true)
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    try {
+      // Prepare bulk order data
+      const bulkOrderData = {
+        businessInfo: {
+          businessName: formData.businessName,
+          contactName: formData.contactName,
+          email: formData.email,
+          phone: formData.phone,
+          businessType: businessType,
+          taxId: formData.taxId || undefined,
+          address: formData.address
+        },
+        items: [
+          {
+            productId: productId.toString(),
+            productName: productName,
+            quantity: quantity,
+            basePrice: basePrice,
+            discountedPrice: getDiscountedPrice(quantity),
+            discountPercentage: getDiscountPercentage(quantity),
+            total: getTotalPrice()
+          }
+        ],
+        subtotal: getTotalPrice(),
+        deliveryCost: getDeliveryCost(),
+        total: getTotalPrice() + getDeliveryCost(),
+        currency: "NGN", // Nigerian Naira
+        status: "pending" as const,
+        deliveryOption: deliveryOption,
+        deliveryEstimate: getDeliveryEstimate(),
+        additionalInfo: formData.additionalInfo || undefined,
+        vendorId: vendorId, // Include vendorId if available
+        productId: productId.toString() // Include specific product ID
+      }
 
-    toast({
-      title: "Bulk Order Request Submitted",
-      description: "Our team will contact you within 24 hours to confirm your order.",
-    })
+      // Create bulk order in Firebase
+      await createBulkOrder(bulkOrderData)
+
+      toast({
+        title: "Bulk Order Request Submitted",
+        description: "Our team will contact you within 24 hours to confirm your order.",
+      })
+    } catch (error) {
+      console.error("Error submitting bulk order:", error)
+      toast({
+        title: "Error Submitting Bulk Order",
+        description: "There was an issue submitting your request. Please try again.",
+        variant: "destructive"
+      })
+    }
 
     setIsSubmitting(false)
     onClose()

@@ -2,10 +2,26 @@
 
 import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
+<<<<<<< HEAD
+<<<<<<<< HEAD:src/pages/service-provider/dashboard/services/page.tsx
+<<<<<<<< HEAD:src/pages/service-provider/dashboard/services/page.tsx
+=======
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+<<<<<<< HEAD
+========
+========
+>>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083:src/pages/Service-providerDashboardServices.tsx
+import { Button } from "../components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
+import { Input } from "../components/ui/input"
+import { Badge } from "../components/ui/badge"
+>>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083:src/pages/Service-providerDashboardServices.tsx
+=======
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
 import { 
   Plus,
   Search,
@@ -20,10 +36,29 @@ import {
   Wrench,
   RefreshCw
 } from "lucide-react"
+<<<<<<< HEAD
+<<<<<<<< HEAD:src/pages/service-provider/dashboard/services/page.tsx
+=======
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
 import { Service } from "@/types"
 import { useAuth } from "@/components/auth-provider"
 import { getServiceProviderByOwnerId } from "@/lib/firebase-service-providers"
 import { getServicesByProviderId, toggleServiceStatus, deleteService } from "@/lib/firebase-services"
+<<<<<<< HEAD
+========
+import { Service, ServiceCategory } from "../types"
+import { useAuth } from "../components/auth-provider"
+import { getServiceProviderByOwnerId } from "../lib/firebase-service-providers"
+import { getServicesByProviderId, toggleServiceStatus, deleteService } from "../lib/firebase-services"
+import { ServiceProviderLayout } from "../components/service-provider-layout"
+
+// Service Provider Services Management Page
+<<<<<<<< HEAD:src/pages/service-provider/dashboard/services/page.tsx
+>>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083:src/pages/Service-providerDashboardServices.tsx
+========
+>>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083:src/pages/Service-providerDashboardServices.tsx
+=======
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
 
 
 export default function ServiceProviderServicesPage() {
@@ -58,6 +93,16 @@ export default function ServiceProviderServicesPage() {
       
       console.log('🔍 Current user UID:', user.uid)
       
+<<<<<<< HEAD
+      // Test Firebase connection first
+      const { testFirebaseConnection } = await import("../lib/firebase-services")
+      const isConnected = await testFirebaseConnection()
+      if (!isConnected) {
+        setError("Unable to connect to database. Please check your internet connection and try again.")
+        setServices([])
+        return
+      }
+=======
       // Clear caches before loading
       console.log('🧹 Clearing localStorage caches...')
       Object.keys(localStorage).forEach(key => {
@@ -66,6 +111,7 @@ export default function ServiceProviderServicesPage() {
           localStorage.removeItem(key)
         }
       })
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
       
       // First get the service provider profile to get the provider ID
       console.log('🔍 Fetching service provider profile for user:', user.uid)
@@ -100,7 +146,11 @@ export default function ServiceProviderServicesPage() {
       console.log(`🔄 Loading services for provider: ${serviceProvider.id}`)
       const providerServices = await getServicesByProviderId(serviceProvider.id)
       
+<<<<<<< HEAD
+      console.log(`📊 Services loaded:`, providerServices.length)
+=======
       console.log(`📊 Raw services loaded from database:`, providerServices.length)
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
       
       // Additional client-side filtering for extra security
       const validServices = providerServices.filter(service => {
@@ -122,6 +172,30 @@ export default function ServiceProviderServicesPage() {
         console.warn(`⚠️ Filtered out ${providerServices.length - validServices.length} invalid services`)
       }
       
+<<<<<<< HEAD
+      setServices(validServices)
+      
+    } catch (err: any) {
+      console.error("❌ Error loading services:", {
+        message: err?.message || 'No message provided',
+        code: err?.code || 'no_code',
+        userId: user?.uid
+      })
+      
+      // Provide user-friendly error messages
+      let userMessage = "Failed to load services"
+      if (err?.message?.includes('timeout')) {
+        userMessage = "Request timed out. Please check your internet connection and try again."
+      } else if (err?.message?.includes('permission')) {
+        userMessage = "Permission denied. Please log out and log back in."
+      } else if (err?.message?.includes('unavailable')) {
+        userMessage = "Database temporarily unavailable. Please try again in a moment."
+      } else if (err?.message?.includes('index')) {
+        userMessage = "Database optimization in progress. Please try again in a few minutes."
+      }
+      
+      setError(userMessage)
+=======
       // Log details of each service for debugging
       validServices.forEach((service, index) => {
         console.log(`📝 Service ${index + 1}:`, {
@@ -176,6 +250,7 @@ export default function ServiceProviderServicesPage() {
         directStack: err.stack
       })
       setError(err?.message || "Failed to load services")
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
       setServices([])
     } finally {
       setIsLoading(false)
@@ -361,6 +436,58 @@ export default function ServiceProviderServicesPage() {
   }
 
   return (
+<<<<<<< HEAD
+    <ServiceProviderLayout title="My Services" description="Manage your service offerings and pricing">
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-gray-900">{stats.totalServices}</div>
+            <div className="text-sm text-gray-600">Total Services</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-green-600">{stats.activeServices}</div>
+            <div className="text-sm text-gray-600">Active Services</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-gray-600">{stats.inactiveServices}</div>
+            <div className="text-sm text-gray-600">Inactive Services</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-blue-600">{stats.avgBookings}</div>
+            <div className="text-sm text-gray-600">Avg Bookings/Month</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Header Actions */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <Button 
+            onClick={() => loadServices(true)}
+            disabled={isRefreshing}
+            variant="outline"
+            size="sm"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Refreshing...' : 'Refresh'}
+          </Button>
+          <Button asChild>
+            <Link to="/service-provider/dashboard/services/add">
+              <Plus className="h-4 w-4 mr-2" />
+              Add New Service
+            </Link>
+          </Button>
+        </div>
+      </div>
+
+=======
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b">
@@ -531,6 +658,7 @@ export default function ServiceProviderServicesPage() {
           </Card>
         )}        
 
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
         {/* Filters and Search */}
         <Card className="mb-6">
           <CardContent className="p-4">
@@ -704,7 +832,11 @@ export default function ServiceProviderServicesPage() {
             </CardContent>
           </Card>
         )}
+<<<<<<< HEAD
+    </ServiceProviderLayout>
+=======
       </div>
     </div>
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
   )
 }

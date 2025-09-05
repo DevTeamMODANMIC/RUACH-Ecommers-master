@@ -14,7 +14,7 @@ import AdminUsers from './pages/AdminUsers'
 import AdminVendors from './pages/AdminVendors'
 import BulkOrder from './pages/Bulk-order'
 import Cart from './pages/Cart'
-import Checkout from './pages/Checkout'
+import Checkout from './pages/Checkout.tsx'
 import Complaint from './pages/Complaint'
 import Contact from './pages/Contact'
 import DebugAdminTest from './pages/DebugAdmin-test'
@@ -28,6 +28,7 @@ import ForgotPassword from './pages/Forgot-password'
 import Index from './pages/Index'
 import Login from './pages/Login'
 import OrderConfirmation from './pages/Order-confirmation'
+import OrderTrackingDetail from './pages/OrderTrackingDetail'
 import PaymentSuccessful from './pages/Payment-successful'
 import PrivacyPolicy from './pages/Privacy-policy'
 import Products from './pages/Products'
@@ -37,18 +38,21 @@ import Profile from './pages/Profile'
 import OrdersPage from "./pages/profile/orders/orders"
 // import ProfileOrdersParam from './pages/ProfileOrdersParam'
 import OrderDetailPage from "./pages/profile/orders/orderDetail"
+// import GuestOrderTracking from './pages/OrderTrackingDetail.tsx'
+
 import Register from './pages/Register'
 import RequestService from './pages/Request-service'
 import ReturnsAndRefunds from './pages/Returns-and-refunds'
-import ServiceProviderDashboard from './pages/Service-providerDashboard'
-import ServiceProviderDashboardAnalytics from './pages/Service-providerDashboardAnalytics'
-import ServiceProviderDashboardBookings from './pages/Service-providerDashboardBookings'
-import ServiceProviderDashboardReviews from './pages/Service-providerDashboardReviews'
-import ServiceProviderDashboardServices from './pages/Service-providerDashboardServices'
-import ServiceProviderDashboardServicesAdd from './pages/Service-providerDashboardServicesAdd'
-import ServiceProviderDashboardServicesParam from './pages/Service-providerDashboardServicesParam'
-import ServiceProviderDashboardServicesParamEdit from './pages/Service-providerDashboardServicesParamEdit'
-import ServiceProviderDashboardSettings from './pages/Service-providerDashboardSettings'
+
+import ServiceProviderDashboard from './service-provider/dashboard/page'
+import ServiceProviderDashboardAnalytics from './service-provider/dashboard/analytics/page'
+import ServiceProviderDashboardBookings from './service-provider/dashboard/bookings/page'
+import ServiceProviderDashboardReviews from './service-provider/dashboard/reviews/page'
+import ServiceProviderDashboardServices from './service-provider/dashboard/services/page'
+import ServiceProviderDashboardServicesAdd from './service-provider/dashboard/services/add/page'
+import ServiceProviderDashboardServicesView from './service-provider/dashboard/services/[id]/page'
+import ServiceProviderDashboardServicesEdit from './service-provider/dashboard/services/[id]/edit/page'
+import ServiceProviderDashboardSettings from './service-provider/dashboard/settings/page'
 import Services from './pages/Services'
 import ServicesBookParam from './pages/ServicesBookParam'
 import ServicesBulkOrders from './pages/ServicesBulk-orders'
@@ -58,6 +62,7 @@ import ServicesMarketplace from './pages/ServicesMarketplace'
 import ServicesVendorOnboarding from './pages/ServicesVendor-onboarding'
 import ShippingAndDelivery from './pages/Shipping-and-delivery'
 import Shop from './pages/Shop'
+import TrackOrder from './pages/TrackOrder'
 import Stores from './pages/Stores'
 import Terms from './pages/Terms'
 import VendorDashboard from './pages/VendorDashboard'
@@ -74,6 +79,7 @@ import VendorParam from './pages/VendorParam'
 import VendorRegister from './pages/VendorRegister'
 import VendorStores from './pages/VendorStores'
 import Wishlist from './pages/Wishlist'
+// import GuestOrderTracking from './pages/OrderTrackingDetail'
 
 type RouteDef = {
   path: string
@@ -121,15 +127,18 @@ const routes: RouteDef[] = [
   { path: '/register', Component: Register },
   { path: '/request-service', Component: RequestService },
   { path: '/returns-and-refunds', Component: ReturnsAndRefunds },
+
+  // Service Provider Dashboard Routes
   { path: '/service-provider/dashboard', Component: ServiceProviderDashboard },
   { path: '/service-provider/dashboard/analytics', Component: ServiceProviderDashboardAnalytics },
   { path: '/service-provider/dashboard/bookings', Component: ServiceProviderDashboardBookings },
   { path: '/service-provider/dashboard/reviews', Component: ServiceProviderDashboardReviews },
   { path: '/service-provider/dashboard/services', Component: ServiceProviderDashboardServices },
-  { path: '/service-provider/dashboard/services/:id', Component: ServiceProviderDashboardServicesParam },
-  { path: '/service-provider/dashboard/services/:id/edit', Component: ServiceProviderDashboardServicesParamEdit },
   { path: '/service-provider/dashboard/services/add', Component: ServiceProviderDashboardServicesAdd },
+  { path: '/service-provider/dashboard/services/:id', Component: ServiceProviderDashboardServicesView },
+  { path: '/service-provider/dashboard/services/:id/edit', Component: ServiceProviderDashboardServicesEdit },
   { path: '/service-provider/dashboard/settings', Component: ServiceProviderDashboardSettings },
+
   { path: '/services', Component: Services },
   { path: '/services/book/:serviceId', Component: ServicesBookParam },
   { path: '/services/bulk-orders', Component: ServicesBulkOrders },
@@ -141,6 +150,8 @@ const routes: RouteDef[] = [
   { path: '/shop', Component: Shop },
   { path: '/stores', Component: Stores },
   { path: '/terms', Component: Terms },
+  { path: '/track-order', Component: TrackOrder },
+  { path: '/order-tracking/:id', Component: OrderTrackingDetail },
   { path: '/vendor/register', Component: VendorRegister },
   { path: '/vendor/stores', Component: VendorStores },
   { path: '/vendor/dashboard', Component: VendorDashboard },

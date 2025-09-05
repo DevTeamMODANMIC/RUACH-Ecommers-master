@@ -6,8 +6,8 @@ export default function ProductsPage() {
   
   useEffect(() => {
     // Redirect to the shop page
-    router.replace('/shop')
-  }, [router])
+    navigate('/shop', { replace: true })
+  }, [navigate])
   
   return null
 }

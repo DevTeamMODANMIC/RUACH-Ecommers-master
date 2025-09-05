@@ -1,3 +1,4 @@
+import { recommendTrendingProducts } from "@/components/ML-AllProducts-modeul"
 import {
   collection,
   doc,
@@ -73,7 +74,7 @@ export interface ProductFilters {
 }
 
 // Product CRUD operations
-export const getProducts = async (filters?: ProductFilters, pageSize = 20, lastDoc?: DocumentSnapshot) => {
+export const getProducts = async (filters?: ProductFilters, pageSize = 100, lastDoc?: DocumentSnapshot) => {
   try {
     let q = query(collection(db, "products"))
     let needsClientSideSort = false;

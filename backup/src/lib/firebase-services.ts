@@ -9,6 +9,7 @@ import {
   query,
   where,
   orderBy,
+  limit,
   serverTimestamp,
 } from "firebase/firestore"
 import { db } from "./firebase"
@@ -18,9 +19,11 @@ import { Service } from "../types"
 export const testFirebaseConnection = async (): Promise<boolean> => {
   try {
     console.log("🔍 Testing Firebase connection...")
-    // Simple read test that doesn't require data to exist
-    const testQuery = query(collection(db, "services"), where("__fake__", "==", "test"))
-    await getDocs(testQuery)
+    // Simple collection access test - no field queries needed
+    const servicesRef = collection(db, "services")
+    // Just check if we can access the collection without querying specific fields
+    // This tests Firebase connectivity without requiring specific data or field names
+    await getDocs(query(servicesRef, limit(1)))
     console.log("✅ Firebase connection test passed")
     return true
   } catch (error: any) {
@@ -190,7 +193,6 @@ export const createService = async (
       updatedAt: serverTimestamp(),
     })
     
-    console.log(`Service created with ID: ${docRef.id}`)
     return docRef.id
   } catch (error) {
     console.error("Error creating service:", error)
@@ -201,7 +203,7 @@ export const createService = async (
 // Update a service
 export const updateService = async (
   serviceId: string,
-  updates: Partial<Service>
+  updates: Partial<Omit<Service, "id" | "createdAt">>
 ): Promise<void> => {
   try {
     const docRef = doc(db, "services", serviceId)
@@ -209,8 +211,6 @@ export const updateService = async (
       ...updates,
       updatedAt: serverTimestamp(),
     })
-    
-    console.log(`Service ${serviceId} updated successfully`)
   } catch (error) {
     console.error("Error updating service:", error)
     throw new Error("Failed to update service")
@@ -222,113 +222,182 @@ export const deleteService = async (serviceId: string): Promise<void> => {
   try {
     const docRef = doc(db, "services", serviceId)
     await deleteDoc(docRef)
-    
-    console.log(`Service ${serviceId} deleted successfully`)
   } catch (error) {
     console.error("Error deleting service:", error)
     throw new Error("Failed to delete service")
   }
 }
 
-// Toggle service active status
-export const toggleServiceStatus = async (serviceId: string, isActive: boolean): Promise<void> => {
+// Get all services (for admin)
+export const getAllServices = async (): Promise<Service[]> => {
   try {
-    const docRef = doc(db, "services", serviceId)
-    await updateDoc(docRef, {
-      isActive,
-      updatedAt: serverTimestamp(),
-    })
-    
-    console.log(`Service ${serviceId} status updated to ${isActive ? 'active' : 'inactive'}`)
+    const q = query(collection(db, "services"), orderBy("createdAt", "desc"))
+    const snapshot = await getDocs(q)
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as Service))
   } catch (error) {
-    console.error("Error updating service status:", error)
-    throw new Error("Failed to update service status")
+    console.error("Error fetching all services:", error)
+    throw new Error("Failed to fetch services")
   }
 }
 
-// Get active services by category
+// Get services by category
 export const getServicesByCategory = async (category: string): Promise<Service[]> => {
   try {
-    // Use simple where query first, then sort client-side to avoid index issues
     const q = query(
       collection(db, "services"),
       where("category", "==", category),
-      where("isActive", "==", true)
+      orderBy("createdAt", "desc")
     )
     const snapshot = await getDocs(q)
-    const services = snapshot.docs.map(doc => ({
+    return snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     } as Service))
-    
-    // Sort client-side by createdAt (desc)
-    services.sort((a, b) => {
-      const getTimestamp = (timestamp: string | number | null): number => {
-        if (!timestamp) return 0
-        if (typeof timestamp === 'number') return timestamp
-        if (typeof timestamp === 'string') {
-          const parsed = new Date(timestamp).getTime()
-          return isNaN(parsed) ? 0 : parsed
-        }
-        if (typeof timestamp === 'object' && 'seconds' in timestamp) {
-          return (timestamp as any).seconds * 1000
-        }
-        return 0
-      }
-      
-      const aTime = getTimestamp(a.createdAt)
-      const bTime = getTimestamp(b.createdAt)
-      return bTime - aTime
-    })
-    
-    return services
   } catch (error) {
     console.error("Error fetching services by category:", error)
-    // Return empty array instead of throwing to improve UX
-    return []
+    throw new Error("Failed to fetch services by category")
   }
 }
 
-// Get all active services
-export const getAllActiveServices = async (): Promise<Service[]> => {
+// Search services by keyword
+export const searchServices = async (keyword: string): Promise<Service[]> => {
   try {
-    // Simplified query without orderBy
-    const q = query(
-      collection(db, "services"),
-      where("isActive", "==", true)
-    )
+    // Note: This is a simple implementation. For production, consider using
+    // Algolia, Elasticsearch, or Firestore's full-text search capabilities
+    const q = query(collection(db, "services"))
     const snapshot = await getDocs(q)
+    
     const services = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     } as Service))
     
-    // Sort client-side by createdAt (desc)
-    services.sort((a, b) => {
-      const getTimestamp = (timestamp: string | number | null): number => {
-        if (!timestamp) return 0
-        if (typeof timestamp === 'number') return timestamp
-        if (typeof timestamp === 'string') {
-          const parsed = new Date(timestamp).getTime()
-          return isNaN(parsed) ? 0 : parsed
-        }
-        if (typeof timestamp === 'object' && 'seconds' in timestamp) {
-          return (timestamp as any).seconds * 1000
-        }
-        return 0
-      }
-      
-      const aTime = getTimestamp(a.createdAt)
-      const bTime = getTimestamp(b.createdAt)
-      return bTime - aTime
-    })
+    // Filter client-side (not ideal for large datasets)
+    const filteredServices = services.filter(service =>
+      service.name?.toLowerCase().includes(keyword.toLowerCase()) ||
+      service.description?.toLowerCase().includes(keyword.toLowerCase()) ||
+      service.category?.toLowerCase().includes(keyword.toLowerCase())
+    )
     
-    return services
+    return filteredServices
   } catch (error) {
-    console.error("Error fetching all active services:", error)
-    // Return empty array instead of throwing to improve UX
-    return []
+    console.error("Error searching services:", error)
+    throw new Error("Failed to search services")
   }
 }
 
-// Firebase Services Module Complete
+// Toggle service active status
+export const toggleServiceStatus = async (
+  serviceId: string, 
+  newStatus?: boolean
+): Promise<void> => {
+  try {
+    console.log("🔄 Toggling service status:", { serviceId, newStatus })
+    
+    const docRef = doc(db, "services", serviceId)
+    
+    if (newStatus !== undefined) {
+      // Set specific status
+      await updateDoc(docRef, {
+        isActive: newStatus,
+        updatedAt: serverTimestamp(),
+      })
+      console.log("✅ Service status updated to:", newStatus)
+    } else {
+      // Toggle current status - need to fetch current value first
+      const snapshot = await getDoc(docRef)
+      if (!snapshot.exists()) {
+        throw new Error("Service not found")
+      }
+      
+      const currentService = snapshot.data() as Service
+      const newActiveStatus = !currentService.isActive
+      
+      await updateDoc(docRef, {
+        isActive: newActiveStatus,
+        updatedAt: serverTimestamp(),
+      })
+      console.log("✅ Service status toggled to:", newActiveStatus)
+    }
+  } catch (error) {
+    console.error("Error toggling service status:", error)
+    throw new Error("Failed to toggle service status")
+  }
+}
+
+// Get all active services (for marketplace)
+export const getAllActiveServices = async (): Promise<Service[]> => {
+  try {
+    console.log("🔍 Firebase: Fetching all active services for marketplace...")
+    
+    // Query services where isActive is true
+    const q = query(
+      collection(db, "services"),
+      where("isActive", "==", true),
+      orderBy("createdAt", "desc")
+    )
+    
+    const snapshot = await getDocs(q)
+    const activeServices = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as Service))
+    
+    console.log("✅ Firebase: Active services fetched:", activeServices.length)
+    return activeServices
+    
+  } catch (error: any) {
+    console.error("💥 Firebase: Error fetching active services:", error)
+    
+    // If composite query fails due to missing index, try simple query
+    if (error?.code === 'failed-precondition') {
+      console.warn("⚠️ Firebase: Composite index not found, using simple query...")
+      
+      try {
+        const q = query(collection(db, "services"))
+        const snapshot = await getDocs(q)
+        
+        const allServices = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        } as Service))
+        
+        // Filter client-side for active services
+        const activeServices = allServices.filter(service => service.isActive === true)
+        
+        // Sort client-side by createdAt (desc)
+        activeServices.sort((a, b) => {
+          const getTimestamp = (timestamp: string | number | null): number => {
+            if (!timestamp) return 0
+            if (typeof timestamp === 'number') return timestamp
+            if (typeof timestamp === 'string') {
+              const parsed = new Date(timestamp).getTime()
+              return isNaN(parsed) ? 0 : parsed
+            }
+            // Handle Firebase Timestamp objects
+            if (typeof timestamp === 'object' && 'seconds' in timestamp) {
+              return (timestamp as any).seconds * 1000
+            }
+            return 0
+          }
+          
+          const aTime = getTimestamp(a.createdAt)
+          const bTime = getTimestamp(b.createdAt)
+          return bTime - aTime // desc order
+        })
+        
+        console.log("✅ Firebase: Active services fetched with fallback:", activeServices.length)
+        return activeServices
+        
+      } catch (fallbackError: any) {
+        console.error("💥 Firebase: Fallback query also failed:", fallbackError)
+        throw new Error("Failed to fetch active services")
+      }
+    }
+    
+    throw new Error(`Failed to fetch active services: ${error?.message || 'Unknown error'}`)
+  }
+}

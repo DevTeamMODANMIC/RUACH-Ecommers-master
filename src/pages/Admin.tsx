@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../components/ui/card"
-import { Package, PlusCircle, ShoppingCart, Users, CloudUpload, Wrench } from "lucide-react"
+import { Package, PlusCircle, ShoppingCart, Users, CloudUpload, Wrench, Package2 } from "lucide-react"
 import { useAdmin } from "../hooks/use-admin"
 
 export default function AdminDashboard() {
@@ -40,6 +40,9 @@ export default function AdminDashboard() {
               </Link>
               <Link to="/admin/orders" className="bg-slate-100 text-slate-800 hover:bg-slate-200 px-3 py-2 rounded-md font-medium">
                 Orders
+              </Link>
+              <Link to="/admin/bulk-orders" className="bg-slate-100 text-slate-800 hover:bg-slate-200 px-3 py-2 rounded-md font-medium">
+                Bulk Orders
               </Link>
               <Link to="/admin/vendors" className="bg-slate-100 text-slate-800 hover:bg-slate-200 px-3 py-2 rounded-md font-medium">
                 Vendors
@@ -134,6 +137,29 @@ export default function AdminDashboard() {
               <Button asChild className="w-full sm:w-auto">
                 <Link to="/admin/orders">
                   Manage Orders
+                </Link>
+              </Button>
+            </CardFooter>
+          </Card>
+
+          {/* Bulk Orders Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package2 className="h-5 w-5" />
+                <span>Bulk Orders</span>
+              </CardTitle>
+              <CardDescription>
+                View and manage bulk customer orders
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm">Process bulk orders, update shipping status, and handle business customer requests.</p>
+            </CardContent>
+            <CardFooter className="flex flex-col sm:flex-row">
+              <Button asChild className="w-full sm:w-auto">
+                <Link to="/admin/bulk-orders">
+                  Manage Bulk Orders
                 </Link>
               </Button>
             </CardFooter>
@@ -234,4 +260,4 @@ export default function AdminDashboard() {
       </div>
     </div>
   )
-} 
+}

@@ -21,6 +21,7 @@ const VENDORS_COLLECTION = "vendors";
 const VENDOR_OWNERS_COLLECTION = "vendorOwners";
 const PRODUCTS_COLLECTION = "products";
 const ORDERS_COLLECTION = "orders";
+const PAYOUTS_COLLECTION = "payouts";
 
 /** Vendor model */
 export interface Vendor {
@@ -34,6 +35,15 @@ export interface Vendor {
   isActive: boolean;
   status?: "pending" | "approved" | "rejected";
   rejected?: boolean;
+  payoutSettings?: {
+    bankName: string;
+    accountNumber: string;
+    accountName: string;
+    routingNumber?: string;
+    swiftCode?: string;
+    payoutFrequency: "weekly" | "biweekly" | "monthly";
+    minimumPayout: number;
+  };
 }
 
 /** Vendor owner model */
@@ -55,6 +65,13 @@ export const createVendorStore = async (
     const ownerStores = await getUserStores(ownerId);
     if (ownerStores.length >= 3) {
       throw new Error("Maximum of 3 stores allowed per user");
+    }
+
+    // Check if user is already a service provider (mutual exclusivity)
+    const { getServiceProviderByOwnerId } = await import("./firebase-service-providers")
+    const existingServiceProvider = await getServiceProviderByOwnerId(ownerId)
+    if (existingServiceProvider) {
+      throw new Error("Cannot create vendor store: User is already a service provider. Users can only be either a vendor or service provider, not both.")
     }
 
     const vendorRef = await addDoc(collection(db, VENDORS_COLLECTION), {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useSearchParams, useNavigate } from "react-router-dom"
 import { Link } from "react-router-dom";
 import ProductGrid from "../components/product-grid"
@@ -10,6 +10,7 @@ import { products } from "../lib/product-data"
 import { getProducts, ProductFilters } from "../lib/firebase-products"
 import { getAllOrdersNoMax } from "@/lib/firebase-orders";
 import { recommendTrendingProducts } from "@/components/ML-AllProducts-modeul";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,20 +44,6 @@ const priceRanges = [
   { id: "over50000", name: "Over ₦50,000", min: 50000, max: Infinity }
 ];
 
-// Category mapping moved to centralized lib/categories.ts
-
-// Add reverse mapping for product categories to URL parameters
-const productCategoryMapping: Record<string, string> = {
-  "drinks": "drinks",
-  "beverages": "drinks",
-  "flour": "flour",
-  "rice": "rice",
-  "food": "food",
-  "spices": "spices",
-  "vegetables": "vegetables",
-  "meat": "meat"
-};
-
 // Sort options for products
 const sortOptions = [
   { id: "popularity", name: "Popular" },
@@ -89,6 +76,10 @@ export default function ShopPage() {
     sort: true
   })
   
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const productsPerPage = 12
+  
   // Calculate active filters count
   useEffect(() => {
     let count = 0
@@ -98,9 +89,57 @@ export default function ShopPage() {
     setActiveFiltersCount(count)
   }, [selectedCategory, selectedPriceRange, searchTerm])
   
+  // Memoize filtered products for better performance
+  const filteredAndSortedProducts = useMemo(() => {
+    let result = [...filteredProducts]
+    
+    // Apply sorting
+    if (selectedSort === "price-asc") {
+      result.sort((a, b) => {
+        const aPrice = a.discount ? a.price * (1 - a.discount / 100) : a.price
+        const bPrice = b.discount ? b.price * (1 - b.discount / 100) : b.price
+        return aPrice - bPrice
+      })
+    } else if (selectedSort === "price-desc") {
+      result.sort((a, b) => {
+        const aPrice = a.discount ? a.price * (1 - a.discount / 100) : a.price
+        const bPrice = b.discount ? b.price * (1 - b.discount / 100) : b.price
+        return bPrice - aPrice
+      })
+    } else if (selectedSort === "newest") {
+      result.sort((a, b) => {
+        // Safe type checking for Date objects
+        const aDate = typeof a.createdAt === 'string' ? new Date(a.createdAt).getTime() : 0
+        const bDate = typeof b.createdAt === 'string' ? new Date(b.createdAt).getTime() : 0
+        return bDate - aDate
+      })
+    } else {
+      // Sort by popularity (default) or rating
+      result.sort((a, b) => {
+        // Safe access to reviews or rating
+        const aRating = a.rating || 0
+        const bRating = b.rating || 0
+        return bRating - aRating
+      })
+    }
+    
+    return result
+  }, [filteredProducts, selectedSort])
+  
+  // Get current products for pagination
+  const currentProducts = useMemo(() => {
+    const indexOfLastProduct = currentPage * productsPerPage
+    const indexOfFirstProduct = indexOfLastProduct - productsPerPage
+    return filteredAndSortedProducts.slice(indexOfFirstProduct, indexOfLastProduct)
+  }, [filteredAndSortedProducts, currentPage])
+  
+  // Calculate total pages
+  const totalPages = Math.ceil(filteredAndSortedProducts.length / productsPerPage)
+  
   // Filter products based on selected filters
   useEffect(() => {
     setIsLoading(true)
+    setCurrentPage(1) // Reset to first page when filters change
     
     async function loadProducts() {
       try {
@@ -110,86 +149,36 @@ export default function ShopPage() {
         // We'll apply category filter client-side to avoid the composite index requirement
         const categoryFilter = selectedCategory !== "all" ? selectedCategory : null
         
-        
-
         try {
           console.log("Fetching products with filters:", firebaseFilters)
           // getAllOrdersNoMax
           const allOrders = await getAllOrdersNoMax();
           const allProducts = await getProducts(firebaseFilters, 500);
 
-          // const recProd = recommendTrendingProducts(allProducts, allOrders).map(v=>v?.product)
-          // const firebaseProducts = recProd.filter(p => p !== undefined).map(v=>v?.product)
-          // const products = recProd.filter(p => p !== undefined).map(v=>v?.product)
-          // const firebaseProducts  = recommendTrendingProducts(allProducts, allOrders).map(v=>v?.product)
-          // const products  = await getProducts(firebaseFilters)
           const { products: firebaseProducts } = await getProducts(firebaseFilters)
-          // const allPrdSam = await getProducts(firebaseFilters)
-          // console.log(`All Products Information ${firebaseProducts.length} and ${products.length}`)
-
-          // console.log(`Found ${firebaseProducts.length} products from Firebase`)
-
+          console.log("Firebase products count:", firebaseProducts.length);
+          console.log("Sample firebase products:", firebaseProducts.slice(0, 3));
+          
           // FALLBACK: If Firebase returns no products (e.g. running locally without data) use mock data
           const baseProducts = firebaseProducts.length > 0 ? firebaseProducts : products
+          console.log("Using base products count:", baseProducts.length);
 
           // Apply category filter client-side
           let filteredFirebaseProducts = [...baseProducts]
           if (categoryFilter) {
             console.log("Applying category filter client-side:", categoryFilter)
             
-            // Debug: Log category values for the first few products
-            console.log("Sample product categories:", baseProducts.slice(0, 5).map(p => ({
-              name: p.name,
-              category: p.category,
-              displayCategory: (p as any).displayCategory
-            })));
-            
             filteredFirebaseProducts = filteredFirebaseProducts.filter((product) => {
-              // Get the category - could be either the new ID or the old string
-              const productCategory = String(product.category || "").toLowerCase().trim()
-              const categoryFilterLower = categoryFilter.toLowerCase().trim()
+              // Use the bucketProductToMainCategory function for consistent categorization
+              const productCategoryBucket = bucketProductToMainCategory(product as any);
               
-              // Get the displayCategory if available
-              const productDisplayCategory = String((product as any).displayCategory || "").toLowerCase().trim()
-              
-              // Bucket product to a main category for 'others' handling
-              const bucket = bucketProductToMainCategory(product as any)
-              if (categoryFilterLower === 'others') {
-                return bucket === 'others'
-              }
-
-              // More precise matching for categories
-              const exactCategoryMatch = productCategory === categoryFilterLower;
-              const exactDisplayCategoryMatch = productDisplayCategory === categoryFilterLower;
-              
-              // Special cases for drinks/beverages
-              const isDrinksCategory = 
-                categoryFilterLower === "drinks" || 
-                categoryFilterLower === "beverages";
-              
-              const productIsDrinks = 
-                productCategory === "drinks" || 
-                productCategory === "beverages" ||
-                productDisplayCategory.includes("drinks") || 
-                productDisplayCategory.includes("beverages");
-              
-              const matches = 
-                exactCategoryMatch || 
-                exactDisplayCategoryMatch ||
-                (isDrinksCategory && productIsDrinks);
-              
-              // Debug: Log detailed category matching for problematic products
-              if (
-                product.name.includes("Coca") || 
-                product.name.includes("Fanta") || 
-                product.name.includes("Rice") || 
-                productCategory === categoryFilterLower ||
-                productDisplayCategory === categoryFilterLower
-              ) {
-                console.log(`Product: ${product.name}, Category: ${productCategory}, DisplayCategory: ${productDisplayCategory}, Filter: ${categoryFilterLower}, Matches: ${matches}`);
+              // Special handling for 'others' category
+              if (categoryFilter === 'others') {
+                return productCategoryBucket === 'others';
               }
               
-              return matches
+              // For all other categories, check for direct match
+              return productCategoryBucket === categoryFilter;
             })
             console.log(`After category filter: ${filteredFirebaseProducts.length} products`)
           }
@@ -217,13 +206,6 @@ export default function ShopPage() {
             )
           }
 
-          // Debug: Log sample products
-          console.log("Available products:", filteredFirebaseProducts.slice(0, 5).map(p => ({
-            name: p.name,
-            category: p.category,
-            origin: p.origin
-          })))
-
           setResultsCount(filteredFirebaseProducts.length)
           // Cast because Firebase Product type differs slightly from app Product type
           setFilteredProducts(filteredFirebaseProducts as unknown as Product[])
@@ -240,33 +222,18 @@ export default function ShopPage() {
             if (selectedCategory !== "all") {
               const mappedCategory = selectedCategory
               localProducts = localProducts.filter((product) => {
-                const productCategory = String(product.category || "").toLowerCase().trim();
-                // Use type assertion for displayCategory
-                const productDisplayCategory = String((product as any).displayCategory || "").toLowerCase().trim();
-                const mappedLower = mappedCategory.toLowerCase().trim();
-                const selectedLower = selectedCategory.toLowerCase().trim();
-
-                // Handle 'others' bucket
-                const bucket = bucketProductToMainCategory(product as any)
-                if (selectedLower === 'others') {
-                  return bucket === 'others'
+                // Use the bucketProductToMainCategory function for consistent categorization
+                const productCategoryBucket = bucketProductToMainCategory(product as any);
+                
+                // Special handling for 'others' category
+                if (mappedCategory === 'others') {
+                  return productCategoryBucket === 'others';
                 }
-
-                // Exact matches only
-                if (productCategory === mappedLower || productCategory === selectedLower) return true;
-                if (productDisplayCategory === mappedLower || productDisplayCategory === selectedLower) return true;
-
-                // Special case for drinks/beverages which are used interchangeably
-                if ((mappedLower === "drinks" && (productCategory === "beverages" || productDisplayCategory === "beverages")) ||
-                    (mappedLower === "beverages" && (productCategory === "drinks" || productDisplayCategory === "drinks"))) {
-                  return true;
-                }
-
-                return false;
+                
+                // For all other categories, check for direct match
+                return productCategoryBucket === mappedCategory;
               })
             }
-            
-            
             
             // Apply price range filter
             if (selectedPriceRange !== "all") {
@@ -291,39 +258,6 @@ export default function ShopPage() {
               )
             }
             
-            // Apply sorting
-            if (selectedSort === "price-asc") {
-              localProducts.sort((a, b) => {
-                const aPrice = a.discount ? a.price * (1 - a.discount / 100) : a.price
-                const bPrice = b.discount ? b.price * (1 - b.discount / 100) : b.price
-                return aPrice - bPrice
-              })
-            } else if (selectedSort === "price-desc") {
-              localProducts.sort((a, b) => {
-                const aPrice = a.discount ? a.price * (1 - a.discount / 100) : a.price
-                const bPrice = b.discount ? b.price * (1 - b.discount / 100) : b.price
-                return bPrice - aPrice
-              })
-            } else if (selectedSort === "newest") {
-              localProducts.sort((a, b) => {
-                // Safe type checking for Date objects
-                const aDate = typeof a.createdAt === 'string' ? new Date(a.createdAt).getTime() : 0
-                const bDate = typeof b.createdAt === 'string' ? new Date(b.createdAt).getTime() : 0
-                return bDate - aDate
-              })
-            } else {
-              // Sort by popularity (default) or rating
-              localProducts.sort((a, b) => {
-                // Safe access to reviews or rating
-                const aReviews = a.reviews || []
-                const bReviews = b.reviews || []
-                // Calculate average rating if reviews exist
-                const aRating = a.rating || 0
-                const bRating = b.rating || 0
-                return bRating - aRating
-              })
-            }
-            
             setResultsCount(localProducts.length)
             setFilteredProducts(localProducts)
           } else {
@@ -343,7 +277,7 @@ export default function ShopPage() {
     }
     
     loadProducts()
-  }, [selectedCategory, selectedPriceRange, searchTerm, selectedSort])
+  }, [selectedCategory, selectedPriceRange, searchTerm])
   
   // Update URL when filters change
   useEffect(() => {
@@ -361,8 +295,6 @@ export default function ShopPage() {
     } else {
       params.set("category", selectedCategory)
     }
-    
-    
     
     if (searchTerm) {
       params.set("search", searchTerm)
@@ -420,14 +352,19 @@ export default function ShopPage() {
     return sort ? sort.name : "Popular"
   }
   
-  
-  
   // Toggle section visibility
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections({
       ...expandedSections,
       [section]: !expandedSections[section]
     })
+  }
+  
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+    // Scroll to top of product grid
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
   
   // Filter component - reusable for both desktop and mobile
@@ -527,8 +464,6 @@ export default function ShopPage() {
           </div>
         )}
       </div>
-      
-      
       
       {/* Sort By - Mobile Only */}
       {isMobile && (
@@ -712,10 +647,12 @@ export default function ShopPage() {
           
           {/* Product grid */}
           <div className="lg:col-span-3">
+            {/* Debug component - temporary for troubleshooting */}
+            
             {/* Results count */}
             <div className="mb-4 flex items-center justify-between">
               <div className="text-sm text-gray-600">
-                Showing {resultsCount} {resultsCount === 1 ? 'product' : 'products'}
+                Showing {Math.min(productsPerPage, filteredAndSortedProducts.length)} of {resultsCount} {resultsCount === 1 ? 'product' : 'products'}
                 {activeFiltersCount > 0 && ' with applied filters'}
               </div>
               
@@ -739,14 +676,67 @@ export default function ShopPage() {
                   <p className="text-gray-500 text-sm">Loading products...</p>
                 </div>
               </div>
-            ) : filteredProducts.length > 0 ? (
-              <ProductGrid products={filteredProducts} />
+            ) : currentProducts.length > 0 ? (
+              <>
+                <ProductGrid products={currentProducts} />
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex justify-center mt-8">
+                    <nav className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                        disabled={currentPage === 1}
+                        className="h-9 px-3"
+                      >
+                        Previous
+                      </Button>
+                      
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = currentPage - 2 + i;
+                        }
+                        
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={currentPage === pageNum ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handlePageChange(pageNum)}
+                            className="h-9 w-9 p-0"
+                          >
+                            {pageNum}
+                          </Button>
+                        );
+                      })}
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                        disabled={currentPage === totalPages}
+                        className="h-9 px-3"
+                      >
+                        Next
+                      </Button>
+                    </nav>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="flex flex-col items-center justify-center py-16 px-4 bg-white rounded-lg shadow-sm border border-gray-200">
                 <div className="text-center max-w-md">
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">No products found</h3>
                   <p className="text-gray-600 mb-6">
-                    We couldn’t find any products matching your current filters. Try adjusting your search or clear filters to see all products.
+                    We couldn't find any products matching your current filters. Try adjusting your search or clear filters to see all products.
                   </p>
                   <Button onClick={clearAllFilters}>
                     Clear Filters

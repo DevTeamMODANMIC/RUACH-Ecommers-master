@@ -67,6 +67,7 @@ export type UserAddress = {
   postalCode: string
   country: string
   phone: string
+  email?: string
 }
 
 export type Order = {
@@ -86,11 +87,14 @@ export type Order = {
   trackingNumber?: string
   trackingUrl?: string
   notes?: string
-  estimatedDelivery?: string | number
+  estimatedDelivery?: string | number | Date
   createdAt: string | number | null
   updatedAt: string | number | null
+  orderNumber?: string
+  currency?: string
 }
 
+// Export other types as needed
 export type User = {
   id: string
   email: string

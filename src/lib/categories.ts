@@ -96,9 +96,10 @@ export const MAIN_CATEGORIES: CategoryItem[] = [
     id: "fashion", 
     name: "Fashion",
     subcategories: [
-      { id: "mens-fashion", name: "Men's Fashion", items: ["Shirts", "Trousers", "Shoes", "Accessories"] },
-      { id: "womens-fashion", name: "Women's Fashion", items: ["Dresses", "Tops", "Shoes", "Bags"] },
-      { id: "kids-fashion", name: "Kids' Fashion", items: ["Boys Clothing", "Girls Clothing", "Baby Clothes"] }
+      { id: "mens-fashion", name: "Men's Fashion", items: ["Shirts", "Trousers", "Accessories"] },
+      { id: "womens-fashion", name: "Women's Fashion", items: ["Dresses", "Tops", "Bags"] },
+      { id: "kids-fashion", name: "Kids' Fashion", items: ["Boys Clothing", "Girls Clothing", "Baby Clothes"] },
+      { id: "shoes", name: "Shoes", items: ["Men's Shoes", "Women's Shoes", "Kids Shoes", "Sports Shoes", "Casual Shoes", "Formal Shoes"] }
     ]
   },
   { 
@@ -158,44 +159,28 @@ export const MAIN_CATEGORIES: CategoryItem[] = [
   }
 ];
 
-// Legacy subcategory mappings (food-focused). These map to the new structure.
-export const LEGACY_TO_MAIN_CATEGORY: Record<string, MainCategoryId> = {
-  drinks: "supermarket",
-  beverages: "supermarket",
-  flour: "supermarket",
-  rice: "supermarket",
-  "pap-custard": "supermarket",
-  spices: "supermarket",
-  "dried-spices": "supermarket",
-  oil: "supermarket",
-  provisions: "supermarket",
-  "fresh-produce": "supermarket",
-  "fresh-vegetables": "supermarket",
-  vegetables: "supermarket",
-  meat: "supermarket",
-  food: "supermarket",
-};
+console.log("MAIN_CATEGORIES loaded:", MAIN_CATEGORIES.map(c => c.id));
 
-// Reverse mapping for convenience when we want to build URLs or handle display
-export const PRODUCT_CATEGORY_TO_URL_PARAM: Record<string, string> = {
-  drinks: "drinks",
-  beverages: "drinks",
-  flour: "flour",
-  rice: "rice",
-  food: "food",
-  spices: "spices",
-  vegetables: "vegetables",
-  meat: "meat",
+// Simplified category mapping for drinks/beverages
+export const DRINKS_CATEGORIES: Record<string, MainCategoryId> = {
+  "drinks": "supermarket",
+  "beverages": "supermarket"
 };
 
 // Utility to normalize a category id coming from URL/search/vendor input
 export function normalizeCategoryId(input?: string | null): MainCategoryId {
   const id = (input || "all").toLowerCase().trim();
+  
+  // Direct match to main categories
   if (MAIN_CATEGORIES.some((c) => c.id === (id as MainCategoryId))) {
     return id as MainCategoryId;
   }
-  // Try legacy map
-  if (id in LEGACY_TO_MAIN_CATEGORY) return LEGACY_TO_MAIN_CATEGORY[id as keyof typeof LEGACY_TO_MAIN_CATEGORY];
+  
+  // Special handling for drinks/beverages
+  if (id in DRINKS_CATEGORIES) {
+    return DRINKS_CATEGORIES[id];
+  }
+  
   return "others"; // Anything unknown falls under Others
 }
 
@@ -203,16 +188,62 @@ export function normalizeCategoryId(input?: string | null): MainCategoryId {
 export function bucketProductToMainCategory(product: { category?: string; displayCategory?: string }): MainCategoryId {
   const cat = (product.category || "").toLowerCase().trim();
   const disp = (product.displayCategory || "").toLowerCase().trim();
-
-  // Exact match to main categories
-  const direct = normalizeCategoryId(cat);
-  if (direct !== "others" || MAIN_CATEGORIES.some((c) => c.id === (cat as MainCategoryId))) {
-    return direct;
+  
+  // If no category info, return others
+  if (!cat && !disp) {
+    return "others";
+  }
+  
+  // First check if the category is a direct match to main categories
+  if (MAIN_CATEGORIES.some((c) => c.id === (cat as MainCategoryId))) {
+    return cat as MainCategoryId;
+  }
+  
+  // If not a direct match, it's likely a subcategory ID
+  // Try to find which main category this subcategory belongs to
+  for (const mainCategory of MAIN_CATEGORIES) {
+    if (mainCategory.subcategories) {
+      for (const subcategory of mainCategory.subcategories) {
+        // Check if the product's category matches a subcategory ID
+        if (subcategory.id === cat) {
+          return mainCategory.id;
+        }
+        
+        // Check if the product's displayCategory matches a subcategory name (case insensitive)
+        if (subcategory.name.toLowerCase() === disp) {
+          return mainCategory.id;
+        }
+      }
+    }
+  }
+  
+  // Special handling for drinks/beverages
+  if (cat in DRINKS_CATEGORIES) {
+    return DRINKS_CATEGORIES[cat];
+  }
+  
+  if (disp in DRINKS_CATEGORIES) {
+    return DRINKS_CATEGORIES[disp];
   }
 
-  // Legacy mapping
-  if (cat in LEGACY_TO_MAIN_CATEGORY) return LEGACY_TO_MAIN_CATEGORY[cat];
-  if (disp in LEGACY_TO_MAIN_CATEGORY) return LEGACY_TO_MAIN_CATEGORY[disp as keyof typeof LEGACY_TO_MAIN_CATEGORY];
+  // Check if it's a drink/beverage by content
+  const drinkKeywords = ['drink', 'beverage', 'soda', 'juice', 'water', 'tea', 'coffee'];
+  if (drinkKeywords.some(keyword => cat.includes(keyword) || disp.includes(keyword))) {
+    return "supermarket";
+  }
 
+  // Check if it's a phone/tablet by content
+  const phoneKeywords = ['phone', 'tablet', 'mobile', 'smartphone', 'iphone', 'android'];
+  if (phoneKeywords.some(keyword => cat.includes(keyword) || disp.includes(keyword))) {
+    return "phones-tablets";
+  }
+
+  // Check if it's an electronic device
+  const electronicKeywords = ['electronic', 'laptop', 'computer', 'desktop', 'monitor', 'keyboard', 'mouse'];
+  if (electronicKeywords.some(keyword => cat.includes(keyword) || disp.includes(keyword))) {
+    return "computing";
+  }
+
+  // Default to others
   return "others";
 }

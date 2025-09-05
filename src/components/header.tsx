@@ -32,6 +32,7 @@ import { useWishlist } from "../../src/hooks/use-wishlist";
 import ClientOnly from "../../src/components/client-only";
 import { useVendor } from "../../src/hooks/use-vendor";
 import { useServiceProvider } from "../../src/hooks/use-service-provider";
+import { ServiceProviderHeaderSwitcher } from "../../src/components/service-provider-header-switcher";
 
 // We'll use CSS classes instead of inline styles
 
@@ -288,6 +289,9 @@ export default function Header() {
 
               {/* Right Icons */}
               <div className="flex items-center space-x-5 ml-8 border-l pl-6 border-gray-100">
+                {/* Service Provider Switcher */}
+                <ServiceProviderHeaderSwitcher />
+                
                 <Link
                   to="/wishlist"
                   className="relative hover:text-green-600 p-2"

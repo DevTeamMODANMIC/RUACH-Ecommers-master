@@ -11,6 +11,7 @@ import {
   rejectServiceProvider,
   suspendServiceProvider,
   reactivateServiceProvider,
+  deleteServiceProvider,
   getServiceProviderStats
 } from "../lib/firebase-service-providers"
 import { Button } from "../components/ui/button"
@@ -41,7 +42,8 @@ import {
   RefreshCw,
   Loader2,
   ArrowLeft,
-  Home
+  Home,
+  Trash2
 } from "lucide-react"
 import { ServiceProvider, Service, ServiceBooking, Complaint } from "../types"
 import { toast } from "sonner"
@@ -73,6 +75,7 @@ export default function ServiceProviderAdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState<string | null>(null)
   const [stats, setStats] = useState({
     totalProviders: 0,
     activeProviders: 0,
@@ -269,6 +272,27 @@ export default function ServiceProviderAdminDashboard() {
       toast.error(err.message || "Failed to update provider status")
     } finally {
       setActionLoading(null)
+    }
+  }
+
+  const handleDeleteProvider = async (providerId: string) => {
+    const provider = providers.find(p => p.id === providerId)
+    if (!provider) return
+    
+    if (!confirm(`Are you sure you want to permanently delete "${provider.name}"? This action cannot be undone and will remove all their data including services and bookings.`)) {
+      return
+    }
+    
+    try {
+      setDeleteLoading(providerId)
+      await deleteServiceProvider(providerId)
+      toast.success("Service provider deleted permanently")
+      await fetchServiceProviders()
+    } catch (err: any) {
+      console.error("Failed to delete provider:", err)
+      toast.error(err.message || "Failed to delete provider")
+    } finally {
+      setDeleteLoading(null)
     }
   }
 
@@ -619,6 +643,19 @@ export default function ServiceProviderAdminDashboard() {
                             )}
                           </Button>
                         )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-red-600 hover:bg-red-50 border-red-200"
+                          onClick={() => handleDeleteProvider(provider.id)}
+                          disabled={deleteLoading === provider.id}
+                        >
+                          {deleteLoading === provider.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3 w-3" />
+                          )}
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -862,6 +899,22 @@ export default function ServiceProviderAdminDashboard() {
                 <Button variant="outline">
                   <Mail className="h-4 w-4 mr-2" />
                   Contact Provider
+                </Button>
+                <Button 
+                  variant="outline"
+                  className="text-red-600 hover:bg-red-50 border-red-200"
+                  onClick={async () => {
+                    await handleDeleteProvider(selectedProvider.id)
+                    setSelectedProvider(null)
+                  }}
+                  disabled={deleteLoading === selectedProvider.id}
+                >
+                  {deleteLoading === selectedProvider.id ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4 mr-2" />
+                  )}
+                  Delete Provider
                 </Button>
               </div>
             </div>

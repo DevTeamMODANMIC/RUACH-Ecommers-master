@@ -199,6 +199,7 @@ export default function VendorDashboardHome() {
         <DashboardWelcome 
           userType="vendor" 
           userName={activeStore?.shopName || 'Vendor'}
+          vendorId={activeStore?.id}
         />
       </VendorLayout>
     )
@@ -234,7 +235,7 @@ export default function VendorDashboardHome() {
         </div>
 
         {/* Quick Actions */}
-        <DashboardQuickActions userType="vendor" />
+        <DashboardQuickActions userType="vendor" vendorId={activeStore?.id} />
 
         {/* Store Performance */}
         <Card>

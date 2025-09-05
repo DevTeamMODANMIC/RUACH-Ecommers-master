@@ -219,7 +219,6 @@ export default function OrderDetailPage() {
             - <Link to> instead of <Link href>
             - useNavigate() instead of router.push()
         */}
-        
       </div>
     </div>
   )

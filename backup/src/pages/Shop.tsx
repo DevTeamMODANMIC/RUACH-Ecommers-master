@@ -8,6 +8,8 @@ import { Input } from "../components/ui/input"
 import { Button } from "../components/ui/button"
 import { products } from "../lib/product-data"
 import { getProducts, ProductFilters } from "../lib/firebase-products"
+import { getAllOrdersNoMax } from "@/lib/firebase-orders";
+import { recommendTrendingProducts } from "@/components/ML-AllProducts-modeul";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -112,8 +114,20 @@ export default function ShopPage() {
 
         try {
           console.log("Fetching products with filters:", firebaseFilters)
+          // getAllOrdersNoMax
+          const allOrders = await getAllOrdersNoMax();
+          const allProducts = await getProducts(firebaseFilters, 500);
+
+          // const recProd = recommendTrendingProducts(allProducts, allOrders).map(v=>v?.product)
+          // const firebaseProducts = recProd.filter(p => p !== undefined).map(v=>v?.product)
+          // const products = recProd.filter(p => p !== undefined).map(v=>v?.product)
+          // const firebaseProducts  = recommendTrendingProducts(allProducts, allOrders).map(v=>v?.product)
+          // const products  = await getProducts(firebaseFilters)
           const { products: firebaseProducts } = await getProducts(firebaseFilters)
-          console.log(`Found ${firebaseProducts.length} products from Firebase`)
+          // const allPrdSam = await getProducts(firebaseFilters)
+          // console.log(`All Products Information ${firebaseProducts.length} and ${products.length}`)
+
+          // console.log(`Found ${firebaseProducts.length} products from Firebase`)
 
           // FALLBACK: If Firebase returns no products (e.g. running locally without data) use mock data
           const baseProducts = firebaseProducts.length > 0 ? firebaseProducts : products

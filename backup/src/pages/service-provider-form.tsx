@@ -1,11 +1,8 @@
-"use client"
-
 import { useState } from "react"
 import { useAuth } from "../components/auth-provider"
 import { SubmitHandler, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-// import { useRouter } from "next/navigation"
 import { useNavigate } from 'react-router-dom'
 import { Input } from "../components/ui/input"
 import { Textarea } from "../components/ui/textarea"
@@ -56,7 +53,7 @@ type FormValues = z.infer<typeof schema>
 
 export default function ServiceProviderForm() {
   const { user } = useAuth()
-  const router = useNavigate()
+  const navigate = useNavigate()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedAreas, setSelectedAreas] = useState<string[]>([])
 
@@ -122,7 +119,7 @@ export default function ServiceProviderForm() {
       
       console.log("Service provider created with ID:", providerId)
       toast.success("Your service provider application has been submitted successfully! We will notify you once it has been reviewed.")
-      router.push("/service-provider/dashboard")
+      navigate("/service-provider/dashboard")
     } catch (err: any) {
       console.error("Service provider registration error:", err)
       toast.error(err.message || "An error occurred while submitting your application. Please try again.")

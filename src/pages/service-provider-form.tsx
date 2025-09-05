@@ -1,5 +1,6 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAuth } from "../components/auth-provider"
+import { useVendor } from "../hooks/use-vendor"
 import { SubmitHandler, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -53,9 +54,18 @@ type FormValues = z.infer<typeof schema>
 
 export default function ServiceProviderForm() {
   const { user } = useAuth()
+  const { isVendor, loading: vendorLoading } = useVendor()
   const navigate = useNavigate()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedAreas, setSelectedAreas] = useState<string[]>([])
+
+  // Redirect if user is already a vendor
+  useEffect(() => {
+    if (!vendorLoading && isVendor) {
+      toast.error("You are already registered as a vendor. Users can only be either a vendor or service provider, not both.")
+      navigate("/vendor/dashboard")
+    }
+  }, [isVendor, vendorLoading, navigate])
 
   const {
     register,
@@ -128,8 +138,43 @@ export default function ServiceProviderForm() {
     }
   }
 
+  // Show loading while checking vendor status
+  if (vendorLoading) {
+    return (
+      <div className="container mx-auto px-4 py-16 max-w-2xl">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Don't render form if user is a vendor
+  if (isVendor) {
+    return null
+  }
+
   return (
     <div className="container mx-auto px-4 py-16 max-w-2xl">
+      {/* Warning about vendor exclusivity */}
+      <div className="mb-6 bg-amber-50 border border-amber-200 rounded-lg p-4">
+        <div className="flex items-start">
+          <div className="flex-shrink-0">
+            <svg className="h-5 w-5 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="ml-3">
+            <h3 className="text-sm font-medium text-amber-800">Important Notice</h3>
+            <p className="mt-1 text-sm text-amber-700">
+              By registering as a service provider, you will not be able to create vendor stores. 
+              Users can only be either a vendor or service provider, not both.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <Card className="shadow-lg">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl text-gray-900">Service Provider Application</CardTitle>

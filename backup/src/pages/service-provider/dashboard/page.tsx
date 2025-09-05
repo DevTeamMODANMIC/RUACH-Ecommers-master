@@ -2,10 +2,25 @@
 
 import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
+<<<<<<< HEAD
+<<<<<<<< HEAD:src/pages/service-provider/dashboard/page.tsx
+<<<<<<<< HEAD:src/pages/service-provider/dashboard/page.tsx
+=======
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
 import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+<<<<<<< HEAD
+========
+========
+>>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083:src/pages/Service-providerDashboard.tsx
+import { Button } from "../components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
+import { Badge } from "../components/ui/badge"
+>>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083:src/pages/Service-providerDashboard.tsx
+=======
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
 import { 
   Calendar,
   Clock,
@@ -21,6 +36,10 @@ import {
   FileText,
   MessageSquare,
   BarChart3,
+<<<<<<< HEAD
+<<<<<<<< HEAD:src/pages/service-provider/dashboard/page.tsx
+=======
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
   Wrench
 } from "lucide-react"
 import { ServiceProvider, Service, ServiceBooking } from "@/types"
@@ -28,6 +47,33 @@ import { useAuth } from "@/components/auth-provider"
 import { getServiceProviderByOwnerId } from "@/lib/firebase-service-providers"
 import { getServicesByProviderId } from "@/lib/firebase-services"
 // import { useRouter } from "next/navigation"
+<<<<<<< HEAD
+========
+  Sparkles,
+  Wrench,
+  ArrowUpRight,
+  RefreshCw,
+  Wifi,
+  WifiOff
+} from "lucide-react"
+import { ServiceProvider, Service, ServiceBooking } from "../types"
+import { useAuth } from "../components/auth-provider"
+import { useAdmin } from "../hooks/use-admin"
+import { useServiceProvider } from "../hooks/use-service-provider"
+import { getServicesByProviderId } from "../lib/firebase-services"
+import { clearServiceProviderCache } from "../lib/firebase-service-providers"
+import { DashboardHeader } from "../components/dashboard-header"
+import { DashboardStatsCard } from "../components/dashboard-stats-card"
+import { DashboardQuickActions } from "../components/dashboard-quick-actions"
+import { DashboardWelcome } from "../components/dashboard-welcome"
+import { useNavigate } from "react-router-dom"
+import { ServiceProviderLayout } from "../components/service-provider-layout"
+<<<<<<<< HEAD:src/pages/service-provider/dashboard/page.tsx
+>>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083:src/pages/Service-providerDashboard.tsx
+========
+>>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083:src/pages/Service-providerDashboard.tsx
+=======
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
 
 // Helper function to get time-based greeting
 const getTimeBasedGreeting = () => {
@@ -39,6 +85,76 @@ const getTimeBasedGreeting = () => {
 
 export default function ServiceProviderDashboard() {
   const { user } = useAuth()
+<<<<<<< HEAD
+  const { isAdmin } = useAdmin()
+  const { serviceProvider, loading: serviceProviderLoading, error: serviceProviderError, retryCount, refreshServiceProvider } = useServiceProvider()
+  const navigate = useNavigate()
+  const [services, setServices] = useState<Service[]>([])
+  const [recentBookings, setRecentBookings] = useState<ServiceBooking[]>([])
+  const [servicesLoading, setServicesLoading] = useState(false)
+  const [servicesError, setServicesError] = useState<string | null>(null)
+  const [showSecretMessage, setShowSecretMessage] = useState(false)
+  const [isOnline, setIsOnline] = useState(navigator.onLine)
+
+  // Track online status
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true)
+    const handleOffline = () => setIsOnline(false)
+    
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+    
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
+
+  // Add global test function for debugging
+  useEffect(() => {
+    // @ts-ignore - Adding to window for debugging
+    window.testFirebaseConnection = async () => {
+      try {
+        console.log("🔍 Testing Firebase connection...")
+        const { collection, getDocs } = await import('firebase/firestore')
+        const { db } = await import('../lib/firebase')
+        
+        console.log("Firebase config:", {
+          hasDb: !!db,
+          projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID
+        })
+        
+        // Simple collection access test
+        const servicesRef = collection(db, "services")
+        const result = await getDocs(servicesRef)
+        console.log("✅ Firebase connection successful! Services collection returned:", result.size, "docs")
+        return true
+      } catch (error: any) {
+        console.error("❌ Firebase connection failed:", error)
+        return false
+      }
+    }
+
+    return () => {
+      // @ts-ignore
+      delete window.testFirebaseConnection
+    }
+  }, [])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Ctrl+Shift+G shortcut - navigate to service provider dashboard
+      if (e.ctrlKey && e.shiftKey && e.key === 'G') {
+        e.preventDefault()
+        
+        // Navigate to service provider dashboard for authenticated users
+        if (user) {
+          navigate('/service-provider/dashboard')
+          setShowSecretMessage(true)
+          setTimeout(() => setShowSecretMessage(false), 3000)
+        }
+        // Only authenticated users can access service provider dashboard
+=======
   const navigate = useNavigate()
   const [provider, setProvider] = useState<ServiceProvider | null>(null)
   const [services, setServices] = useState<Service[]>([])
@@ -55,11 +171,28 @@ export default function ServiceProviderDashboard() {
         navigate('/admin/service-providers')
         setShowSecretMessage(true)
         setTimeout(() => setShowSecretMessage(false), 3000)
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
+<<<<<<< HEAD
+<<<<<<<< HEAD:src/pages/service-provider/dashboard/page.tsx
+<<<<<<<< HEAD:src/pages/service-provider/dashboard/page.tsx
+  }, [navigate])
+========
+  }, [navigate, user])
+>>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083:src/pages/Service-providerDashboard.tsx
+========
+  }, [navigate, user])
+>>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083:src/pages/Service-providerDashboard.tsx
+
+  // Load services when service provider is available
+  useEffect(() => {
+    if (!serviceProvider?.id) {
+      setServices([])
+=======
   }, [navigate])
 
   useEffect(() => {
@@ -71,12 +204,27 @@ export default function ServiceProviderDashboard() {
     if (!user) {
       setIsLoading(false)
       setError("Please log in to access the service provider dashboard")
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
       return
     }
 
     let isMounted = true
     const controller = new AbortController()
 
+<<<<<<< HEAD
+    const loadServices = async () => {
+      try {
+        setServicesLoading(true)
+        setServicesError(null)
+        
+        console.log("🔍 Loading services for provider:", serviceProvider.id)
+        
+        const servicesData = await getServicesByProviderId(serviceProvider.id, controller)
+        
+        if (isMounted) {
+          console.log("📋 Services loaded:", servicesData.length)
+          setServices(servicesData)
+=======
     const loadServiceProvider = async () => {
       try {
         setIsLoading(true)
@@ -124,10 +272,22 @@ export default function ServiceProviderDashboard() {
               setServices([])
             }
           })
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
           
           // Mock recent bookings for now
           setRecentBookings([])
         }
+<<<<<<< HEAD
+      } catch (error: any) {
+        if (isMounted && !error?.message?.includes('aborted')) {
+          console.error("⚠️ Error loading services:", error)
+          setServicesError(error?.message || 'Failed to load services')
+          setServices([])
+        }
+      } finally {
+        if (isMounted) {
+          setServicesLoading(false)
+=======
       } catch (err: any) {
         console.error("💥 Error loading service provider:", {
           error: err,
@@ -173,23 +333,44 @@ export default function ServiceProviderDashboard() {
         if (isMounted) {
           console.log("🏁 Service provider loading completed")
           setIsLoading(false)
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
         }
       }
     }
 
+<<<<<<< HEAD
+    loadServices()
+=======
     // Add a small delay to ensure auth has stabilized
     const timeoutId = setTimeout(() => {
       if (isMounted) {
         loadServiceProvider()
       }
     }, 100)
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
 
     return () => {
       isMounted = false
       controller.abort()
+<<<<<<< HEAD
+    }
+  }, [serviceProvider?.id])
+
+  // Handle refresh with cache clearing
+  const handleRefresh = async (clearCache = false) => {
+    if (clearCache && user?.uid) {
+      clearServiceProviderCache(user.uid)
+    }
+    await refreshServiceProvider(clearCache)
+  }
+
+  const isLoading = serviceProviderLoading || servicesLoading
+  const error = serviceProviderError || servicesError
+=======
       clearTimeout(timeoutId)
     }
   }, [user])
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
 
   if (isLoading) {
     return (
@@ -197,6 +378,18 @@ export default function ServiceProviderDashboard() {
         <div className="text-center">
           <div className="h-8 w-8 border-4 border-t-blue-500 border-l-blue-600 border-r-blue-600 border-b-blue-700 rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-600">Loading dashboard...</p>
+<<<<<<< HEAD
+          <p className="text-sm text-gray-400 mt-2">
+            {retryCount > 0 ? `Retry attempt ${retryCount}...` : 'This should take no more than 15 seconds'}
+          </p>
+          {!isOnline && (
+            <div className="mt-3 flex items-center justify-center text-red-600">
+              <WifiOff className="h-4 w-4 mr-2" />
+              <span className="text-sm">You appear to be offline</span>
+            </div>
+          )}
+=======
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
         </div>
       </div>
     )
@@ -209,24 +402,91 @@ export default function ServiceProviderDashboard() {
           <CardHeader className="text-center">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
             <CardTitle>Error Loading Dashboard</CardTitle>
+<<<<<<< HEAD
+            {!isOnline && (
+              <div className="flex items-center justify-center text-red-600 mt-2">
+                <WifiOff className="h-4 w-4 mr-2" />
+                <span className="text-sm">You appear to be offline</span>
+              </div>
+            )}
+=======
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
           </CardHeader>
           <CardContent className="text-center">
             <p className="text-gray-600 mb-6">{error}</p>
             
+<<<<<<< HEAD
+            {retryCount > 0 && (
+              <div className="bg-blue-50 p-3 rounded text-sm text-blue-800 mb-4">
+                <p className="font-medium">Retry attempt {retryCount}</p>
+                <p>System is automatically retrying the connection...</p>
+              </div>
+            )}
+            
+=======
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
             {/* Debug Info for development */}
             {process.env.NODE_ENV === 'development' && user && (
               <div className="bg-gray-50 p-3 rounded text-left text-xs mb-4">
                 <p><strong>User ID:</strong> {user.uid}</p>
                 <p><strong>Email:</strong> {user.email}</p>
                 <p><strong>Display Name:</strong> {user.displayName || 'Not set'}</p>
+<<<<<<< HEAD
+                <p><strong>Online:</strong> {isOnline ? 'Yes' : 'No'}</p>
+                <p><strong>Retry Count:</strong> {retryCount}</p>
+=======
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
                 <p><strong>Error:</strong> {error}</p>
               </div>
             )}
             
             <div className="flex flex-col gap-3">
+<<<<<<< HEAD
+              <Button 
+                variant="outline" 
+                onClick={() => handleRefresh(false)}
+                disabled={!isOnline}
+              >
+                {isOnline ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Try Again
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="h-4 w-4 mr-2" />
+                    Offline
+                  </>
+                )}
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                onClick={() => handleRefresh(true)}
+                disabled={!isOnline}
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Clear Cache & Retry
+              </Button>
+              
+              {error.includes('timeout') && isOnline && (
+                <div className="bg-blue-50 p-3 rounded text-sm text-blue-800">
+                  <p className="font-medium mb-1">Connection timeout</p>
+                  <p>If this keeps happening, try:</p>
+                  <ul className="list-disc list-inside text-xs mt-1 space-y-1">
+                    <li>Check your internet connection</li>
+                    <li>Refresh the page</li>
+                    <li>Clear browser cache</li>
+                    <li>Try again in a few minutes</li>
+                  </ul>
+                </div>
+              )}
+              
+=======
               <Button variant="outline" onClick={() => window.location.reload()}>
                 Try Again
               </Button>
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
               {process.env.NODE_ENV === 'development' && (
                 <Button variant="outline" asChild>
                   <Link to="/debug/firebase">
@@ -241,7 +501,11 @@ export default function ServiceProviderDashboard() {
     )
   }
 
+<<<<<<< HEAD
+  if (!serviceProvider) {
+=======
   if (!provider) {
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <Card className="max-w-md w-full text-center">
@@ -264,6 +528,10 @@ export default function ServiceProviderDashboard() {
   
   if (isNewServiceProvider) {
     return (
+<<<<<<< HEAD
+<<<<<<<< HEAD:src/pages/service-provider/dashboard/page.tsx
+=======
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <Card className="max-w-md w-full text-center">
           <CardHeader>
@@ -277,17 +545,35 @@ export default function ServiceProviderDashboard() {
           </CardContent>
         </Card>
       </div>
+<<<<<<< HEAD
+========
+      <DashboardWelcome 
+        userType="service-provider" 
+        userName={serviceProvider.name || 'Service Provider'}
+      />
+>>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083:src/pages/Service-providerDashboard.tsx
+=======
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
     )
   }
 
   // Calculate dashboard stats from real data
   const stats = {
+<<<<<<< HEAD
+    totalBookings: serviceProvider.totalBookings || 0,
+    completedBookings: Math.floor((serviceProvider.totalBookings || 0) * 0.85),
+    pendingBookings: recentBookings.filter(b => b.status === "pending").length,
+    activeServices: services.filter(s => s.isActive).length,
+    monthlyEarnings: ((serviceProvider.totalBookings || 0) * 15000) * 0.7, // Estimated monthly earnings
+    rating: serviceProvider.rating || 0,
+=======
     totalBookings: provider.totalBookings || 0,
     completedBookings: Math.floor((provider.totalBookings || 0) * 0.85),
     pendingBookings: recentBookings.filter(b => b.status === "pending").length,
     activeServices: services.filter(s => s.isActive).length,
     monthlyEarnings: ((provider.totalBookings || 0) * 15000) * 0.7, // Estimated monthly earnings
     rating: provider.rating || 0,
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
     responseRate: 98
   }
 
@@ -322,11 +608,20 @@ export default function ServiceProviderDashboard() {
       icon: Star,
       color: "text-indigo-600",
       bgColor: "bg-indigo-50",
+<<<<<<< HEAD
+      change: `${serviceProvider.reviewCount || 0} reviews`
+=======
       change: `${provider.reviewCount || 0} reviews`
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
     }
   ]
 
   return (
+<<<<<<< HEAD
+<<<<<<<< HEAD:src/pages/service-provider/dashboard/page.tsx
+<<<<<<<< HEAD:src/pages/service-provider/dashboard/page.tsx
+=======
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
     <div className="space-y-8">
       {/* Header */}
       <div className="mb-8">
@@ -335,6 +630,24 @@ export default function ServiceProviderDashboard() {
         </h1>
         <p className="text-gray-600 mt-2">Here's what's happening with your services today.</p>
       </div>
+<<<<<<< HEAD
+========
+========
+>>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083:src/pages/Service-providerDashboard.tsx
+    <ServiceProviderLayout title="Dashboard" description="Manage your service provider business">
+      <div className="space-y-8">
+        {/* Header */}
+        <DashboardHeader
+          title={`${getTimeBasedGreeting()}, ${serviceProvider.name || 'Service Provider'}!`}
+          subtitle="Here's what's happening with your services today."
+          userType="service-provider"
+        />
+<<<<<<<< HEAD:src/pages/service-provider/dashboard/page.tsx
+>>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083:src/pages/Service-providerDashboard.tsx
+========
+>>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083:src/pages/Service-providerDashboard.tsx
+=======
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -457,10 +770,17 @@ export default function ServiceProviderDashboard() {
                   variant="outline" 
                   size="sm"
                   onClick={async () => {
+<<<<<<< HEAD
+                    if (!serviceProvider?.id) return
+                    try {
+                      console.log('🔄 Refreshing services...')
+                      const refreshedServices = await getServicesByProviderId(serviceProvider.id)
+=======
                     if (!provider?.id) return
                     try {
                       console.log('🔄 Refreshing services...')
                       const refreshedServices = await getServicesByProviderId(provider.id)
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
                       console.log('📊 Refreshed services:', refreshedServices.length)
                       setServices(refreshedServices)
                       alert(`Found ${refreshedServices.length} services`)
@@ -486,7 +806,11 @@ export default function ServiceProviderDashboard() {
                 {process.env.NODE_ENV === 'development' && (
                   <div className="p-3 bg-blue-50 border border-blue-200 rounded text-xs mb-4">
                     <p><strong>🔍 Services Debug Information:</strong></p>
+<<<<<<< HEAD
+                    <p>Provider ID: {serviceProvider?.id || 'Not loaded'}</p>
+=======
                     <p>Provider ID: {provider?.id || 'Not loaded'}</p>
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
                     <p>Total Services Found: {services.length}</p>
                     <p>User UID: {user?.uid || 'Not authenticated'}</p>
                     
@@ -518,9 +842,15 @@ export default function ServiceProviderDashboard() {
                       <button 
                         onClick={async () => {
                           console.log('🔄 Manual service refresh clicked')
+<<<<<<< HEAD
+                          if (serviceProvider?.id) {
+                            try {
+                              const refreshedServices = await getServicesByProviderId(serviceProvider.id)
+=======
                           if (provider?.id) {
                             try {
                               const refreshedServices = await getServicesByProviderId(provider.id)
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
                               console.log('📊 Manual refresh result:', refreshedServices)
                               setServices(refreshedServices)
                               alert(`Refreshed! Found ${refreshedServices.length} services`)
@@ -661,14 +991,22 @@ export default function ServiceProviderDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3 text-sm">
+<<<<<<< HEAD
+                {serviceProvider.isApproved ? (
+=======
                 {provider.isApproved ? (
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
                   <>
                     <div className="p-3 bg-green-50 rounded-lg">
                       <p className="font-medium text-green-800">Profile Approved</p>
                       <p className="text-green-600">Your service provider profile is active</p>
                       <p className="text-xs text-green-500 mt-1">You can now receive bookings</p>
                     </div>
+<<<<<<< HEAD
+                    {!serviceProvider.isActive && (
+=======
                     {!provider.isActive && (
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
                       <div className="p-3 bg-orange-50 rounded-lg">
                         <p className="font-medium text-orange-800">Profile Inactive</p>
                         <p className="text-orange-600">Activate your profile to receive bookings</p>
@@ -696,6 +1034,11 @@ export default function ServiceProviderDashboard() {
         </div>
       </div>
       
+<<<<<<< HEAD
+      </div>
+      
+=======
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
       {/* Secret message overlay */}
       {showSecretMessage && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
@@ -705,6 +1048,10 @@ export default function ServiceProviderDashboard() {
           </div>
         </div>
       )}
+<<<<<<< HEAD
+    </ServiceProviderLayout>
+=======
     </div>
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
   )
 }

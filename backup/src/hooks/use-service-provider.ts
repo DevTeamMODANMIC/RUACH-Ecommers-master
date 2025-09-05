@@ -19,9 +19,13 @@ export function useServiceProvider() {
       console.log(`Fetching service provider data for user: ${userId} (attempt ${retryCount + 1})`);
       
       // Create new abort controller for this request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
       abortControllerRef.current = new AbortController()
       
       const provider = await getServiceProviderByOwnerId(userId, abortControllerRef.current)
+      
       console.log("Service provider found:", provider)
       
       setServiceProvider(provider)
@@ -31,7 +35,7 @@ export function useServiceProvider() {
       console.error("Failed to fetch service provider data:", error)
       
       // Don't set error state if request was aborted (component unmounted)
-      if (error?.message?.includes('aborted')) {
+      if (error?.message?.includes('aborted') || error?.message?.includes('cancelled')) {
         return
       }
       

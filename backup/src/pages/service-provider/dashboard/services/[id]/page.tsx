@@ -1,10 +1,24 @@
 "use client"
 
 import { useState, useEffect } from "react"
+<<<<<<< HEAD
+<<<<<<<< HEAD:src/pages/service-provider/dashboard/services/[id]/page.tsx
+=======
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
 import { useNavigate, useParams } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+<<<<<<< HEAD
+========
+import { useNavigate } from "react-router-dom"
+import { Link } from "react-router-dom"
+import { Button } from "../components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
+import { Badge } from "../components/ui/badge"
+>>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083:src/pages/Service-providerDashboardServicesParam.tsx
+=======
+>>>>>>> 5b5fd8b87f3bdfb44b59524083be90d21966c083
 import { 
   ArrowLeft,
   Edit,

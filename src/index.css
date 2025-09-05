@@ -59,14 +59,62 @@
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  
-  body {
-    @apply bg-background text-foreground;
-  }
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-/* Global styles */
+::-webkit-scrollbar-track {
+  background: var(--secondary);
+  border-radius: var(--radius);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--muted);
+  border-radius: var(--radius);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+/* Scroll shadow for menus */
+.scroll-shadow {
+  position: relative;
+}
+
+.scroll-shadow::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background: linear-gradient(to bottom, transparent, var(--background) 90%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Custom scrollbar width for mobile menu */
+.mobile-menu-scrollbar {
+  scrollbar-width: thin;
+}
+
+.mobile-menu-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.mobile-menu-scrollbar::-webkit-scrollbar-track {
+  background: var(--secondary);
+  border-radius: var(--radius);
+}
+
+.mobile-menu-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--muted);
+  border-radius: var(--radius);
+}
+
+.mobile-menu-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}

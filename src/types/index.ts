@@ -11,7 +11,10 @@ export type Product = {
   cloudinaryImages?: CloudinaryImage[]
   discount?: number
   rating?: number
-  reviews?: Review[]
+  reviews?: {
+    average: number
+    count: number
+  }
   options?: ProductOption[]
   featured?: boolean
   bulkPricing?: BulkPricingTier[]
@@ -24,6 +27,31 @@ export type Product = {
   shippingClass?: string
   createdAt?: string
   popularity?: number
+  // Add missing properties from firebase-products.ts
+  originalPrice?: number
+  subcategory?: string
+  subtitle?: string
+  cloudinaryMigrated?: boolean
+  stockQuantity: number
+  availableCountries: string[]
+  tags: string[]
+  nutritionalInfo?: {
+    calories: number
+    protein: number
+    carbs: number
+    fat: number
+    fiber: number
+  }
+  bestseller?: boolean
+  new?: boolean
+  popular?: boolean
+  isNew?: boolean
+  isBulk?: boolean
+  vendorId?: string
+  size?: string
+  updatedAt: string
+  // Add outOfStock property as a computed property
+  outOfStock?: boolean
 }
 
 export type Review = {

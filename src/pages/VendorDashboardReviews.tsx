@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { VendorLayout } from "../components/vendor-layout"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
@@ -16,104 +16,85 @@ import {
   BarChart3,
   Award
 } from "lucide-react"
+import { collection, query, where, orderBy, getDocs, updateDoc, doc, addDoc } from "firebase/firestore"
+import { db } from "../lib/firebase"
+import { useVendor } from "../hooks/use-vendor"
 
-// Mock reviews data
-const mockReviews = [
-  {
-    id: "1",
-    customer: {
-      name: "John Doe", 
-      avatar: null,
-      verified: true
-    },
-    service: "Home Plumbing Repair",
-    rating: 5,
-    title: "Excellent service and very professional",
-    review: "The plumber arrived on time and quickly diagnosed the problem. He explained everything clearly and completed the work efficiently. Very satisfied with the service quality and would definitely book again.",
-    date: "2024-03-22",
-    booking: {
-      id: "1",
-      amount: 15000
-    },
-    helpful: 3,
-    response: null
-  },
-  {
-    id: "2",
-    customer: {
-      name: "Sarah Johnson",
-      avatar: null, 
-      verified: true
-    },
-    service: "Emergency Leak Fix",
-    rating: 5,
-    title: "Quick response and great work",
-    review: "Had an emergency leak in my bathroom at 8pm. The technician came within 30 minutes and fixed it perfectly. Saved my weekend! Highly recommend this service.",
-    date: "2024-03-23",
-    booking: {
-      id: "2", 
-      amount: 8000
-    },
-    helpful: 5,
-    response: {
-      text: "Thank you Sarah! We're always here for emergencies. Glad we could help save your weekend.",
-      date: "2024-03-23"
-    }
-  },
-  {
-    id: "3",
-    customer: {
-      name: "Mike Wilson",
-      avatar: null,
-      verified: true
-    },
-    service: "Bathroom Renovation", 
-    rating: 4,
-    title: "Good work but took longer than expected",
-    review: "The quality of work was excellent and I'm happy with the final result. However, the job took 2 days longer than initially quoted. Better communication about delays would be appreciated.",
-    date: "2024-03-20",
-    booking: {
-      id: "3",
-      amount: 45000
-    },
-    helpful: 2,
-    response: {
-      text: "Thank you for the feedback Mike. We apologize for the delay - we encountered some unexpected plumbing issues that required additional time to fix properly. We'll improve our communication in future projects.",
-      date: "2024-03-21"
-    }
-  },
-  {
-    id: "4",
-    customer: {
-      name: "Lisa Brown",
-      avatar: null,
-      verified: false
-    },
-    service: "Home Plumbing Repair",
-    rating: 3, 
-    title: "Average service",
-    review: "The work was done correctly but the technician was quite late and didn't communicate well. The price was fair though.",
-    date: "2024-03-18",
-    booking: {
-      id: "4",
-      amount: 12000
-    },
-    helpful: 1,
-    response: null
-  }
-]
+// Remove mock reviews data - we'll load from database
+// const mockReviews = [ ... ]
 
 export default function ReviewsManagement() {
-  const [reviews, setReviews] = useState(mockReviews)
+  const [reviews, setReviews] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedRating, setSelectedRating] = useState("all")
   const [showResponseForm, setShowResponseForm] = useState<string | null>(null)
   const [responseText, setResponseText] = useState("")
+  const { activeStore } = useVendor()
+
+  // Fetch reviews from Firebase
+  useEffect(() => {
+    const fetchReviews = async () => {
+      if (!activeStore) return
+      
+      try {
+        setLoading(true)
+        // Get products for this vendor
+        const productsQuery = query(
+          collection(db, "products"),
+          where("vendorId", "==", activeStore.id)
+        )
+        
+        const productsSnapshot = await getDocs(productsQuery)
+        const productIds = productsSnapshot.docs.map(doc => doc.id)
+        
+        if (productIds.length === 0) {
+          setReviews([])
+          setLoading(false)
+          return
+        }
+        
+        // Get reviews for these products
+        const reviewsQuery = query(
+          collection(db, "reviews"),
+          where("productId", "in", productIds),
+          orderBy("date", "desc")
+        )
+        
+        const reviewsSnapshot = await getDocs(reviewsQuery)
+        const reviewsData: any[] = []
+        
+        reviewsSnapshot.forEach((doc) => {
+          const reviewData = doc.data()
+          // Get product info for this review
+          const productDoc = productsSnapshot.docs.find(p => p.id === reviewData.productId)
+          const productData = productDoc ? productDoc.data() : null
+          
+          reviewsData.push({
+            id: doc.id,
+            ...reviewData,
+            service: productData ? productData.name : "Unknown Product",
+            booking: {
+              amount: reviewData.purchasePrice || 0
+            }
+          })
+        })
+        
+        setReviews(reviewsData)
+      } catch (error) {
+        console.error("Error fetching reviews:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchReviews()
+  }, [activeStore])
 
   const filteredReviews = reviews.filter(review => {
-    const matchesSearch = review.customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const matchesSearch = review.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          review.service.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         review.review.toLowerCase().includes(searchQuery.toLowerCase())
+                         review.content.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesRating = selectedRating === "all" || review.rating.toString() === selectedRating
     return matchesSearch && matchesRating
   })
@@ -126,29 +107,55 @@ export default function ReviewsManagement() {
     })
   }
 
-  const handleResponseSubmit = (reviewId: string) => {
-    setReviews(prev => prev.map(review => 
-      review.id === reviewId 
-        ? { 
-            ...review, 
-            response: { 
-              text: responseText, 
-              date: new Date().toISOString().split('T')[0]
+  const handleResponseSubmit = async (reviewId: string) => {
+    if (!responseText.trim()) return
+    
+    try {
+      // Add response to Firestore
+      const response = {
+        text: responseText,
+        date: new Date().toISOString().split('T')[0],
+        vendorId: activeStore?.id
+      }
+      
+      // In a real implementation, you might want to store responses in a separate collection
+      // For now, we'll just update the local state
+      setReviews(prev => prev.map(review => 
+        review.id === reviewId 
+          ? { 
+              ...review, 
+              vendorResponse: response
             }
-          }
-        : review
-    ))
-    setResponseText("")
-    setShowResponseForm(null)
+          : review
+      ))
+      
+      setResponseText("")
+      setShowResponseForm(null)
+    } catch (error) {
+      console.error("Error submitting response:", error)
+    }
   }
 
-  const averageRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+  const averageRating = reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0
   const totalReviews = reviews.length
   const ratingDistribution = [5, 4, 3, 2, 1].map(rating => ({
     rating,
     count: reviews.filter(r => r.rating === rating).length,
-    percentage: (reviews.filter(r => r.rating === rating).length / totalReviews) * 100
+    percentage: totalReviews > 0 ? (reviews.filter(r => r.rating === rating).length / totalReviews) * 100 : 0
   }))
+
+  if (loading) {
+    return (
+      <VendorLayout 
+        title="Reviews & Ratings" 
+        description="Monitor and respond to customer feedback"
+      >
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </VendorLayout>
+    )
+  }
 
   return (
     <VendorLayout 
@@ -225,7 +232,7 @@ export default function ReviewsManagement() {
               <div>
                 <p className="text-sm text-gray-600">Response Rate</p>
                 <p className="text-2xl font-bold">
-                  {Math.round((reviews.filter(r => r.response).length / totalReviews) * 100)}%
+                  {totalReviews > 0 ? Math.round((reviews.filter(r => r.vendorResponse).length / totalReviews) * 100) : 0}%
                 </p>
               </div>
               <div className="p-2 bg-purple-100 rounded-lg">
@@ -307,8 +314,8 @@ export default function ReviewsManagement() {
                     </div>
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-semibold">{review.customer.name}</h4>
-                        {review.customer.verified && (
+                        <h4 className="font-semibold">{review.userName || "Anonymous"}</h4>
+                        {review.verifiedPurchase && (
                           <Badge variant="outline" className="text-green-600 border-green-600 text-xs">
                             Verified
                           </Badge>
@@ -336,8 +343,8 @@ export default function ReviewsManagement() {
 
                 {/* Review Content */}
                 <div>
-                  <h5 className="font-medium mb-2">{review.title}</h5>
-                  <p className="text-gray-700">{review.review}</p>
+                  <h5 className="font-medium mb-2">{review.title || "No title"}</h5>
+                  <p className="text-gray-700">{review.content}</p>
                 </div>
 
                 {/* Review Actions */}
@@ -345,11 +352,11 @@ export default function ReviewsManagement() {
                   <div className="flex items-center gap-4 text-sm text-gray-500">
                     <div className="flex items-center gap-1">
                       <ThumbsUp className="h-3 w-3" />
-                      <span>{review.helpful} helpful</span>
+                      <span>{review.helpfulVotes || 0} helpful</span>
                     </div>
                   </div>
                   
-                  {!review.response && (
+                  {!review.vendorResponse && (
                     <Button 
                       size="sm" 
                       variant="outline"
@@ -395,16 +402,16 @@ export default function ReviewsManagement() {
                 )}
 
                 {/* Existing Response */}
-                {review.response && (
+                {review.vendorResponse && (
                   <div className="bg-blue-50 rounded-lg p-4 border-l-4 border-blue-500">
                     <div className="flex items-center gap-2 mb-2">
                       <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
                         <span className="text-xs text-white font-medium">R</span>
                       </div>
                       <span className="font-medium text-blue-900">Your Response</span>
-                      <span className="text-sm text-blue-600">• {formatDate(review.response.date)}</span>
+                      <span className="text-sm text-blue-600">• {formatDate(review.vendorResponse.date)}</span>
                     </div>
-                    <p className="text-blue-800">{review.response.text}</p>
+                    <p className="text-blue-800">{review.vendorResponse.text}</p>
                   </div>
                 )}
               </div>

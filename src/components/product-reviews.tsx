@@ -1,5 +1,3 @@
-
-
 import { useState, useEffect } from "react"
 
 import { Button } from "../../src/components/ui/button"
@@ -13,9 +11,10 @@ import { ReviewForm } from "../../src/components/review-form"
 import { useReviews } from "../../src/hooks/use-reviews"
 import { useCurrency } from "../../src/components/currency-provider"
 import { useAuth } from "../../src/components/auth-provider"
+import { useLocalStorage } from "../../src/hooks/use-local-storage"
 
 interface ProductReviewsProps {
-  productId: number
+  productId: string
   productName: string
   availableCountries: string[]
 }
@@ -27,11 +26,14 @@ export function ProductReviews({ productId, productName, availableCountries }: P
   const [showReviewForm, setShowReviewForm] = useState(false)
   const { user } = useAuth()
   const { formatPrice } = useCurrency()
+  const [userVotes, setUserVotes] = useLocalStorage<Record<string, "helpful" | "not-helpful">>("review-votes", {})
 
   const { reviews, reviewStats, loading, submitReview, voteOnReview, reportReview, getReviews } = useReviews()
 
   useEffect(() => {
-    getReviews(productId, selectedCountry, sortBy, filterRating)
+    // Convert string productId to number for the hook
+    const productIdNum = parseInt(productId, 10) || 0
+    getReviews(productIdNum, selectedCountry, sortBy, filterRating)
   }, [productId, selectedCountry, sortBy, filterRating, getReviews])
 
   const countryNames = {
@@ -200,108 +202,84 @@ export function ProductReviews({ productId, productName, availableCountries }: P
           <Card>
             <CardContent className="p-8 text-center">
               <p className="text-muted-foreground mb-4">
-                No reviews yet for this product
-                {selectedCountry !== "all" && ` from ${countryNames[selectedCountry as keyof typeof countryNames]}`}.
+                No reviews yet. Be the first to review "{productName}"!
               </p>
-              {user && <Button onClick={() => setShowReviewForm(true)}>Be the first to review</Button>}
+              {user && (
+                <Button onClick={() => setShowReviewForm(true)}>
+                  Write a Review
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
           reviews.map((review) => (
             <Card key={review.id}>
               <CardContent className="p-6">
-                <div className="space-y-4">
-                  {/* Review Header */}
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                        <span className="font-semibold text-green-700">{review.userName.charAt(0).toUpperCase()}</span>
-                      </div>
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0">
+                    <div className="bg-gray-200 border-2 border-dashed rounded-xl w-16 h-16" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
                       <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold">{review.userName}</span>
+                        <h4 className="font-semibold">{review.userName}</h4>
+                        <div className="flex items-center gap-2 mt-1">
+                          {renderStars(review.rating)}
+                          <span className="text-sm text-muted-foreground">
+                            {formatDate(review.date)}
+                          </span>
                           {review.verifiedPurchase && (
-                            <Badge variant="secondary" className="text-xs">
+                            <Badge variant="secondary" className="ml-2">
                               <CheckCircle className="h-3 w-3 mr-1" />
                               Verified Purchase
                             </Badge>
                           )}
-                          <Badge variant="outline" className="text-xs">
-                            <MapPin className="h-3 w-3 mr-1" />
-                            {countryNames[review.country as keyof typeof countryNames]}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          {renderStars(review.rating, "sm")}
-                          <span className="text-sm text-muted-foreground">{formatDate(review.date)}</span>
                         </div>
                       </div>
+                      <Button variant="ghost" size="sm">
+                        <Flag className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => reportReview(review.id)}>
-                      <Flag className="h-4 w-4" />
-                    </Button>
-                  </div>
-
-                  {/* Review Content */}
-                  <div className="space-y-3">
-                    {review.title && <h4 className="font-semibold text-lg">{review.title}</h4>}
-                    <p className="text-muted-foreground leading-relaxed">{review.content}</p>
-
-                    {/* Review Images */}
-                    {review.images && review.images.length > 0 && (
-                      <div className="flex gap-2 flex-wrap">
-                        {review.images.map((image, index) => (
-                          <div key={index} className="relative w-20 h-20 rounded-lg overflow-hidden border">
-                            <Image
-                              src={image || "/placeholder.svg"}
-                              alt={`Review image ${index + 1}`}
-                              fill
-                              className="object-cover"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Country-specific details */}
+                    
+                    <div className="mt-3">
+                      <h5 className="font-medium">{review.title}</h5>
+                      <p className="text-muted-foreground mt-1">
+                        {review.content}
+                      </p>
+                    </div>
+                    
                     {review.countrySpecificNotes && (
-                      <div className="bg-muted/50 p-3 rounded-lg">
-                        <p className="text-sm">
-                          <strong>Country-specific notes:</strong> {review.countrySpecificNotes}
+                      <div className="mt-3 p-3 bg-blue-50 rounded-md">
+                        <div className="flex items-center text-sm">
+                          <MapPin className="h-4 w-4 mr-1 text-blue-500" />
+                          <span className="font-medium">Notes for {countryNames[review.country as keyof typeof countryNames] || review.country}:</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {review.countrySpecificNotes}
                         </p>
                       </div>
                     )}
-                  </div>
-
-                  <Separator />
-
-                  {/* Review Actions */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <Button
-                        variant="ghost"
+                    
+                    <div className="flex items-center gap-4 mt-4">
+                      <Button 
+                        variant="ghost" 
                         size="sm"
                         onClick={() => voteOnReview(review.id, "helpful")}
-                        className="text-muted-foreground hover:text-green-600"
+                        disabled={!!userVotes[review.id]}
                       >
-                        <ThumbsUp className="h-4 w-4 mr-1" />
+                        <ThumbsUp className="h-4 w-4 mr-2" />
                         Helpful ({review.helpfulVotes})
                       </Button>
-                      <Button
-                        variant="ghost"
+                      <Button 
+                        variant="ghost" 
                         size="sm"
                         onClick={() => voteOnReview(review.id, "not-helpful")}
-                        className="text-muted-foreground hover:text-red-600"
+                        disabled={!!userVotes[review.id]}
                       >
-                        <ThumbsDown className="h-4 w-4 mr-1" />
+                        <ThumbsDown className="h-4 w-4 mr-2" />
                         Not Helpful ({review.notHelpfulVotes})
                       </Button>
                     </div>
-                    {review.purchasePrice && (
-                      <span className="text-sm text-muted-foreground">
-                        Purchased for {formatPrice(review.purchasePrice)}
-                      </span>
-                    )}
                   </div>
                 </div>
               </CardContent>
@@ -309,18 +287,10 @@ export function ProductReviews({ productId, productName, availableCountries }: P
           ))
         )}
       </div>
-
-      {/* Load More Button */}
-      {reviews.length > 0 && reviews.length % 10 === 0 && (
-        <div className="text-center">
-          <Button variant="outline">Load More Reviews</Button>
-        </div>
-      )}
-
-      {/* Review Form Modal */}
+      
       {showReviewForm && (
-        <ReviewForm
-          productId={productId}
+        <ReviewForm 
+          productId={parseInt(productId, 10) || 0}
           productName={productName}
           availableCountries={availableCountries}
           onClose={() => setShowReviewForm(false)}
