@@ -12,6 +12,7 @@ import AdminServiceProviders from './pages/AdminService-providers'
 import AdminUsers from './pages/AdminUsers'
 import AdminVendors from './pages/AdminVendors'
 import AdminPayouts from './pages/AdminPayouts'
+import AdminBulkOrders from './pages/admin/AdminBulkOrders'
 import BulkOrder from './pages/Bulk-order'
 import Cart from './pages/Cart'
 import Checkout from './pages/Checkout.tsx'
@@ -72,6 +73,7 @@ import VendorDashboardProfile from './pages/VendorDashboardProfile'
 import VendorDashboardReviews from './pages/VendorDashboardReviews'
 import VendorDashboardSettings from './pages/VendorDashboardSettings'
 import VendorDashboardPayouts from './pages/VendorDashboardPayouts'
+import VendorDashboardBulkOrders from './pages/VendorDashboardBulkOrders'
 import VendorParam from './pages/VendorParam'
 import VendorRegister from './pages/VendorRegister'
 import VendorStores from './pages/VendorStores'
@@ -99,6 +101,7 @@ const routes: RouteDef[] = [
   { path: '/admin/users', Component: AdminUsers },
   { path: '/admin/vendors', Component: AdminVendors },
   { path: '/admin/payouts', Component: AdminPayouts },
+  { path: '/admin/bulk-orders', Component: AdminBulkOrders },
   { path: '/bulk-order', Component: BulkOrder },
   { path: '/cart', Component: Cart },
   { path: '/checkout', Component: Checkout },
@@ -159,6 +162,7 @@ const routes: RouteDef[] = [
   { path: '/vendor/dashboard/reviews', Component: VendorDashboardReviews },
   { path: '/vendor/dashboard/settings', Component: VendorDashboardSettings },
   { path: '/vendor/dashboard/payouts', Component: VendorDashboardPayouts },
+  { path: '/vendor/dashboard/bulk-orders', Component: VendorDashboardBulkOrders },
   { path: '/vendor/:vendorId', Component: VendorParam },
   { path: '/wishlist', Component: Wishlist }
 ]

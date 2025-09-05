@@ -19,7 +19,8 @@ import {
   Eye,
   ArrowLeft,
   Layers,
-  DollarSign
+  DollarSign,
+  Package2
 } from "lucide-react"
 
 interface NavItem {
@@ -82,6 +83,11 @@ export function VendorSidebar() {
           title: "Orders",
           href: "/vendor/dashboard/orders",
           icon: ShoppingCart
+        },
+        {
+          title: "Bulk Orders",
+          href: "/vendor/dashboard/bulk-orders",
+          icon: Package2
         }
       ]
     },
