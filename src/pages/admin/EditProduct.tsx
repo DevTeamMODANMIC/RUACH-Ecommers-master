@@ -62,7 +62,10 @@ export default function EditProduct() {
   ]
 
   useEffect(() => {
-    if (!id) return
+    if (!id) {
+      navigate("/admin/products")
+      return
+    }
     
     const loadProduct = async () => {
       try {
@@ -105,10 +108,18 @@ export default function EditProduct() {
       }
     }
 
-    if (isAdmin) {
-      loadProduct()
+    // Load product regardless of admin status initially
+    // We'll handle access denied separately
+    loadProduct()
+  }, [id, navigate])
+
+  // Separate effect for handling admin access
+  useEffect(() => {
+    if (!adminLoading && !isAdmin && id) {
+      // User is not admin and we've finished loading user status
+      console.log("User is not admin")
     }
-  }, [id, isAdmin, navigate])
+  }, [isAdmin, adminLoading, id])
 
   const handleInputChange = (field: string, value: string | boolean | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -142,6 +153,12 @@ export default function EditProduct() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!product || !id) return
+
+    // Check admin access before submitting
+    if (!isAdmin) {
+      alert("You need admin privileges to update products")
+      return
+    }
 
     setIsSaving(true)
     try {
