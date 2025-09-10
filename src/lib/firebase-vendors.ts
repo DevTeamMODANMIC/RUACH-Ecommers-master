@@ -35,6 +35,8 @@ export interface Vendor {
   isActive: boolean;
   status?: "pending" | "approved" | "rejected";
   rejected?: boolean;
+  contactEmail?: string;
+  contactPhone?: string;
   payoutSettings?: {
     bankName: string;
     accountNumber: string;
@@ -185,12 +187,22 @@ export const approveVendor = async (storeId: string): Promise<void> => {
  */
 export const rejectVendor = async (storeId: string): Promise<void> => {
   try {
+    // First, get the vendor to retrieve the ownerId
+    const vendor = await getVendor(storeId);
+    if (!vendor) {
+      throw new Error("Vendor not found");
+    }
+
+    // Update the vendor status to rejected
     await updateDoc(doc(db, VENDORS_COLLECTION, storeId), {
       approved: false,
       isActive: false,
       rejected: true,
       status: "rejected",
     });
+
+    // Then delete the vendor store and all related data
+    await deleteVendorStore(vendor.ownerId, storeId);
   } catch (error) {
     console.error("Error rejecting vendor:", error);
     throw error;
