@@ -55,10 +55,13 @@ export default function ReviewsManagement() {
         }
         
         // Get reviews for these products
+        // NOTE: Sorting by date with other filters requires a composite index in Firestore
+        // For development, we're temporarily removing date sorting to avoid the index requirement
+        // For production, create the composite index using the link in the Firebase error message
         const reviewsQuery = query(
           collection(db, "reviews"),
-          where("productId", "in", productIds),
-          orderBy("date", "desc")
+          where("productId", "in", productIds)
+          // orderBy("date", "desc")  // Commented out to avoid composite index requirement
         )
         
         const reviewsSnapshot = await getDocs(reviewsQuery)

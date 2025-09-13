@@ -249,6 +249,100 @@ export const getAllOrders = async (maxOrders: number = 100): Promise<Order[]> =>
   }
 };
 
+// ✅ Get orders for a specific vendor
+export const getVendorOrders = async (vendorId: string): Promise<Order[]> => {
+  try {
+    // Get all orders
+    const ordersSnapshot = await getDocs(collection(db, "orders"));
+    
+    // Filter orders that contain items from this vendor
+    const vendorOrders: Order[] = [];
+    
+    ordersSnapshot.docs.forEach((doc) => {
+      const orderData = doc.data();
+      const orderItems = orderData.items || [];
+      
+      // Check if any item in the order belongs to this vendor
+      const hasVendorItems = orderItems.some((item: any) => item.vendorId === vendorId);
+      
+      if (hasVendorItems) {
+        vendorOrders.push({
+          id: doc.id,
+          ...orderData,
+          createdAt: orderData.createdAt.toDate(),
+          updatedAt: orderData.updatedAt.toDate(),
+          estimatedDelivery: orderData.estimatedDelivery?.toDate(),
+        } as Order);
+      }
+    });
+    
+    // Sort by creation date (newest first)
+    vendorOrders.sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+    
+    return vendorOrders;
+  } catch (error: any) {
+    console.error("Error getting vendor orders:", error);
+    return [];
+  }
+};
+
+// ✅ Live listener for vendor orders
+export const listenToVendorOrders = (
+  vendorId: string,
+  callback: (orders: Order[]) => void
+) => {
+  try {
+    if (!vendorId) {
+      console.error("No vendorId provided to listenToVendorOrders");
+      callback([]);
+      return () => {};
+    }
+
+    // Since Firestore doesn't support querying array elements directly,
+    // we need to listen to all orders and filter client-side
+    return onSnapshot(
+      collection(db, "orders"),
+      (snapshot) => {
+        const vendorOrders: Order[] = [];
+        
+        snapshot.docs.forEach((doc) => {
+          const orderData = doc.data();
+          const orderItems = orderData.items || [];
+          
+          // Check if any item in the order belongs to this vendor
+          const hasVendorItems = orderItems.some((item: any) => item.vendorId === vendorId);
+          
+          if (hasVendorItems) {
+            vendorOrders.push({
+              id: doc.id,
+              ...orderData,
+              createdAt: orderData.createdAt.toDate(),
+              updatedAt: orderData.updatedAt.toDate(),
+              estimatedDelivery: orderData.estimatedDelivery?.toDate(),
+            } as Order);
+          }
+        });
+        
+        // Sort by creation date (newest first)
+        vendorOrders.sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        
+        callback(vendorOrders);
+      },
+      (error: FirestoreError) => {
+        console.error("Error listening to vendor orders:", error.message);
+        callback([]);
+      }
+    );
+  } catch (error: any) {
+    console.error("Error setting up vendor orders listener:", error);
+    callback([]); // Ensure we always call the callback even on error
+  }
+};
+
 export const getAllOrdersNoMax = async (): Promise<Order[]> => {
   try {
     const q = query(

@@ -84,12 +84,16 @@ export function useReviews() {
         }
 
         // Sort reviews
+        // NOTE: Sorting by date with other filters requires a composite index in Firestore
+        // For development, we're temporarily removing date sorting to avoid the index requirement
+        // For production, create the composite index using the link in the Firebase error message:
+        // https://console.firebase.google.com/v1/r/project/mondanmic-ecommers/firestore/indexes?create_composite=ClJwcm9qZWN0cy9tb25kYW5taWMtZWNvbW1lcnMvZGF0YWJhc2VzLyhkZWZhdWx0KS9jb2xsZWN0aW9uR3JvdXBzL3Jldmlld3MvaW5kZXhlcy9fEAEaDQoJcHJvZHVjdElkEAEaCAoEZGF0ZRACGgwKCF9fbmFtZV9fEAI
         switch (sortBy) {
           case "newest":
-            q = query(q, orderBy("date", "desc"))
+            // q = query(q, orderBy("date", "desc"))
             break
           case "oldest":
-            q = query(q, orderBy("date", "asc"))
+            // q = query(q, orderBy("date", "asc"))
             break
           case "highest":
             q = query(q, orderBy("rating", "desc"))
