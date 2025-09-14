@@ -20,7 +20,8 @@ import {
   ArrowLeft,
   Layers,
   DollarSign,
-  Package2
+  Package2,
+  Ticket
 } from "lucide-react"
 
 interface NavItem {
@@ -88,6 +89,11 @@ export function VendorSidebar() {
           title: "Bulk Orders",
           href: "/vendor/dashboard/bulk-orders",
           icon: Package2
+        },
+        {
+          title: "Promo Codes",
+          href: "/vendor/dashboard/promo-codes",
+          icon: Ticket
         }
       ]
     },

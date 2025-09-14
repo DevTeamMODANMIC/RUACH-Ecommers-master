@@ -316,3 +316,20 @@ export type Complaint = {
   createdAt: string | number | null
   updatedAt: string | number | null
 }
+
+// Promo Code Types
+export type PromoCode = {
+  id: string
+  code: string // Unique promo code
+  vendorId: string // Which vendor created this promo
+  discountType: 'percentage' | 'fixed' // Percentage off or fixed amount
+  discountValue: number // The discount amount (e.g., 10 for 10% or 10 for $10 off)
+  minimumOrderAmount?: number // Minimum order value to apply promo
+  maxUses?: number // Maximum number of times this promo can be used
+  usedCount: number // How many times it's been used
+  expirationDate?: Date // When the promo expires
+  isActive: boolean // Whether the promo is currently active
+  customerId?: string // Optional: specific customer this was issued to
+  createdAt: Date
+  updatedAt: Date
+}

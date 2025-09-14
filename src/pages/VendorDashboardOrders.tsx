@@ -31,9 +31,14 @@ import {
 } from "../components/ui/dropdown-menu"
 import { listenToVendorOrders, updateOrderStatus, type Order } from "../lib/firebase-orders"
 import { useToast } from "../hooks/use-toast"
+import { useCurrency } from "../components/currency-provider"
+// Add PDF generation imports
+import jsPDF from 'jspdf'
+import html2canvas from 'html2canvas'
 
 export default function VendorOrdersPage() {
   const { vendor, activeStore, loading: vendorLoading } = useVendor()
+  const { formatPrice } = useCurrency()
   const { toast } = useToast()
   const [orders, setOrders] = useState<Order[]>([])
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([])
@@ -147,6 +152,210 @@ export default function VendorOrdersPage() {
       })
     } finally {
       setUpdatingOrderId(null)
+    }
+  }
+
+  // Add this function to generate and download the invoice
+  const handleDownloadInvoice = async (order: Order) => {
+    try {
+      // Create a temporary div to hold the invoice content
+      const invoiceContent = document.createElement('div')
+      invoiceContent.style.padding = '30px'
+      invoiceContent.style.fontFamily = 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+      invoiceContent.style.maxWidth = '800px'
+      invoiceContent.style.margin = '0 auto'
+      invoiceContent.style.backgroundColor = 'white'
+      invoiceContent.style.color = '#333'
+      invoiceContent.style.lineHeight = '1.5'
+      
+      // Generate invoice HTML content
+      let itemsHtml = ''
+      order.items.forEach(item => {
+        // Handle options if they exist
+        const optionsHtml = item.options && Object.keys(item.options).length > 0 ? 
+          `<div style="font-size: 13px; color: #666; margin-top: 4px;">
+            ${Object.entries(item.options).map(([key, value]) => `${key}: ${value}`).join(', ')}
+          </div>` : ''
+        
+        // Calculate item total if not provided
+        const itemTotal = item.total || (item.price * item.quantity)
+        
+        itemsHtml += `
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 12px 16px;">
+              <div style="font-weight: 500; color: #1f2937;">${item.name || 'Unknown Item'}</div>
+              ${optionsHtml}
+            </td>
+            <td style="text-align: center; padding: 12px 16px; color: #6b7280;">${item.quantity || 0}</td>
+            <td style="text-align: right; padding: 12px 16px; color: #6b7280;">${formatPrice(item.price || 0)}</td>
+            <td style="text-align: right; padding: 12px 16px; font-weight: 500;">${formatPrice(itemTotal)}</td>
+          </tr>
+        `
+      })
+      
+      // Use default values if properties don't exist
+      const subtotal = order.subtotal || 0
+      const shipping = order.shipping || 0
+      const tax = order.tax || 0
+      const total = order.total || (subtotal + shipping + tax)
+      
+      invoiceContent.innerHTML = `
+        <div style="max-width: 800px; margin: 0 auto; background: white; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #333; line-height: 1.5;">
+          <!-- Header -->
+          <div style="padding: 30px; border-bottom: 2px solid #e5e7eb;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <h1 style="font-size: 28px; font-weight: 700; color: #111827; margin: 0 0 8px 0;">INVOICE</h1>
+                <p style="color: #6b7280; font-size: 16px; margin: 0;">Order #${order.id.slice(-6)}</p>
+                <p style="color: #6b7280; font-size: 14px; margin: 4px 0 0 0;">${new Date(order.createdAt || Date.now()).toLocaleDateString('en-US', { 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}</p>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-size: 24px; font-weight: 700; color: #111827;">${formatPrice(total)}</div>
+                <div style="color: #6b7280; font-size: 14px; margin-top: 4px;">Total Amount</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Company & Customer Info -->
+          <div style="padding: 30px; border-bottom: 1px solid #e5e7eb;">
+            <div style="display: flex; justify-content: space-between;">
+              <div style="flex: 1;">
+                <h2 style="font-size: 16px; font-weight: 600; color: #111827; margin: 0 0 12px 0;">From</h2>
+                <p style="margin: 0 0 4px 0; font-weight: 500;">Ruach Ecommers</p>
+                <p style="margin: 0 0 4px 0; color: #6b7280; font-size: 14px;">123 Business Street</p>
+                <p style="margin: 0 0 4px 0; color: #6b7280; font-size: 14px;">Business City, 10001</p>
+                <p style="margin: 0 0 4px 0; color: #6b7280; font-size: 14px;">Nigeria</p>
+                <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 14px;">contact@ruach.com</p>
+              </div>
+              
+              <div style="flex: 1;">
+                <h2 style="font-size: 16px; font-weight: 600; color: #111827; margin: 0 0 12px 0;">Bill To</h2>
+                <p style="margin: 0 0 4px 0; font-weight: 500;">
+                  ${(order.billingAddress?.firstName || '')} ${(order.billingAddress?.lastName || '')}
+                </p>
+                <p style="margin: 0 0 4px 0; color: #6b7280; font-size: 14px;">${order.billingAddress?.address1 || ''}</p>
+                <p style="margin: 0 0 4px 0; color: #6b7280; font-size: 14px;">
+                  ${(order.billingAddress?.city || '')}, ${(order.billingAddress?.postalCode || '')}
+                </p>
+                <p style="margin: 0 0 4px 0; color: #6b7280; font-size: 14px;">${order.billingAddress?.country || ''}</p>
+                <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 14px;">${order.billingAddress?.email || ''}</p>
+              </div>
+              
+              <div style="flex: 1;">
+                <h2 style="font-size: 16px; font-weight: 600; color: #111827; margin: 0 0 12px 0;">Ship To</h2>
+                <p style="margin: 0 0 4px 0; font-weight: 500;">
+                  ${(order.shippingAddress?.firstName || '')} ${(order.shippingAddress?.lastName || '')}
+                </p>
+                <p style="margin: 0 0 4px 0; color: #6b7280; font-size: 14px;">${order.shippingAddress?.address1 || ''}</p>
+                <p style="margin: 0 0 4px 0; color: #6b7280; font-size: 14px;">
+                  ${(order.shippingAddress?.city || '')}, ${(order.shippingAddress?.postalCode || '')}
+                </p>
+                <p style="margin: 0 0 4px 0; color: #6b7280; font-size: 14px;">${order.shippingAddress?.country || ''}</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Order Items -->
+          <div style="padding: 0 30px 30px 30px;">
+            <h2 style="font-size: 18px; font-weight: 600; color: #111827; margin: 24px 0 16px 0;">Order Details</h2>
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="background-color: #f9fafb; border-bottom: 2px solid #e5e7eb;">
+                  <th style="text-align: left; padding: 12px 16px; font-weight: 600; color: #6b7280; text-transform: uppercase; font-size: 12px;">Item</th>
+                  <th style="text-align: center; padding: 12px 16px; font-weight: 600; color: #6b7280; text-transform: uppercase; font-size: 12px;">Qty</th>
+                  <th style="text-align: right; padding: 12px 16px; font-weight: 600; color: #6b7280; text-transform: uppercase; font-size: 12px;">Price</th>
+                  <th style="text-align: right; padding: 12px 16px; font-weight: 600; color: #6b7280; text-transform: uppercase; font-size: 12px;">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemsHtml}
+              </tbody>
+            </table>
+            
+            <!-- Order Summary -->
+            <div style="margin-top: 30px; max-width: 300px; margin-left: auto;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="color: #6b7280;">Subtotal:</span>
+                <span style="font-weight: 500;">${formatPrice(subtotal)}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="color: #6b7280;">Shipping:</span>
+                <span style="font-weight: 500;">${formatPrice(shipping)}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="color: #6b7280;">Tax:</span>
+                <span style="font-weight: 500;">${formatPrice(tax)}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin: 16px 0 8px 0; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+                <span style="font-weight: 600; color: #111827;">Total:</span>
+                <span style="font-weight: 700; font-size: 18px; color: #111827;">${formatPrice(total)}</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Footer -->
+          <div style="padding: 30px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; text-align: center;">
+            <p style="color: #6b7280; font-size: 14px; margin: 0;">
+              Thank you for your business! If you have any questions about this invoice, please contact us at contact@ruach.com
+            </p>
+            <p style="color: #9ca3af; font-size: 12px; margin: 8px 0 0 0;">
+              © ${new Date().getFullYear()} Ruach Ecommers. All rights reserved.
+            </p>
+          </div>
+        </div>
+      `
+      
+      // Add the temporary div to the document
+      document.body.appendChild(invoiceContent)
+      
+      // Use html2canvas to capture the content
+      const canvas = await html2canvas(invoiceContent, {
+        scale: 2, // Higher quality
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      })
+      
+      // Remove the temporary div
+      document.body.removeChild(invoiceContent)
+      
+      // Create PDF from canvas
+      const imgData = canvas.toDataURL('image/png')
+      const pdf = new jsPDF('p', 'mm', 'a4')
+      const imgWidth = 210 // A4 width in mm
+      const pageHeight = 297 // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width
+      let heightLeft = imgHeight
+      let position = 0
+      
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+      heightLeft -= pageHeight
+      
+      // Add new pages if content is too long
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight
+        pdf.addPage()
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+        heightLeft -= pageHeight
+      }
+      
+      // Save the PDF
+      pdf.save(`invoice-${order.id.slice(-6)}.pdf`)
+      
+      toast({
+        title: "Invoice downloaded",
+        description: "Invoice has been successfully downloaded."
+      })
+    } catch (error: any) {
+      console.error("Error generating invoice:", error)
+      toast({
+        title: "Download failed",
+        description: "Failed to generate invoice. Please try again.",
+        variant: "destructive"
+      })
     }
   }
 
@@ -376,7 +585,7 @@ export default function VendorOrdersPage() {
                                 Mark as Delivered
                               </DropdownMenuItem>
                             )}
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDownloadInvoice(order)}>
                               Print Invoice
                             </DropdownMenuItem>
                             <DropdownMenuItem>

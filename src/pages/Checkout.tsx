@@ -1,8 +1,5 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-
-
-
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Input } from "../components/ui/input"
@@ -11,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Checkbox } from "../components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group"
 import { Separator } from "../components/ui/separator"
-import { CreditCard, Truck, Shield, Lock, ArrowLeft } from "lucide-react"
+import { CreditCard, Truck, Shield, Lock, ArrowLeft, Ticket, AlertCircle } from "lucide-react"
 import { useCart } from "../components/cart-provider"
 import { useAuth } from "../components/auth-provider"
 import { useToast } from "../hooks/use-toast"
@@ -25,7 +22,8 @@ import {
 } from "../components/ui/breadcrumb"
 import { createOrder } from "../lib/firebase-orders"
 import { PaystackButton } from "react-paystack"
-
+import { validatePromoCode, applyPromoCodeDiscount, incrementPromoCodeUsage } from "../lib/firebase-promo-codes"
+import { PromoCode } from "../types"
 
 // Nigerian states for shipping
 const NIGERIA_STATES = [
@@ -110,6 +108,12 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState("card")
   const [sameAsShipping, setSameAsShipping] = useState(true)
   const [orderId, setOrderId] = useState<string | null>(null)
+  
+  // Promo code state
+  const [promoCode, setPromoCode] = useState("")
+  const [appliedPromoCode, setAppliedPromoCode] = useState<PromoCode | null>(null)
+  const [promoCodeError, setPromoCodeError] = useState("")
+  const [isPromoCodeValidating, setIsPromoCodeValidating] = useState(false)
 
   const subtotal = getTotalPrice()
   const shippingCost = deliveryType === 'lagos' 
@@ -117,7 +121,8 @@ export default function CheckoutPage() {
     : otherShippingOptions.find(option => option.id === otherShippingOptionId)?.price || 0
   // VAT = 2.5% of subtotal for Nigeria
   const tax = subtotal * 0.025
-  const total = subtotal + shippingCost + tax
+  const discountAmount = appliedPromoCode ? applyPromoCodeDiscount(subtotal, appliedPromoCode) : 0
+  const total = subtotal + shippingCost + tax - discountAmount
 
   // Override formatPrice to use Naira on this page
   const formatPrice = (amount: number) => formatNaira(amount)
@@ -133,42 +138,6 @@ export default function CheckoutPage() {
   const handlePaymentChange = (field: string, value: string) => {
     setPaymentInfo((prev) => ({ ...prev, [field]: value }))
   }
-
-  // const validateStep = (stepNumber: number) => {
-    
-  //   switch (stepNumber) {
-  //     case 1:
-  //       return (
-  //         shippingInfo.firstName &&
-  //         shippingInfo.lastName &&
-  //         shippingInfo.email &&
-  //         shippingInfo.phone &&
-  //         shippingInfo.address &&
-  //         shippingInfo.city &&
-  //         shippingInfo.postalCode
-  //       )
-  //     case 2:
-  //       if (sameAsShipping) return true
-  //       return (
-  //         billingInfo.firstName &&
-  //         billingInfo.lastName &&
-  //         billingInfo.address &&
-  //         billingInfo.city &&
-  //         billingInfo.postalCode
-  //       )
-  //     case 4:
-  //       if (paymentMethod === "card") {
-  //         return paymentInfo.cardNumber && paymentInfo.expiryDate && paymentInfo.cvv && paymentInfo.nameOnCard
-  //       }
-  //       if (paymentMethod === "external") {
-  //         // External payment method doesn't need validation
-  //         return true
-  //       }
-  //       return true
-  //     default:
-  //       return false
-  //   }
-  // }
 
   const validateStep = (stepNumber: number) => {
     switch (stepNumber) {
@@ -209,6 +178,46 @@ export default function CheckoutPage() {
       default:
         return false
     }
+  }
+
+  // Handle promo code validation
+  const handleApplyPromoCode = async () => {
+    if (!promoCode.trim()) {
+      setPromoCodeError("Please enter a promo code")
+      return
+    }
+    
+    setIsPromoCodeValidating(true)
+    setPromoCodeError("")
+    
+    try {
+      // Get product IDs from cart items
+      const cartProductIds = items.map(item => item.productId);
+      
+      const result = await validatePromoCode(promoCode, subtotal, cartProductIds, user?.uid)
+      
+      if (result.isValid && result.promoCode) {
+        setAppliedPromoCode(result.promoCode)
+        toast({
+          title: "Promo code applied",
+          description: `You saved ₦${applyPromoCodeDiscount(subtotal, result.promoCode).toFixed(2)} with this promo code!`,
+        })
+      } else {
+        setPromoCodeError(result.error || "Invalid promo code")
+      }
+    } catch (error) {
+      setPromoCodeError("Error validating promo code")
+      console.error("Error validating promo code:", error)
+    } finally {
+      setIsPromoCodeValidating(false)
+    }
+  }
+
+  // Handle removing promo code
+  const handleRemovePromoCode = () => {
+    setAppliedPromoCode(null)
+    setPromoCode("")
+    setPromoCodeError("")
   }
 
   const handlePlaceOrder = async (paymentRef?: string) => {
@@ -283,10 +292,21 @@ export default function CheckoutPage() {
           deliveryType === "lagos"
             ? new Date(Date.now() + 2 * 24 * 60 * 60 * 1000) // 1-2 days
             : new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 3-5 days
+        // Add promo code info to order if applied
+        ...(appliedPromoCode && {
+          promoCodeId: appliedPromoCode.id,
+          promoCode: appliedPromoCode.code,
+          discountAmount: discountAmount
+        })
       }
 
       const createdOrder = await createOrder(orderData)
       const orderId = createdOrder?.id || createdOrder
+
+      // Increment promo code usage if applied
+      if (appliedPromoCode) {
+        await incrementPromoCodeUsage(appliedPromoCode.id)
+      }
 
       clearCart()
 
@@ -307,134 +327,6 @@ export default function CheckoutPage() {
       setIsProcessing(false)
     }
   }
-
-
-  // const handlePlaceOrder = async () => {
-  //   setIsProcessing(true)
-
-  //   try {
-  //     if (!user) {
-  //       toast({
-  //         title: "Authentication required",
-  //         description: "Please log in to place an order.",
-  //         variant: "destructive",
-  //       })
-  //       navigate("/login?redirect=/checkout")
-  //       return
-  //     }
-
-  //     // Prepare the order data
-  //     const orderData = {
-  //       userId: user.uid,
-  //       items: items.map(item => ({
-  //         productId: item.productId,
-  //         name: item.name,
-  //         price: item.price,
-  //         image: item.image,
-  //         quantity: item.quantity,
-  //         total: item.price * item.quantity
-  //       })),
-  //       subtotal,
-  //       shipping: shippingCost,
-  //       tax,
-  //       total,
-  //       currency: "NGN", // Nigerian Naira
-  //       status: "pending" as const,
-  //       paymentStatus: "pending" as const,
-  //       paymentMethod: paymentMethod,
-  //       shippingAddress: {
-  //         firstName: shippingInfo.firstName,
-  //         lastName: shippingInfo.lastName,
-  //         address1: shippingInfo.address,
-  //         street: shippingInfo.address,
-  //         city: shippingInfo.city,
-  //         state: shippingInfo.state,
-  //         postalCode: shippingInfo.postalCode,
-  //         country: shippingInfo.country,
-  //         phone: shippingInfo.phone,
-  //       },
-  //       billingAddress: sameAsShipping
-  //         ? {
-  //             firstName: shippingInfo.firstName,
-  //             lastName: shippingInfo.lastName,
-  //             address1: shippingInfo.address,
-  //             street: shippingInfo.address,
-  //             city: shippingInfo.city,
-  //             state: shippingInfo.state,
-  //             postalCode: shippingInfo.postalCode,
-  //             country: shippingInfo.country,
-  //             phone: shippingInfo.phone,
-  //           }
-  //         : {
-  //             firstName: billingInfo.firstName,
-  //             lastName: billingInfo.lastName,
-  //             address1: billingInfo.address,
-  //             street: billingInfo.address,
-  //             city: billingInfo.city,
-  //             state: billingInfo.state,
-  //             postalCode: billingInfo.postalCode,
-  //             country: billingInfo.country,
-  //             phone: shippingInfo.phone,
-  //           },
-  //       estimatedDelivery: deliveryType === "lagos"
-  //         ? new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)  // 1-2 days for Lagos
-  //         : new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 3-5 days for Interstate
-  //     }
-
-  //     // Handle different payment methods
-  //     if (paymentMethod === "external") {
-  //       // For external payment, create the order first as pending
-  //       const createdOrder = await createOrder(orderData)
-  //       const orderId = createdOrder?.id || createdOrder
-
-  //       // For testing, redirect to payment successful page
-  //       // This will be replaced with actual external payment link
-  //       navigate(`/payment-successful?orderId=${orderId}&amount=${total.toFixed(2)}&items=${items.length}&email=${encodeURIComponent(shippingInfo.email)}`)
-        
-  //       // Don't clear cart yet - this will be done after successful payment
-        
-  //     } else {
-  //       // Standard card payment processing
-  //       const paymentResult = await simulatePaymentProcessing()
-        
-  //       if (paymentResult.success) {
-  //         // Update order with payment info
-  //         const updatedOrderData = {
-  //           ...orderData,
-  //           paymentStatus: "paid" as const,
-  //           paymentId: paymentResult.paymentId
-  //         }
-
-  //         // Create the order in Firebase
-  //         const createdOrder = await createOrder(updatedOrderData)
-  //         const orderId = createdOrder?.id || createdOrder
-
-  //         // Clear cart
-  //         clearCart()
-          
-  //         // Show success message
-  //         toast({
-  //           title: "Order placed successfully",
-  //           description: "Your order has been placed and is being processed.",
-  //         })
-
-  //         // Redirect to confirmation page
-  //         navigate(`/order-confirmation?orderId=${orderId}`)
-  //       } else {
-  //         throw new Error("Payment processing failed")
-  //       }
-  //     }
-  //   } catch (error: any) {
-  //     console.error("Error placing order:", error);
-  //     toast({
-  //       title: "Order failed",
-  //       description: error.message || "There was an error processing your order. Please try again.",
-  //       variant: "destructive",
-  //     });
-  //   } finally {
-  //     setIsProcessing(false);
-  //   }
-  // };
 
   // Add a function to simulate payment processing
   const simulatePaymentProcessing = async () => {
@@ -922,8 +814,6 @@ export default function CheckoutPage() {
               </Card>
             )}
 
-
-
             {/* Navigation Buttons */}
             <div className="flex justify-between mt-6">
               <Button variant="outline" onClick={() => (step > 1 ? setStep(step - 1) : navigate("/cart"))}>
@@ -973,6 +863,65 @@ export default function CheckoutPage() {
                     <span>Subtotal</span>
                     <span>{formatPrice(subtotal)}</span>
                   </div>
+                  
+                  {/* Promo Code Section */}
+                  <div className="pt-2">
+                    {appliedPromoCode ? (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center">
+                            <Ticket className="h-4 w-4 text-green-600 mr-2" />
+                            <span className="font-medium text-green-800">
+                              {appliedPromoCode.code}
+                            </span>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={handleRemovePromoCode}
+                            className="text-green-700 hover:text-green-900 hover:bg-green-100"
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                        <div className="text-sm text-green-700 mt-1">
+                          You saved {formatPrice(discountAmount)}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="flex items-center">
+                          <Ticket className="h-4 w-4 text-muted-foreground mr-2" />
+                          <Label htmlFor="promoCode" className="text-sm font-medium">
+                            Promo Code
+                          </Label>
+                        </div>
+                        <div className="flex gap-2">
+                          <Input
+                            id="promoCode"
+                            value={promoCode}
+                            onChange={(e) => setPromoCode(e.target.value)}
+                            placeholder="Enter promo code"
+                            className={promoCodeError ? "border-red-500" : ""}
+                          />
+                          <Button 
+                            onClick={handleApplyPromoCode}
+                            disabled={isPromoCodeValidating || !promoCode.trim()}
+                            size="sm"
+                          >
+                            {isPromoCodeValidating ? "Applying..." : "Apply"}
+                          </Button>
+                        </div>
+                        {promoCodeError && (
+                          <div className="flex items-center text-sm text-red-600">
+                            <AlertCircle className="h-4 w-4 mr-1" />
+                            {promoCodeError}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  
                   <div className="flex justify-between">
                     <span>Shipping</span>
                     <span>{formatPrice(shippingCost)}</span>
@@ -981,6 +930,14 @@ export default function CheckoutPage() {
                     <span>Tax (VAT)</span>
                     <span>{formatPrice(tax)}</span>
                   </div>
+                  
+                  {/* Discount Display */}
+                  {appliedPromoCode && (
+                    <div className="flex justify-between text-green-600">
+                      <span>Discount</span>
+                      <span>-{formatPrice(discountAmount)}</span>
+                    </div>
+                  )}
                 </div>
 
                 <Separator />

@@ -74,6 +74,7 @@ import VendorDashboardReviews from './pages/VendorDashboardReviews'
 import VendorDashboardSettings from './pages/VendorDashboardSettings'
 import VendorDashboardPayouts from './pages/VendorDashboardPayouts'
 import VendorDashboardBulkOrders from './pages/VendorDashboardBulkOrders'
+import VendorDashboardPromoCodes from './pages/VendorDashboardPromoCodes'
 import VendorParam from './pages/VendorParam'
 import VendorRegister from './pages/VendorRegister'
 import VendorStores from './pages/VendorStores'
@@ -163,6 +164,7 @@ const routes: RouteDef[] = [
   { path: '/vendor/dashboard/settings', Component: VendorDashboardSettings },
   { path: '/vendor/dashboard/payouts', Component: VendorDashboardPayouts },
   { path: '/vendor/dashboard/bulk-orders', Component: VendorDashboardBulkOrders },
+  { path: '/vendor/dashboard/promo-codes', Component: VendorDashboardPromoCodes },
   { path: '/vendor/:vendorId', Component: VendorParam },
   { path: '/wishlist', Component: Wishlist }
 ]

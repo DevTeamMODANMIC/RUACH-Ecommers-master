@@ -20,7 +20,7 @@ import {
   MoreHorizontal,
   Plus,
   ShoppingBag,
-  Package2
+  Loader2
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import {
@@ -29,53 +29,23 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu"
-import { getVendorBulkOrders, updateBulkOrderStatus, onVendorBulkOrdersUpdate } from "../lib/firebase-bulk-orders"
-
-interface BulkOrderItem {
-  productId: string
-  productName: string
-  quantity: number
-  basePrice: number
-  discountedPrice: number
-  discountPercentage: number
-  total: number
-}
-
-interface BulkOrderBusinessInfo {
-  businessName: string
-  contactName: string
-  email: string
-  phone: string
-  businessType: string
-  taxId?: string
-  address: string
-}
-
-interface BulkOrder {
-  id: string
-  orderNumber: string
-  businessInfo: BulkOrderBusinessInfo
-  items: BulkOrderItem[]
-  subtotal: number
-  deliveryCost: number
-  total: number
-  currency: string
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
-  deliveryOption: string
-  deliveryEstimate: string
-  additionalInfo?: string
-  createdAt: Date
-  updatedAt: Date
-}
+import { onVendorBulkOrdersUpdate, updateBulkOrderStatus, type BulkOrder } from "../lib/firebase-bulk-orders"
+import { useToast } from "../hooks/use-toast"
+import { useCurrency } from "../components/currency-provider"
+// Add PDF generation imports
+import jsPDF from 'jspdf'
+import html2canvas from 'html2canvas'
 
 export default function VendorBulkOrdersPage() {
-  const { vendor, activeStore } = useVendor()
+  const { vendor, activeStore, loading: vendorLoading } = useVendor()
+  const { formatPrice } = useCurrency()
   const [orders, setOrders] = useState<BulkOrder[]>([])
   const [filteredOrders, setFilteredOrders] = useState<BulkOrder[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [activeTab, setActiveTab] = useState("all")
   const [loading, setLoading] = useState(true)
+  const { toast } = useToast()
 
   // Load bulk orders for vendor
   useEffect(() => {
@@ -160,7 +130,180 @@ export default function VendorBulkOrdersPage() {
     }
   }
 
-  if (loading) {
+  // Add this function to generate and download the invoice
+  const handleDownloadInvoice = async (order: BulkOrder) => {
+    try {
+      // Create a temporary div to hold the invoice content
+      const invoiceContent = document.createElement('div')
+      invoiceContent.style.padding = '30px'
+      invoiceContent.style.fontFamily = 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+      invoiceContent.style.maxWidth = '800px'
+      invoiceContent.style.margin = '0 auto'
+      invoiceContent.style.backgroundColor = 'white'
+      invoiceContent.style.color = '#333'
+      invoiceContent.style.lineHeight = '1.5'
+      
+      // Generate invoice HTML content
+      let itemsHtml = ''
+      order.items.forEach(item => {
+        itemsHtml += `
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 12px 16px;">
+              <div style="font-weight: 500; color: #1f2937;">${item.productName || 'Unknown Product'}</div>
+            </td>
+            <td style="text-align: center; padding: 12px 16px; color: #6b7280;">${item.quantity || 0}</td>
+            <td style="text-align: right; padding: 12px 16px; color: #6b7280;">${formatPrice(item.basePrice || 0)}</td>
+            <td style="text-align: right; padding: 12px 16px; font-weight: 500;">${formatPrice(item.total || (item.basePrice || 0) * (item.quantity || 0))}</td>
+          </tr>
+        `
+      })
+      
+      // Use default values if properties don't exist
+      const subtotal = order.subtotal || 0
+      const deliveryCost = order.deliveryCost || 0
+      const total = order.total || (subtotal + deliveryCost)
+      
+      invoiceContent.innerHTML = `
+        <div style="max-width: 800px; margin: 0 auto; background: white; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #333; line-height: 1.5;">
+          <!-- Header -->
+          <div style="padding: 30px; border-bottom: 2px solid #e5e7eb;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <h1 style="font-size: 28px; font-weight: 700; color: #111827; margin: 0 0 8px 0;">BULK ORDER INVOICE</h1>
+                <p style="color: #6b7280; font-size: 16px; margin: 0;">Order #${order.id.slice(-6)}</p>
+                <p style="color: #6b7280; font-size: 14px; margin: 4px 0 0 0;">${order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-US', { 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                }) : 'Unknown'}</p>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-size: 24px; font-weight: 700; color: #111827;">${formatPrice(total)}</div>
+                <div style="color: #6b7280; font-size: 14px; margin-top: 4px;">Total Amount</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Company & Customer Info -->
+          <div style="padding: 30px; border-bottom: 1px solid #e5e7eb;">
+            <div style="display: flex; justify-content: space-between;">
+              <div style="flex: 1;">
+                <h2 style="font-size: 16px; font-weight: 600; color: #111827; margin: 0 0 12px 0;">From</h2>
+                <p style="margin: 0 0 4px 0; font-weight: 500;">Ruach Ecommers</p>
+                <p style="margin: 0 0 4px 0; color: #6b7280; font-size: 14px;">123 Business Street</p>
+                <p style="margin: 0 0 4px 0; color: #6b7280; font-size: 14px;">Business City, 10001</p>
+                <p style="margin: 0 0 4px 0; color: #6b7280; font-size: 14px;">Nigeria</p>
+                <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 14px;">contact@ruach.com</p>
+              </div>
+              
+              <div style="flex: 1;">
+                <h2 style="font-size: 16px; font-weight: 600; color: #111827; margin: 0 0 12px 0;">Business Information</h2>
+                <p style="margin: 0 0 4px 0; font-weight: 500;">${order.businessInfo?.businessName || ''}</p>
+                <p style="margin: 0 0 4px 0; color: #6b7280; font-size: 14px;">${order.businessInfo?.contactName || ''}</p>
+                <p style="margin: 0 0 4px 0; color: #6b7280; font-size: 14px;">${order.businessInfo?.email || ''}</p>
+                <p style="margin: 0 0 4px 0; color: #6b7280; font-size: 14px;">${order.businessInfo?.phone || ''}</p>
+                <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 14px;">Status: ${order.status || 'Unknown'}</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Order Items -->
+          <div style="padding: 0 30px 30px 30px;">
+            <h2 style="font-size: 18px; font-weight: 600; color: #111827; margin: 24px 0 16px 0;">Order Items</h2>
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="background-color: #f9fafb; border-bottom: 2px solid #e5e7eb;">
+                  <th style="text-align: left; padding: 12px 16px; font-weight: 600; color: #6b7280; text-transform: uppercase; font-size: 12px;">Item</th>
+                  <th style="text-align: center; padding: 12px 16px; font-weight: 600; color: #6b7280; text-transform: uppercase; font-size: 12px;">Qty</th>
+                  <th style="text-align: right; padding: 12px 16px; font-weight: 600; color: #6b7280; text-transform: uppercase; font-size: 12px;">Price</th>
+                  <th style="text-align: right; padding: 12px 16px; font-weight: 600; color: #6b7280; text-transform: uppercase; font-size: 12px;">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemsHtml}
+              </tbody>
+            </table>
+            
+            <!-- Order Summary -->
+            <div style="margin-top: 30px; max-width: 300px; margin-left: auto;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="color: #6b7280;">Subtotal:</span>
+                <span style="font-weight: 500;">${formatPrice(subtotal)}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="color: #6b7280;">Delivery:</span>
+                <span style="font-weight: 500;">${formatPrice(deliveryCost)}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin: 16px 0 8px 0; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+                <span style="font-weight: 600; color: #111827;">Total:</span>
+                <span style="font-weight: 700; font-size: 18px; color: #111827;">${formatPrice(total)}</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Footer -->
+          <div style="padding: 30px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; text-align: center;">
+            <p style="color: #6b7280; font-size: 14px; margin: 0;">
+              Thank you for your business! If you have any questions about this invoice, please contact us at contact@ruach.com
+            </p>
+            <p style="color: #9ca3af; font-size: 12px; margin: 8px 0 0 0;">
+              © ${new Date().getFullYear()} Ruach Ecommers. All rights reserved.
+            </p>
+          </div>
+        </div>
+      `
+      
+      // Add the temporary div to the document
+      document.body.appendChild(invoiceContent)
+      
+      // Use html2canvas to capture the content
+      const canvas = await html2canvas(invoiceContent, {
+        scale: 2, // Higher quality
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      })
+      
+      // Remove the temporary div
+      document.body.removeChild(invoiceContent)
+      
+      // Create PDF from canvas
+      const imgData = canvas.toDataURL('image/png')
+      const pdf = new jsPDF('p', 'mm', 'a4')
+      const imgWidth = 210 // A4 width in mm
+      const pageHeight = 297 // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width
+      let heightLeft = imgHeight
+      let position = 0
+      
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+      heightLeft -= pageHeight
+      
+      // Add new pages if content is too long
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight
+        pdf.addPage()
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+        heightLeft -= pageHeight
+      }
+      
+      // Save the PDF
+      pdf.save(`bulk-invoice-${order.id.slice(-6)}.pdf`)
+      
+      toast({
+        title: "Invoice downloaded",
+        description: "Bulk order invoice has been successfully downloaded."
+      })
+    } catch (error: any) {
+      console.error("Error generating invoice:", error)
+      toast({
+        title: "Download failed",
+        description: "Failed to generate invoice. Please try again.",
+        variant: "destructive"
+      })
+    }
+  }
+
+  if (loading || vendorLoading) {
     return (
       <VendorLayout 
         title="Bulk Orders" 
@@ -238,7 +381,7 @@ export default function VendorBulkOrdersPage() {
               <CardContent className="p-12 text-center">
                 <div className="flex justify-center mb-4">
                   <div className="p-4 bg-blue-100 rounded-full">
-                    <Package2 className="h-8 w-8 text-blue-600" />
+                    <Package className="h-8 w-8 text-blue-600" />
                   </div>
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">No Bulk Orders Yet</h3>
@@ -250,7 +393,7 @@ export default function VendorBulkOrdersPage() {
           ) : filteredOrders.length === 0 ? (
             <Card>
               <CardContent className="p-12 text-center">
-                <Package2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No bulk orders found</h3>
                 <p className="text-gray-600">
                   {searchTerm || statusFilter !== "all" 
@@ -321,7 +464,7 @@ export default function VendorBulkOrdersPage() {
                                 Mark as Delivered
                               </DropdownMenuItem>
                             )}
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDownloadInvoice(order)}>
                               Print Invoice
                             </DropdownMenuItem>
                             <DropdownMenuItem>
