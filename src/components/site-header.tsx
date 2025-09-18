@@ -1,6 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { useState } from "react"
-import comLogog from "../a/new_logo.jpg"
 // React doesn't need Image component from Next.js
 import {
   Heart,
@@ -43,6 +42,30 @@ import { VendorHeaderSwitcher } from "../../src/components/vendor-header-switche
 import { ServiceProviderHeaderSwitcher } from "../../src/components/service-provider-header-switcher"
 import { DesktopMegaMenu, MobileMegaMenu } from "../../src/components/mega-menu"
 import clsx from "clsx"
+
+// React doesn't need Image component from Next.js
+const Logo = () => {
+  const [logoError, setLogoError] = useState(false);
+  const [logoLoaded, setLogoLoaded] = useState(false);
+
+  if (logoError) {
+    return (
+      <div className="h-10 w-10 rounded-full bg-green-600 flex items-center justify-center border border-green-700">
+        <span className="text-white font-bold text-lg">R</span>
+      </div>
+    );
+  }
+
+  return (
+    <img 
+      src="/logo/new_logo.jpg" 
+      alt="RUACH Logo" 
+      className={`h-10 w-10 rounded-full object-cover ${logoLoaded ? 'block' : 'hidden'}`}
+      onLoad={() => setLogoLoaded(true)}
+      onError={() => setLogoError(true)}
+    />
+  );
+};
 
 // Legacy categories - keeping for backward compatibility if needed
 const legacyCategories = [
@@ -183,7 +206,7 @@ export default function HeaderImproved() {
 
         {/* Logo */}
         <Link to="/" className="flex items-center space-x-2">
-          <img src={comLogog} alt="RUACH Logo" className="h-10 w-10 rounded-full object-cover" />
+          <Logo />
           <span className="font-bold tracking-tight text-gray-900 hidden sm:inline">
             RUACH E-STORE
           </span>
