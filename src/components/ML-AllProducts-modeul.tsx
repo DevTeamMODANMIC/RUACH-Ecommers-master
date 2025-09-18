@@ -23,8 +23,8 @@ function weightedScore(productVec, orderVec) {
   const reviewScore = productVec.reviews / 5; // normalized 0–1
 
   return (
-    (0.3 * (1 / (1 + priceDiff))) + // smaller diff = higher score
-    (0.2 * timeScore) +
+    (0.25 * (1 / (1 + priceDiff))) + // smaller diff = higher score
+    (0.25 * timeScore) +
     (0.25 * stockScore) +
     (0.25 * reviewScore)
   );

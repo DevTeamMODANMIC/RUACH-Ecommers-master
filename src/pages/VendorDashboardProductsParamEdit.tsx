@@ -50,74 +50,97 @@ const categories = MAIN_CATEGORIES.filter(
 )
 
 export default function VendorEditProductPage() {
-  const { productId } = useParams()
+  const { id } = useParams()
   const navigate = useNavigate()
   const { toast } = useToast()
   const { vendor, loading } = useVendor()
   
-  const [product, setProduct] = useState<any>(null)
+  const [product, setProduct] = useState<any>(null);
+  
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [imageError, setImageError] = useState<Record<string, boolean>>({})
   
+  // Separate effect for handling vendor access check - moved to consistent position
   useEffect(() => {
+    if (!loading && vendor && product && product.vendorId !== vendor?.id) {
+      toast({
+        title: "Access denied",
+        description: "You don't have permission to edit this product.",
+        variant: "destructive"
+      })
+      navigate("/vendor/dashboard/products")
+    }
+  }, [vendor, product, loading, toast, navigate])
+
+  const handleSelectChange = (name: string, value: string) => {
+    const updatedProduct = {
+      ...product,
+      [name]: value
+    };
+    setProduct(updatedProduct);
+  }
+
+  // Add effect to log product state changes
+  useEffect(() => {
+    if (product) {
+    }
+  }, [product]);
+
+  useEffect(() => {
+    // Redirect if no product ID
+    if (!id) {
+      navigate("/vendor/dashboard/products");
+      return;
+    }
+    
     const fetchProduct = async () => {
-      if (!productId) return
-      
       try {
-        const productData = await getProduct(productId)
+        setIsLoading(true);
+        const productData = await getProduct(id);
         if (!productData) {
           toast({
             title: "Product not found",
             description: "The requested product could not be found.",
             variant: "destructive"
-          })
-          navigate("/vendor/dashboard/products")
-          return
-        }
-        
-        // Check if user owns this product
-        if (productData.vendorId !== vendor?.id) {
-          toast({
-            title: "Access denied",
-            description: "You don't have permission to edit this product.",
-            variant: "destructive"
-          })
-          navigate("/vendor/dashboard/products")
-          return
+          });
+          navigate("/vendor/dashboard/products");
+          return;
         }
         
         // Extract size from tags if it exists
-        let size = ""
+        let size = "";
         if (productData.tags && Array.isArray(productData.tags)) {
-          const sizeTag = productData.tags.find((tag: string) => tag.startsWith("size:"))
+          const sizeTag = productData.tags.find((tag: string) => tag.startsWith("size:"));
           if (sizeTag) {
-            size = sizeTag.replace("size:", "")
+            size = sizeTag.replace("size:", "");
           }
         }
         
-        setProduct({
+        const productWithSize = {
           ...productData,
           size // Add size to the product state
-        })
+        };
+        
+        setProduct(productWithSize);
       } catch (error) {
-        console.error("Error fetching product:", error)
+        console.error("Error fetching product:", error);
         toast({
           title: "Error loading product",
           description: "Failed to load product details. Please try again.",
           variant: "destructive"
-        })
-        navigate("/vendor/dashboard/products")
+        });
+        navigate("/vendor/dashboard/products");
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
     
-    if (vendor && productId) {
-      fetchProduct()
-    }
-  }, [productId, vendor, toast, navigate])
-  
+    // Fetch product regardless of vendor status initially
+    // We'll handle vendor access check separately
+    fetchProduct();
+  }, [id, toast, navigate]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target
     const checked = type === 'checkbox' ? (e.target as HTMLInputElement).checked : undefined
@@ -127,14 +150,7 @@ export default function VendorEditProductPage() {
       [name]: type === 'checkbox' ? checked : type === 'number' ? parseFloat(value) || 0 : value
     })
   }
-  
-  const handleSelectChange = (name: string, value: string) => {
-    setProduct({
-      ...product,
-      [name]: value
-    })
-  }
-  
+
   // Check if size selection should be shown
   const shouldShowSizeSelection = (category: string, subcategory: string) => {
     // Show size selection for fashion subcategories
@@ -170,10 +186,10 @@ export default function VendorEditProductPage() {
   }
   
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!product || !productId) return
+    e.preventDefault();
+    if (!product || !id) return;
     
-    setIsSaving(true)
+    setIsSaving(true);
     
     try {
       // Validate required fields
@@ -182,8 +198,8 @@ export default function VendorEditProductPage() {
           title: "Validation Error",
           description: "Product name is required.",
           variant: "destructive"
-        })
-        return
+        });
+        return;
       }
       
       if (!product.price || product.price <= 0) {
@@ -191,8 +207,8 @@ export default function VendorEditProductPage() {
           title: "Validation Error",
           description: "Valid product price is required.",
           variant: "destructive"
-        })
-        return
+        });
+        return;
       }
       
       if (!product.category) {
@@ -200,8 +216,8 @@ export default function VendorEditProductPage() {
           title: "Validation Error",
           description: "Product category is required.",
           variant: "destructive"
-        })
-        return
+        });
+        return;
       }
       
       if (product.cloudinaryImages.length === 0) {
@@ -209,60 +225,82 @@ export default function VendorEditProductPage() {
           title: "Validation Error",
           description: "At least one product image is required.",
           variant: "destructive"
-        })
-        return
+        });
+        return;
       }
       
       // For fashion categories that require size, require size selection
-      const showSizeSelection = shouldShowSizeSelection(product.category, product.subcategory || product.category)
+      const showSizeSelection = shouldShowSizeSelection(product.category, product.subcategory || product.category);
       if (showSizeSelection && !product.size) {
         toast({
           title: "Validation Error",
           description: "Please select a size for fashion products.",
           variant: "destructive"
-        })
-        return
+        });
+        return;
       }
       
       // Prepare tags including size if applicable
-      let tags = product.tags || []
+      let tags = product.tags || [];
       if (product.size) {
         // Remove any existing size tags
-        tags = tags.filter((tag: string) => !tag.startsWith("size:"))
+        tags = tags.filter((tag: string) => !tag.startsWith("size:"));
         // Add the new size tag
-        tags.push(`size:${product.size}`)
+        tags.push(`size:${product.size}`);
       }
       
-      // Prepare update data
-      const updateData = {
-        ...product,
-        price: parseFloat(product.price.toString()),
-        originalPrice: product.originalPrice ? parseFloat(product.originalPrice.toString()) : undefined,
-        weight: product.weight ? product.weight.toString() : undefined,
-        dimensions: product.dimensions ? JSON.stringify(product.dimensions) : undefined,
-        discount: product.discount,
+      // Prepare update data - only include fields that should be updated
+      const updateData: any = {
+        // Basic fields that should always be included
+        name: product.name,
+        description: product.description,
+        category: product.category,
+        origin: product.origin,
+        inStock: product.inStock,
+        images: product.images,
+        cloudinaryImages: product.cloudinaryImages,
+        tags: tags,
         vendorId: vendor.id,
         updatedAt: new Date(),
-        tags // Include updated tags with size information
+      };
+      
+      // Price fields
+      updateData.price = parseFloat(product.price.toString());
+      
+      // Optional fields - only include if they have values
+      if (product.originalPrice) {
+        updateData.originalPrice = parseFloat(product.originalPrice.toString());
       }
       
-      await updateProduct(productId, updateData)
+      if (product.weight) {
+        updateData.weight = product.weight.toString();
+      }
+      
+      if (product.dimensions) {
+        updateData.dimensions = JSON.stringify(product.dimensions);
+      }
+      
+      if (product.discount !== undefined && product.discount !== null) {
+        updateData.discount = product.discount;
+      }
+
+      await updateProduct(id, updateData);
       
       toast({
         title: "Product updated",
         description: "Your product has been successfully updated."
-      })
+      });
       
-      navigate("/vendor/dashboard/products")
+      navigate("/vendor/dashboard/products");
     } catch (error) {
-      console.error("Error updating product:", error)
+      console.error("Error updating product:", error);
       toast({
         title: "Error updating product",
         description: "Failed to update product. Please try again.",
         variant: "destructive"
-      })
+      });
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
   }
   
@@ -405,7 +443,7 @@ export default function VendorEditProductPage() {
                 <div>
                   <Label htmlFor="category">Category *</Label>
                   <Select
-                    value={product.category}
+                    value={product?.category || ""}
                     onValueChange={(value) => handleSelectChange("category", value)}
                   >
                     <SelectTrigger>

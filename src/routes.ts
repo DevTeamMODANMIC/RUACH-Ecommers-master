@@ -6,7 +6,7 @@ import AdminProducts from './pages/AdminProducts'
 import AdminProductsAdd from './pages/AdminProductsAdd'
 import AdminProductsCloudinaryMigration from './pages/AdminProductsCloudinary-migration'
 import AdminProductsCloudinaryReport from './pages/AdminProductsCloudinary-report'
-import AdminProductsEditParam from './pages/AdminProductsEditParam'
+import EditProduct from './pages/admin/EditProduct'
 import AdminProductsImport from './pages/AdminProductsImport'
 import AdminServiceProviders from './pages/AdminService-providers'
 import AdminUsers from './pages/AdminUsers'
@@ -95,7 +95,7 @@ const routes: RouteDef[] = [
   { path: '/admin/products/add', Component: AdminProductsAdd },
   { path: '/admin/products/cloudinary-migration', Component: AdminProductsCloudinaryMigration },
   { path: '/admin/products/cloudinary-report', Component: AdminProductsCloudinaryReport },
-  { path: '/admin/products/edit/:id', Component: AdminProductsEditParam },
+  { path: '/admin/products/edit/:id', Component: EditProduct },
   { path: '/admin/products/import', Component: AdminProductsImport },
   { path: '/admin/service-providers', Component: AdminServiceProviders },
   { path: '/admin/users', Component: AdminUsers },

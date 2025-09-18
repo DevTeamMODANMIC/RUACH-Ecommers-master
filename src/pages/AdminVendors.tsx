@@ -196,6 +196,11 @@ export default function AdminVendorsPage() {
       if (action === 'approve') {
         await approveVendor(vendorId)
       } else {
+        // Show confirmation dialog for rejection since it will delete the store
+        if (!window.confirm('Are you sure you want to reject this vendor? This will permanently delete the vendor store and all associated data.')) {
+          setActionUid(null)
+          return
+        }
         await rejectVendor(vendorId)
       }
       
@@ -394,7 +399,7 @@ export default function AdminVendorsPage() {
                     disabled={actionUid === vendor.id}
                   >
                     {actionUid === vendor.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4 mr-1" />}
-                    Reject
+                    Reject & Delete
                   </Button>
                   <Button
                     size="sm"

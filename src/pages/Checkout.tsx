@@ -247,15 +247,38 @@ export default function CheckoutPage() {
         shippingAddress: {
           firstName: shippingInfo.firstName,
           lastName: shippingInfo.lastName,
-          address1: shippingInfo.address,
-          street: shippingInfo.address,
+          address1: shippingInfo.address, // This is required
+          street: shippingInfo.address,   // This is required
           city: shippingInfo.city,
           state: shippingInfo.state,
           postalCode: shippingInfo.postalCode,
           country: shippingInfo.country,
           phone: shippingInfo.phone,
+          email: shippingInfo.email, // This is required
         },
-        billingAddress: sameAsShipping ? shippingInfo : billingInfo,
+        billingAddress: sameAsShipping ? {
+          firstName: shippingInfo.firstName,
+          lastName: shippingInfo.lastName,
+          address1: shippingInfo.address, // This is required
+          street: shippingInfo.address,   // This is required
+          city: shippingInfo.city,
+          state: shippingInfo.state,
+          postalCode: shippingInfo.postalCode,
+          country: shippingInfo.country,
+          phone: shippingInfo.phone,
+          email: shippingInfo.email, // This is required
+        } : {
+          firstName: billingInfo.firstName,
+          lastName: billingInfo.lastName,
+          address1: billingInfo.address, // This is required
+          street: billingInfo.address,   // This is required
+          city: billingInfo.city,
+          state: billingInfo.state,
+          postalCode: billingInfo.postalCode,
+          country: billingInfo.country,
+          phone: shippingInfo.phone, // Use shipping phone for billing
+          email: shippingInfo.email, // Use shipping email for billing
+        },
         estimatedDelivery:
           deliveryType === "lagos"
             ? new Date(Date.now() + 2 * 24 * 60 * 60 * 1000) // 1-2 days
@@ -881,7 +904,8 @@ export default function CheckoutPage() {
                           ],
                         }}
                         onSuccess={async (ref) => {
-                          await handlePlaceOrder(ref.reference)
+                          // Fix: Extract the reference string instead of passing the entire event object
+                          await handlePlaceOrder(ref.reference);
                         }}
                         onClose={() => {
                           setIsProcessing(false)
@@ -912,7 +936,12 @@ export default function CheckoutPage() {
                   Continue
                 </Button>
               ) : (
-                <Button onClick={handlePlaceOrder} disabled={isProcessing} className="bg-green-600 hover:bg-green-700">
+                // Fix: Prevent direct calling with event parameter by using an arrow function
+                <Button 
+                  onClick={() => handlePlaceOrder()} 
+                  disabled={isProcessing ? false : true} 
+                  className="bg-green-600 hover:bg-green-700"
+                >
                   {isProcessing ? "Processing..." : `Place Order - ${formatPrice(total)}`}
                 </Button>
               )}

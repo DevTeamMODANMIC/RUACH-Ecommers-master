@@ -7,6 +7,8 @@ import { CurrencyProvider } from "./components/currency-provider"
 import { AuthProvider } from "./components/auth-provider"   // ✅ add this
 import ScrollToTop from "./components/scroll-to-top"
 import "./index.css"
+import { loadConfig } from "./config";
+
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -22,3 +24,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     </BrowserRouter>
   </React.StrictMode>
 )
+
+async function startApp() {
+  await loadConfig();
+}
+
+startApp();

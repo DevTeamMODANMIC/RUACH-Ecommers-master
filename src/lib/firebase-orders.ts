@@ -14,6 +14,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { updateProduct } from "./firebase-products";
+import { getVendor } from "./firebase-vendors";
 
 export interface OrderItem {
   productId: string;
@@ -87,9 +88,36 @@ export const createOrder = async (
           const productDoc = await getDoc(doc(db, "products", item.productId));
           if (productDoc.exists()) {
             const productData = productDoc.data();
+
             return {
               ...item,
-              vendorId: productData.vendorId || undefined
+              vendorId: productData.vendorId || undefined,
+            };
+          }
+        } catch (error) {
+          console.error(`Error fetching product ${item.productId}:`, error);
+        }
+        return item;
+      })
+    );
+
+    // BACKEND RESPONSE SMTP EMAIL
+    const backemdItems = await Promise.all(
+      orderData.items.map(async (item) => {
+        // Get product to retrieve vendorId
+        try {
+          const productDoc = await getDoc(doc(db, "products", item.productId));
+          if (productDoc.exists()) {
+            const productData = productDoc.data();
+            const getVendoreInfo = await getVendor(productData.vendorId)
+            // console.log("getVendoreInfo", getVendoreInfo?.contactEmail)
+
+            return {
+              ...item,
+              vendorId: productData.vendorId || undefined,
+              vendorEmail: getVendoreInfo?.contactEmail || " "
+
+
             };
           }
         } catch (error) {
@@ -106,6 +134,29 @@ export const createOrder = async (
       createdAt: new Date(),
       updatedAt: new Date(),
     };
+
+    const backendOrder: Omit<Order, "id"> = {
+      ...orderData,
+      items: backemdItems,
+      orderNumber,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const config = {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(backendOrder),
+    };
+
+    
+
+    // Send order data to backend for email processing
+
+    console.log("Creating order:", order);
 
     const docRef = await addDoc(collection(db, "orders"), order);
 
@@ -131,6 +182,11 @@ export const createOrder = async (
         console.error("Error updating stock levels:", stockError);
       }
     }
+    const handeLocalhostLocation = "https://custome-backend.onrender.com/api/" // "http://localhost:3001/api/";
+    const url = `${handeLocalhostLocation}SMTP-orders`;
+
+    const reposen = await fetch(url, config);
+    console.log("backendOrder", backendOrder)
 
     return { id: docRef.id, ...order };
   } catch (error: any) {
@@ -246,6 +302,100 @@ export const getAllOrders = async (maxOrders: number = 100): Promise<Order[]> =>
   } catch (error: any) {
     console.error("Error getting all orders:", error);
     return [];
+  }
+};
+
+// ✅ Get orders for a specific vendor
+export const getVendorOrders = async (vendorId: string): Promise<Order[]> => {
+  try {
+    // Get all orders
+    const ordersSnapshot = await getDocs(collection(db, "orders"));
+    
+    // Filter orders that contain items from this vendor
+    const vendorOrders: Order[] = [];
+    
+    ordersSnapshot.docs.forEach((doc) => {
+      const orderData = doc.data();
+      const orderItems = orderData.items || [];
+      
+      // Check if any item in the order belongs to this vendor
+      const hasVendorItems = orderItems.some((item: any) => item.vendorId === vendorId);
+      
+      if (hasVendorItems) {
+        vendorOrders.push({
+          id: doc.id,
+          ...orderData,
+          createdAt: orderData.createdAt.toDate(),
+          updatedAt: orderData.updatedAt.toDate(),
+          estimatedDelivery: orderData.estimatedDelivery?.toDate(),
+        } as Order);
+      }
+    });
+    
+    // Sort by creation date (newest first)
+    vendorOrders.sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+    
+    return vendorOrders;
+  } catch (error: any) {
+    console.error("Error getting vendor orders:", error);
+    return [];
+  }
+};
+
+// ✅ Live listener for vendor orders
+export const listenToVendorOrders = (
+  vendorId: string,
+  callback: (orders: Order[]) => void
+) => {
+  try {
+    if (!vendorId) {
+      console.error("No vendorId provided to listenToVendorOrders");
+      callback([]);
+      return () => {};
+    }
+
+    // Since Firestore doesn't support querying array elements directly,
+    // we need to listen to all orders and filter client-side
+    return onSnapshot(
+      collection(db, "orders"),
+      (snapshot) => {
+        const vendorOrders: Order[] = [];
+        
+        snapshot.docs.forEach((doc) => {
+          const orderData = doc.data();
+          const orderItems = orderData.items || [];
+          
+          // Check if any item in the order belongs to this vendor
+          const hasVendorItems = orderItems.some((item: any) => item.vendorId === vendorId);
+          
+          if (hasVendorItems) {
+            vendorOrders.push({
+              id: doc.id,
+              ...orderData,
+              createdAt: orderData.createdAt.toDate(),
+              updatedAt: orderData.updatedAt.toDate(),
+              estimatedDelivery: orderData.estimatedDelivery?.toDate(),
+            } as Order);
+          }
+        });
+        
+        // Sort by creation date (newest first)
+        vendorOrders.sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        
+        callback(vendorOrders);
+      },
+      (error: FirestoreError) => {
+        console.error("Error listening to vendor orders:", error.message);
+        callback([]);
+      }
+    );
+  } catch (error: any) {
+    console.error("Error setting up vendor orders listener:", error);
+    callback([]); // Ensure we always call the callback even on error
   }
 };
 

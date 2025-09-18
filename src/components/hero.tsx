@@ -42,6 +42,15 @@ const slides: Slide[] = [
     cta: "Become a Vendor",
     ctaLink: "/vendor/register"
   },
+  {
+    id: 4, // Ensure this ID is unique
+    title: "Back to School",
+    subtitle: "Complete, Cheap, and Stylish!",
+    description: "Get ready for the new school year with our selection of backpacks, notebooks, and more.",
+    image: "/WhatsApp Image 2025-09-07 at 14.54.17_aea152e2.jpg", // New image path
+    cta: "Shop Now",
+    ctaLink: "/shop"
+  },
 ];
 
 export default function Hero() {
