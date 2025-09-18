@@ -83,6 +83,8 @@ import Wishlist from './pages/Wishlist'
 // Import the new Delivery Dashboard components
 import DeliveryDashboard from './pages/DeliveryDashboard'
 import DeliveryLogin from './pages/DeliveryLogin'
+// Import the new Slider Management component
+import SliderManagement from './pages/admin/SliderManagement.tsx'
 
 type RouteDef = {
   path: string
@@ -102,6 +104,7 @@ const routes: RouteDef[] = [
   { path: '/admin/products/edit/:id', Component: EditProduct },
   { path: '/admin/products/import', Component: AdminProductsImport },
   { path: '/admin/service-providers', Component: AdminServiceProviders },
+  { path: '/admin/slider-management', Component: SliderManagement },
   { path: '/admin/users', Component: AdminUsers },
   { path: '/admin/vendors', Component: AdminVendors },
   { path: '/admin/payouts', Component: AdminPayouts },

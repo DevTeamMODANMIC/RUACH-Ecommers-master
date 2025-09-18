@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Mail, ShoppingBag, ArrowRight } from "lucide-react";
+import { getAllSliderItems } from "@/lib/firebase-slider";
 
 interface Slide {
-  id: number;
+  id: string; // Changed to string to match Firebase key
   title: string;
   subtitle: string;
   description: string;
@@ -13,10 +14,10 @@ interface Slide {
   ctaLink: string;
 }
 
-// Updated slides with better images and content
-const slides: Slide[] = [
+// Default slides as fallback
+const defaultSlides: Slide[] = [
   {
-    id: 1,
+    id: "1",
     title: "Discover a World of Products",
     subtitle: "From fashion and electronics to handmade crafts, find it all on Ruach E-Store.",
     description: "Experience the tastes of home with our carefully curated selection of international Products.",
@@ -25,7 +26,7 @@ const slides: Slide[] = [
     ctaLink: "/shop"
   },
   {
-    id: 2,
+    id: "2",
     title: "Shop Local, Support Your Community",
     subtitle: "Discover unique products from independent vendors in your area.",
     description: "Quench your thirst with our wide range of international product and services",
@@ -34,7 +35,7 @@ const slides: Slide[] = [
     ctaLink: "/shop"
   },
   {
-    id: 3,
+    id: "3",
     title: "Start Your Vendor Journey Today",
     subtitle: "Join our community of vendors and reach customers worldwide",
     description: "Manage up to 3 independent stores with our comprehensive vendor platform",
@@ -43,11 +44,11 @@ const slides: Slide[] = [
     ctaLink: "/vendor/register"
   },
   {
-    id: 4, // Ensure this ID is unique
+    id: "4",
     title: "Back to School",
     subtitle: "Complete, Cheap, and Stylish!",
     description: "Get ready for the new school year with our selection of backpacks, notebooks, and more.",
-    image: "/WhatsApp Image 2025-09-07 at 14.54.17_aea152e2.jpg", // New image path
+    image: "/WhatsApp Image 2025-09-07 at 14.54.17_aea152e2.jpg",
     cta: "Shop Now",
     ctaLink: "/shop"
   },
@@ -55,10 +56,64 @@ const slides: Slide[] = [
 
 export default function Hero() {
   const navigate = useNavigate();
+  const [slides, setSlides] = useState<Slide[]>(defaultSlides);
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [isLoading, setIsLoading] = useState<boolean[]>([true, true, true]);
+  const [isLoading, setIsLoading] = useState<boolean[]>(new Array(defaultSlides.length).fill(true));
   const [touchStart, setTouchStart] = useState<number>(0);
   const [touchEnd, setTouchEnd] = useState<number>(0);
+  const [loadError, setLoadError] = useState(false);
+
+  // Load slider data from Firebase
+  useEffect(() => {
+    const loadSliderData = async () => {
+      try {
+        const sliderData = await getAllSliderItems();
+        if (sliderData && sliderData.length > 0) {
+          // Use Firebase data directly, mapping the id correctly
+          const firebaseSlides = sliderData.map((item: any) => ({
+            id: item.id,
+            title: item.title || "",
+            subtitle: item.subtitle || item.description || "", // fallback to description if subtitle missing
+            description: item.description || "",
+            image: item.image || item.imageUrl || "", // fallback to imageUrl if image missing
+            cta: item.cta || item.ctaText || "Shop Now", // fallback to ctaText if cta missing
+            ctaLink: item.ctaLink || "/shop"
+          }));
+          setSlides(firebaseSlides);
+          setIsLoading(new Array(firebaseSlides.length).fill(true));
+        }
+        setLoadError(false);
+      } catch (error: any) {
+        console.error("Error loading slider data from Firebase:", error);
+        console.log("Error details:", {
+          message: error.message,
+          code: error.code,
+          name: error.name,
+          stack: error.stack
+        });
+        
+        // Try to load from local storage as fallback
+        try {
+          const localData = localStorage.getItem("ruach_slider_items");
+          if (localData) {
+            const parsedData = JSON.parse(localData);
+            if (parsedData.length > 0) {
+              setSlides(parsedData);
+              setIsLoading(new Array(parsedData.length).fill(true));
+              setLoadError(false);
+              return;
+            }
+          }
+        } catch (localError) {
+          console.error("Error loading slider data from local storage:", localError);
+        }
+        // Use default slides if all else fails
+        setLoadError(true);
+      }
+    };
+
+    loadSliderData();
+  }, []);
 
   // Function to handle touch swipe
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -91,7 +146,7 @@ export default function Hero() {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
     }, 7000); // Auto-advance every 7 seconds
     return () => clearInterval(timer);
-  }, []);
+  }, [slides]);
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % slides.length);
@@ -115,6 +170,11 @@ export default function Hero() {
       newsletterSection.scrollIntoView({ behavior: 'smooth' });
     }
   };
+
+  // If there was an error loading slides and we're still using defaults, show a warning
+  if (loadError && slides === defaultSlides) {
+    console.warn("Failed to load slider data from Firebase, using default slides");
+  }
 
   return (
     <section 
