@@ -1,8 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { addProduct, type Product } from "./firebase-products"
-import fs from "fs"
-import path from "path"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -25,6 +23,10 @@ export function formatCurrency(amount: number, currency: string = 'GBP', locale:
 // Function to import products from a scraped JSON file
 export async function importScrapedProducts(jsonPath: string, imagesDir: string) {
   try {
+    // Dynamically import fs and path only when needed (server-side)
+    const fs = await import('fs');
+    const path = await import('path');
+    
     // Note: This has to run on server-side or needs a server API endpoint
     // For this demo we'll use pre-configured product data
     const predefinedProducts = [
