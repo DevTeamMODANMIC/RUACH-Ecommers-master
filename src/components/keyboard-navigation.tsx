@@ -1,5 +1,3 @@
-
-
 import { useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/components/auth-provider"
@@ -77,6 +75,10 @@ export default function KeyboardNavigation() {
               // Not logged in - redirect to login
               navigate('/login?redirect=/service-provider/dashboard')
             }
+            break
+          case 'L': // Delivery Dashboard
+            event.preventDefault()
+            navigate('/delivery-login')
             break
         }
       }

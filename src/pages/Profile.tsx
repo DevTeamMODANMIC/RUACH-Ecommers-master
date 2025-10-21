@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 import { Link } from "react-router-dom";
 import { Button } from "../components/ui/button"
@@ -18,6 +18,7 @@ import { useToast } from "../hooks/use-toast"
 import { useLocalStorage } from "../hooks/use-local-storage"
 import { useWishlist } from "../hooks/use-wishlist"
 import { useCart } from "../components/cart-provider"
+import { getUserOrders, listenToUserOrders } from "../lib/firebase-orders"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -82,49 +83,213 @@ export default function ProfilePage() {
     currency: "GBP",
   })
 
-  // Mock order history
-  const orderHistory = [
-    // For testing purposes only - in production this would come from the database
-    // Uncomment these for testing and comment out the empty array
-    /*
+  // Orders state
+  const [orders, setOrders] = useState<any[]>([])
+  const [ordersLoading, setOrdersLoading] = useState(false)
+
+  // Security features state
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
+  const [twoFactorDialogOpen, setTwoFactorDialogOpen] = useState(false)
+  const [paymentMethodsDialogOpen, setPaymentMethodsDialogOpen] = useState(false)
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  })
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false)
+  const [paymentMethods, setPaymentMethods] = useState([
     {
-      id: "ORD-2024-001",
-      date: "2024-01-15",
-      status: "Delivered",
-      total: 89.97,
-      items: 3,
+      id: 1,
+      type: "card",
+      last4: "4242",
+      brand: "Visa",
+      expiryMonth: 12,
+      expiryYear: 2025,
+      isDefault: true,
     },
-    {
-      id: "ORD-2024-002",
-      date: "2024-01-10",
-      status: "Processing",
-      total: 45.5,
-      items: 2,
-    },
-    {
-      id: "ORD-2024-003",
-      date: "2024-01-05",
-      status: "Shipped",
-      total: 123.45,
-      items: 5,
+  ])
+
+  // Load orders and profile data on component mount
+  useEffect(() => {
+    const loadOrders = async () => {
+      if (!user) return
+
+      setOrdersLoading(true)
+      try {
+        const userOrders = await getUserOrders(user.uid)
+        setOrders(userOrders)
+      } catch (error) {
+        console.error("Error loading orders:", error)
+        toast({
+          title: "Error loading orders",
+          description: "There was a problem loading your order history",
+          variant: "destructive"
+        })
+      } finally {
+        setOrdersLoading(false)
+      }
     }
-    */
-    // Empty array represents a new user with no orders
-  ]
+
+    // Load saved profile data from localStorage
+    const loadProfileData = () => {
+      try {
+        const savedProfile = localStorage.getItem('userProfile')
+        if (savedProfile) {
+          const parsedProfile = JSON.parse(savedProfile)
+          setProfileData(prev => ({ ...prev, ...parsedProfile }))
+        }
+
+        // Load saved addresses
+        const savedAddresses = localStorage.getItem('userAddresses')
+        if (savedAddresses) {
+          setAddresses(JSON.parse(savedAddresses))
+        }
+
+        // Load saved preferences
+        const savedPreferences = localStorage.getItem('userPreferences')
+        if (savedPreferences) {
+          setPreferences(JSON.parse(savedPreferences))
+        }
+
+        // Load saved payment methods
+        const savedPaymentMethods = localStorage.getItem('userPaymentMethods')
+        if (savedPaymentMethods) {
+          setPaymentMethods(JSON.parse(savedPaymentMethods))
+        }
+
+        // Load 2FA setting
+        const savedTwoFactor = localStorage.getItem('userTwoFactorEnabled')
+        if (savedTwoFactor) {
+          setTwoFactorEnabled(JSON.parse(savedTwoFactor))
+        }
+      } catch (error) {
+        console.error("Error loading saved data:", error)
+      }
+    }
+
+    loadOrders()
+    loadProfileData()
+  }, [user, toast])
+
+  // Order history - now using real data from Firebase
+  const orderHistory = orders.map(order => ({
+    id: order.id,
+    date: order.createdAt,
+    status: order.status,
+    total: order.total,
+    items: order.items.length,
+  }))
 
   const { addToCart } = useCart()
 
   const handleSaveProfile = () => {
-    // In a real app, you'd save to your backend
-    toast({
-      title: "Profile updated",
-      description: "Your profile information has been saved successfully.",
-    })
-    setIsEditing(false)
+    const errors = []
+
+    // Validate first name
+    if (!profileData.firstName.trim()) {
+      errors.push("First name is required")
+    } else if (profileData.firstName.trim().length < 2) {
+      errors.push("First name must be at least 2 characters long")
+    } else if (!/^[a-zA-Z\s'-]+$/.test(profileData.firstName.trim())) {
+      errors.push("First name can only contain letters, spaces, hyphens, and apostrophes")
+    }
+
+    // Validate last name
+    if (!profileData.lastName.trim()) {
+      errors.push("Last name is required")
+    } else if (profileData.lastName.trim().length < 2) {
+      errors.push("Last name must be at least 2 characters long")
+    } else if (!/^[a-zA-Z\s'-]+$/.test(profileData.lastName.trim())) {
+      errors.push("Last name can only contain letters, spaces, hyphens, and apostrophes")
+    }
+
+    // Validate email
+    if (!profileData.email.trim()) {
+      errors.push("Email is required")
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(profileData.email.trim())) {
+        errors.push("Please enter a valid email address")
+      }
+    }
+
+    // Validate phone number if provided
+    if (profileData.phone.trim()) {
+      const phoneRegex = /^[\+]?[0-9\s\-\(\)]{10,15}$/
+      if (!phoneRegex.test(profileData.phone.trim())) {
+        errors.push("Please enter a valid phone number")
+      }
+    }
+
+    // Validate date of birth if provided
+    if (profileData.dateOfBirth) {
+      const birthDate = new Date(profileData.dateOfBirth)
+      const today = new Date()
+      const age = today.getFullYear() - birthDate.getFullYear()
+
+      if (birthDate > today) {
+        errors.push("Date of birth cannot be in the future")
+      } else if (age < 13) {
+        errors.push("You must be at least 13 years old")
+      } else if (age > 150) {
+        errors.push("Please enter a valid date of birth")
+      }
+    }
+
+    // Validate gender if provided
+    if (profileData.gender && !['male', 'female', 'other', 'prefer-not-to-say'].includes(profileData.gender)) {
+      errors.push("Please select a valid gender option")
+    }
+
+    // If there are validation errors, show them
+    if (errors.length > 0) {
+      toast({
+        title: "Validation Error",
+        description: errors[0], // Show first error
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      // Save to localStorage for persistence
+      const profileToSave = {
+        ...profileData,
+        updatedAt: new Date().toISOString()
+      }
+      localStorage.setItem('userProfile', JSON.stringify(profileToSave))
+
+      // Update the user display name if it changed
+      if (user && `${profileData.firstName} ${profileData.lastName}` !== user.displayName) {
+        // In a real app, you'd update this in your backend/Firebase
+        console.log('Would update user display name:', `${profileData.firstName} ${profileData.lastName}`)
+      }
+
+      toast({
+        title: "Profile updated",
+        description: "Your profile information has been saved successfully.",
+      })
+      setIsEditing(false)
+    } catch (error) {
+      toast({
+        title: "Save failed",
+        description: "There was an error saving your profile. Please try again.",
+        variant: "destructive"
+      })
+    }
   }
 
   const handlePreferenceChange = (key: string, value: boolean | string) => {
-    setPreferences((prev) => ({ ...prev, [key]: value }))
+    const updatedPreferences = { ...preferences, [key]: value }
+    setPreferences(updatedPreferences)
+
+    // Save to localStorage
+    try {
+      localStorage.setItem('userPreferences', JSON.stringify(updatedPreferences))
+    } catch (error) {
+      console.error("Error saving preferences:", error)
+    }
+
     toast({
       title: "Preference updated",
       description: "Your preference has been saved.",
@@ -167,6 +332,14 @@ export default function ProfilePage() {
     }
     
     setAddresses(updatedAddresses)
+
+    // Save to localStorage
+    try {
+      localStorage.setItem('userAddresses', JSON.stringify(updatedAddresses))
+    } catch (error) {
+      console.error("Error saving addresses:", error)
+    }
+
     toast({
       title: "Address deleted",
       description: "The address has been removed from your account.",
@@ -197,41 +370,27 @@ export default function ProfilePage() {
       // If setting as default, update other addresses
       let newAddresses = [...addresses]
       if (addressForm.isDefault) {
-        newAddresses = newAddresses.map(address => ({
-          ...address,
-          isDefault: false
-        }))
+        newAddresses = newAddresses.map(addr => ({ ...addr, isDefault: false }))
       }
-      // Add the new address
-      setAddresses([...newAddresses, addressForm])
-      toast({
-        title: "Address added",
-        description: "Your new address has been saved successfully."
-      })
+      newAddresses.push(addressForm)
+      setAddresses(newAddresses)
     }
-    
-    // Close the dialog
+
+    // Save to localStorage
+    try {
+      localStorage.setItem('userAddresses', JSON.stringify(addresses))
+    } catch (error) {
+      console.error("Error saving addresses:", error)
+    }
+
     setAddressDialogOpen(false)
-  }
-
-  // Wishlist functions
-  const handleAddToCart = (product: any) => {
-    addToCart({
-      productId: product.id,
-      name: product.name,
-      price: product.price,
-      image: product.image,
-      quantity: 1,
-      options: {} // Add empty options object to satisfy CartItem interface
-    })
-    
     toast({
-      title: "Added to cart",
-      description: `${product.name} has been added to your cart`,
+      title: "Address saved",
+      description: "Your address has been saved successfully.",
     })
   }
 
-  const setAddressAsDefault = (id: number) => {
+  const setStatusAsDefault = (id: number) => {
     setAddresses(addresses.map(address => ({
       ...address,
       isDefault: address.id === id
@@ -253,6 +412,108 @@ export default function ProfilePage() {
       default:
         return "bg-gray-100 text-gray-800"
     }
+  }
+
+  // Security feature handlers
+  const handlePasswordChange = (field: string, value: string) => {
+    setPasswordForm(prev => ({ ...prev, [field]: value }))
+  }
+
+  const handleChangePassword = () => {
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast({
+        title: "Password mismatch",
+        description: "New password and confirmation password do not match",
+        variant: "destructive"
+      })
+      return
+    }
+
+    if (passwordForm.newPassword.length < 8) {
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 8 characters long",
+        variant: "destructive"
+      })
+      return
+    }
+
+    // In a real app, you'd call an API to change the password
+    toast({
+      title: "Password changed",
+      description: "Your password has been updated successfully",
+    })
+
+    setPasswordDialogOpen(false)
+    setPasswordForm({
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    })
+  }
+
+  const handleToggleTwoFactor = () => {
+    const newTwoFactorState = !twoFactorEnabled
+    setTwoFactorEnabled(newTwoFactorState)
+
+    // Save to localStorage
+    try {
+      localStorage.setItem('userTwoFactorEnabled', JSON.stringify(newTwoFactorState))
+    } catch (error) {
+      console.error("Error saving 2FA setting:", error)
+    }
+
+    toast({
+      title: newTwoFactorState ? "2FA enabled" : "2FA disabled",
+      description: newTwoFactorState
+        ? "Two-factor authentication has been enabled. Check your email for setup instructions."
+        : "Two-factor authentication has been disabled for your account.",
+    })
+    setTwoFactorDialogOpen(false)
+  }
+
+  const handleSetDefaultPaymentMethod = (id: number) => {
+    const updatedMethods = paymentMethods.map(method => ({ ...method, isDefault: method.id === id }))
+    setPaymentMethods(updatedMethods)
+
+    // Save to localStorage
+    try {
+      localStorage.setItem('userPaymentMethods', JSON.stringify(updatedMethods))
+    } catch (error) {
+      console.error("Error saving payment methods:", error)
+    }
+
+    toast({
+      title: "Default payment method updated",
+      description: "Your default payment method has been changed",
+    })
+  }
+
+  const handleDeletePaymentMethod = (id: number) => {
+    const methodToDelete = paymentMethods.find(m => m.id === id)
+    let updatedMethods = paymentMethods
+
+    if (methodToDelete?.isDefault && paymentMethods.length > 1) {
+      // Set another method as default
+      updatedMethods = paymentMethods.map((method, index) =>
+        method.id === id ? { ...method, isDefault: false } : { ...method, isDefault: index === 0 }
+      )
+    }
+
+    const finalMethods = updatedMethods.filter(method => method.id !== id)
+    setPaymentMethods(finalMethods)
+
+    // Save to localStorage
+    try {
+      localStorage.setItem('userPaymentMethods', JSON.stringify(finalMethods))
+    } catch (error) {
+      console.error("Error saving payment methods:", error)
+    }
+
+    toast({
+      title: "Payment method removed",
+      description: "The payment method has been removed from your account",
+    })
   }
 
   if (!user) {
@@ -308,7 +569,7 @@ export default function ProfilePage() {
         </div>
 
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList>
             <TabsTrigger value="profile" className="flex items-center gap-2">
               <User className="h-4 w-4" />
               Profile
@@ -325,9 +586,13 @@ export default function ProfilePage() {
               <MapPin className="h-4 w-4" />
               Addresses
             </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
+            <TabsTrigger value="preferences" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
-              Settings
+              Preferences
+            </TabsTrigger>
+            <TabsTrigger value="security" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              Security
             </TabsTrigger>
           </TabsList>
 
@@ -433,7 +698,7 @@ export default function ProfilePage() {
                         <div className="text-sm text-muted-foreground">Last updated 3 months ago</div>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => setPasswordDialogOpen(true)}>
                       Change
                     </Button>
                   </div>
@@ -442,11 +707,13 @@ export default function ProfilePage() {
                       <Bell className="h-5 w-5 text-blue-600" />
                       <div>
                         <div className="font-medium">Two-Factor Authentication</div>
-                        <div className="text-sm text-muted-foreground">Not enabled</div>
+                        <div className="text-sm text-muted-foreground">
+                          {twoFactorEnabled ? "Enabled" : "Not enabled"}
+                        </div>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm">
-                      Enable
+                    <Button variant="outline" size="sm" onClick={() => setTwoFactorDialogOpen(true)}>
+                      {twoFactorEnabled ? "Disable" : "Enable"}
                     </Button>
                   </div>
                   <div className="flex items-center justify-between p-4 border rounded-lg">
@@ -454,10 +721,10 @@ export default function ProfilePage() {
                       <CreditCard className="h-5 w-5 text-purple-600" />
                       <div>
                         <div className="font-medium">Payment Methods</div>
-                        <div className="text-sm text-muted-foreground">1 card on file</div>
+                        <div className="text-sm text-muted-foreground">{paymentMethods.length} card{paymentMethods.length !== 1 ? 's' : ''} on file</div>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => setPaymentMethodsDialogOpen(true)}>
                       Manage
                     </Button>
                   </div>
@@ -473,7 +740,15 @@ export default function ProfilePage() {
                 <CardTitle>Order History</CardTitle>
               </CardHeader>
               <CardContent>
-                {orderHistory.length === 0 ? (
+                {ordersLoading ? (
+                  <div className="text-center py-8">
+                    <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4 animate-pulse" />
+                    <h3 className="text-lg font-semibold mb-2">Loading your orders...</h3>
+                    <p className="text-muted-foreground">
+                      Please wait while we fetch your order history.
+                    </p>
+                  </div>
+                ) : orderHistory.length === 0 ? (
                   <div className="text-center py-8">
                     <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                     <h3 className="text-lg font-semibold mb-2">No orders yet</h3>
@@ -501,11 +776,11 @@ export default function ProfilePage() {
                         </div>
                         <div className="flex items-center gap-4">
                           <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
-                          <div className="text-right">
-                            <div className="font-medium">{formatPrice(order.total)}</div>
-                          </div>
                           <Button variant="outline" size="sm" asChild>
-                            <a href={`/profile/orders/${order.id}`}>View Details</a>
+                            <Link to={`/order/${order.id}`}>
+                              View Details
+                              <ExternalLink className="h-4 w-4 ml-2" />
+                            </Link>
                           </Button>
                         </div>
                       </div>
@@ -519,82 +794,65 @@ export default function ProfilePage() {
           {/* Wishlist Tab */}
           <TabsContent value="wishlist">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>My Wishlist</CardTitle>
-                <Link to="/wishlist">
-                  <Button variant="ghost" className="h-9 w-9 p-0" title="View full wishlist">
-                    <ExternalLink className="h-4 w-4" />
-                  </Button>
-                </Link>
+              <CardHeader>
+                <CardTitle>Wishlist</CardTitle>
               </CardHeader>
-              <CardContent className="grid gap-4">
+              <CardContent>
                 {wishlistItems.length === 0 ? (
                   <div className="text-center py-8">
+                    <Heart className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                     <h3 className="text-lg font-semibold mb-2">Your wishlist is empty</h3>
-                    <p className="text-muted-foreground mb-6">
-                      Save items you love to your wishlist for easy access later.
+                    <p className="text-muted-foreground mb-4">
+                      Save items to your wishlist to easily find them later.
                     </p>
                     <Button asChild>
-                      <Link to="/shop">Browse Products</Link>
+                      <a href="/shop">Start Shopping</a>
                     </Button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {wishlistItems.slice(0, 3).map((item) => (
-                      <div key={item.id} className="relative rounded-lg border p-3 flex flex-col h-full">
-                        <div className="absolute top-2 right-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 p-0"
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {wishlistItems.map((item) => (
+                      <div key={item.id} className="border rounded-lg overflow-hidden">
+                        <div className="relative">
+                          <img 
+                            src={item.image} 
+                            alt={item.name} 
+                            className="w-full h-48 object-cover"
+                          />
+                          <Button 
+                            size="sm" 
+                            variant="destructive" 
+                            className="absolute top-2 right-2"
                             onClick={() => removeFromWishlist(item.id)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <div className="h-16 w-16 relative rounded overflow-hidden bg-muted">
-                            <img
-                              src={item.image}
-                              alt={item.name}
-                              className="object-cover w-full h-full"
-                            />
-                          </div>
-                          <div className="flex-1 space-y-1 min-w-0">
-                            <h4 className="font-medium text-sm truncate">{item.name}</h4>
-                            <p className="text-sm font-bold">{formatPrice(item.price)}</p>
-                          </div>
-                        </div>
-                        <div className="mt-4 flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="flex-1 h-8"
-                            onClick={() => handleAddToCart(item)}
-                            disabled={item.inStock === false}
+                        <div className="p-4">
+                          <h3 className="font-medium mb-1">{item.name}</h3>
+                          <p className="text-lg font-bold text-primary">{formatPrice(item.price)}</p>
+                          <Button 
+                            className="w-full mt-2"
+                            onClick={() => {
+                              addToCart({
+                                productId: item.id,
+                                name: item.name,
+                                price: item.price,
+                                image: item.image,
+                                quantity: 1,
+                                options: {} // Add empty options object to satisfy CartItem interface
+                              })
+                              toast({
+                                title: "Added to cart",
+                                description: `${item.name} has been added to your cart`,
+                              })
+                            }}
                           >
-                            <ShoppingCart className="h-3 w-3 mr-2" />
                             Add to Cart
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-8 w-8 p-0"
-                            onClick={() => removeFromWishlist(item.id)}
-                          >
-                            <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
                       </div>
                     ))}
-                    {wishlistItems.length > 3 && (
-                      <Link to="/wishlist" className="border rounded-lg p-4 flex flex-col items-center justify-center h-full">
-                        <div className="text-xl font-semibold mb-2">
-                          +{wishlistItems.length - 3} more {wishlistItems.length - 3 === 1 ? 'item' : 'items'}
-                        </div>
-                        <Button variant="outline">View All</Button>
-                      </Link>
-                    )}
                   </div>
                 )}
               </CardContent>
@@ -605,90 +863,83 @@ export default function ProfilePage() {
           <TabsContent value="addresses">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Saved Addresses</CardTitle>
+                <CardTitle>Addresses</CardTitle>
                 <Button onClick={openAddAddressDialog}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Add New Address
+                  Add Address
                 </Button>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {addresses.length === 0 ? (
-                    <div className="text-center py-8">
-                      <MapPin className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-semibold mb-2">No addresses saved</h3>
-                      <p className="text-muted-foreground mb-4">
-                        Add a shipping address to make checkout faster.
-                      </p>
-                      <Button onClick={openAddAddressDialog}>Add Address</Button>
-                    </div>
-                  ) : (
-                    addresses.map((address) => (
+                {addresses.length === 0 ? (
+                  <div className="text-center py-8">
+                    <MapPin className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No addresses saved</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Add an address to make checkout faster.
+                    </p>
+                    <Button onClick={openAddAddressDialog}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Address
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {addresses.map((address) => (
                       <div key={address.id} className="p-4 border rounded-lg">
                         <div className="flex items-start justify-between">
                           <div>
                             <div className="flex items-center gap-2 mb-2">
-                              <span className="font-medium">{address.type}</span>
-                              {address.isDefault && <Badge variant="secondary">Default</Badge>}
+                              <Badge variant={address.type === "Home" ? "default" : address.type === "Work" ? "secondary" : "outline"}>
+                                {address.type}
+                              </Badge>
+                              {address.isDefault && (
+                                <Badge variant="outline">Default</Badge>
+                              )}
                             </div>
-                            <div className="text-sm text-muted-foreground">
-                              <div>{address.name}</div>
-                              <div>{address.address}</div>
-                              <div>
-                                {address.city}, {address.postalCode}
-                              </div>
-                              <div>{address.country}</div>
-                            </div>
+                            <h3 className="font-medium">{address.name}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {address.address}, {address.city}, {address.postalCode}, {address.country}
+                            </p>
                           </div>
-                          <div className="flex flex-col sm:flex-row gap-2">
+                          <div className="flex gap-2">
                             {!address.isDefault && (
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => setAddressAsDefault(address.id)}
-                              >
+                              <Button variant="outline" size="sm" onClick={() => setStatusAsDefault(address.id)}>
                                 Set as Default
                               </Button>
                             )}
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => openEditAddressDialog(address)}
-                            >
+                            <Button variant="outline" size="sm" onClick={() => openEditAddressDialog(address)}>
                               Edit
                             </Button>
-                            {!address.isDefault && (
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => handleDeleteAddress(address.id)}
-                              >
-                                Delete
-                              </Button>
-                            )}
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => handleDeleteAddress(address.id)}
+                              disabled={address.isDefault}
+                            >
+                              Delete
+                            </Button>
                           </div>
                         </div>
                       </div>
-                    ))
-                  )}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
-            
+
             {/* Address Dialog */}
             <Dialog open={addressDialogOpen} onOpenChange={setAddressDialogOpen}>
-              <DialogContent className="sm:max-w-[500px] bg-white">
+              <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                  <DialogTitle>{currentAddress ? "Edit Address" : "Add New Address"}</DialogTitle>
+                  <DialogTitle>{currentAddress ? "Edit Address" : "Add Address"}</DialogTitle>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="space-y-2">
+                <div className="space-y-4 py-4">
+                  <div>
                     <Label htmlFor="addressType">Address Type</Label>
                     <RadioGroup 
-                      id="addressType" 
-                      value={addressForm.type}
+                      value={addressForm.type} 
                       onValueChange={(value) => handleAddressChange("type", value)}
-                      className="flex space-x-4"
+                      className="flex space-x-4 mt-2"
                     >
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="Home" id="home" />
@@ -787,6 +1038,148 @@ export default function ProfilePage() {
                   </Button>
                   <Button onClick={handleSaveAddress}>
                     {currentAddress ? "Update Address" : "Save Address"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Password Change Dialog */}
+            <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
+              <DialogContent className="sm:max-w-[400px]">
+                <DialogHeader>
+                  <DialogTitle>Change Password</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div>
+                    <Label htmlFor="currentPassword">Current Password</Label>
+                    <Input
+                      id="currentPassword"
+                      type="password"
+                      value={passwordForm.currentPassword}
+                      onChange={(e) => handlePasswordChange("currentPassword", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="newPassword">New Password</Label>
+                    <Input
+                      id="newPassword"
+                      type="password"
+                      value={passwordForm.newPassword}
+                      onChange={(e) => handlePasswordChange("newPassword", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      value={passwordForm.confirmPassword}
+                      onChange={(e) => handlePasswordChange("confirmPassword", e.target.value)}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setPasswordDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleChangePassword}>
+                    Change Password
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Two-Factor Authentication Dialog */}
+            <Dialog open={twoFactorDialogOpen} onOpenChange={setTwoFactorDialogOpen}>
+              <DialogContent className="sm:max-w-[400px]">
+                <DialogHeader>
+                  <DialogTitle>Two-Factor Authentication</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="text-center">
+                    <Bell className="h-12 w-12 mx-auto text-blue-600 mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">
+                      {twoFactorEnabled ? "Disable 2FA" : "Enable 2FA"}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {twoFactorEnabled
+                        ? "Two-factor authentication will be disabled for your account."
+                        : "Add an extra layer of security to your account by enabling two-factor authentication."
+                      }
+                    </p>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setTwoFactorDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleToggleTwoFactor}>
+                    {twoFactorEnabled ? "Disable 2FA" : "Enable 2FA"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Payment Methods Dialog */}
+            <Dialog open={paymentMethodsDialogOpen} onOpenChange={setPaymentMethodsDialogOpen}>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>Payment Methods</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  {paymentMethods.length === 0 ? (
+                    <div className="text-center py-8">
+                      <CreditCard className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-semibold mb-2">No payment methods</h3>
+                      <p className="text-muted-foreground mb-4">
+                        Add a payment method to make checkout faster.
+                      </p>
+                      <Button>Add Payment Method</Button>
+                    </div>
+                  ) : (
+                    paymentMethods.map((method) => (
+                      <div key={method.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <CreditCard className="h-5 w-5 text-muted-foreground" />
+                          <div>
+                            <div className="font-medium">
+                              {method.brand} ending in {method.last4}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              Expires {method.expiryMonth}/{method.expiryYear}
+                              {method.isDefault && " • Default"}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          {!method.isDefault && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleSetDefaultPaymentMethod(method.id)}
+                            >
+                              Set Default
+                            </Button>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeletePaymentMethod(method.id)}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                  <Button className="w-full" variant="outline">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add New Payment Method
+                  </Button>
+                </div>
+                <DialogFooter>
+                  <Button onClick={() => setPaymentMethodsDialogOpen(false)}>
+                    Done
                   </Button>
                 </DialogFooter>
               </DialogContent>

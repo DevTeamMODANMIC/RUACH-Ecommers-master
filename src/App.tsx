@@ -4,8 +4,15 @@ import HeaderImproved from './components/site-header'
 import Footer from './components/footer'
 import KeyboardNavigation from './components/keyboard-navigation'
 import { Toaster } from './components/ui/toaster'
+import { useEffect } from 'react'
+import { initializeDeliveryEmails } from './lib/firebase-delivery-emails'
 
 export default function App() {
+  useEffect(() => {
+    // Initialize delivery authorized emails
+    initializeDeliveryEmails();
+  }, []);
+
   return (
     <>
       <KeyboardNavigation />

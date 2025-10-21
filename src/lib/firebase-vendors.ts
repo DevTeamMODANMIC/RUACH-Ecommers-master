@@ -37,6 +37,8 @@ export interface Vendor {
   rejected?: boolean;
   contactEmail?: string;
   contactPhone?: string;
+  kycStatus?: "pending" | "verified" | "rejected" | "flagged";
+  walletBalance?: number;
   payoutSettings?: {
     bankName: string;
     accountNumber: string;

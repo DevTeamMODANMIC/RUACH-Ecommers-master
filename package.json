@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "lint": "eslint src --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "grant-admin": "npx tsx src/grant-admin.ts",
+    "init-slider": "node src/scripts/init-slider-local.js",
+    "test-indexeddb": "node src/scripts/test-indexeddb.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
@@ -83,9 +86,11 @@
     "eslint": "^8.57.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.6",
+    "fake-indexeddb": "^6.2.4",
     "jsdom": "^26.1.0",
     "postcss": "^8.5",
     "tailwindcss": "^3.4.17",
+    "tsx": "^4.20.6",
     "typescript": "^5.2.2",
     "typescript-eslint": "^8.40.0",
     "vite": "^5.2.0"

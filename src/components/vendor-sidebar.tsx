@@ -20,7 +20,9 @@ import {
   ArrowLeft,
   Layers,
   DollarSign,
-  Package2
+  Package2,
+  Shield,
+  Wallet
 } from "lucide-react"
 
 interface NavItem {
@@ -107,6 +109,16 @@ export function VendorSidebar() {
       ]
     },
     {
+      title: "Compliance",
+      items: [
+        {
+          title: "KYC Verification",
+          href: "/vendor/dashboard/kyc",
+          icon: Shield
+        }
+      ]
+    },
+    {
       title: "Account",
       items: [
         {
@@ -123,6 +135,11 @@ export function VendorSidebar() {
           title: "Payouts",
           href: "/vendor/dashboard/payouts",
           icon: DollarSign
+        },
+        {
+          title: "Wallet",
+          href: "/vendor/dashboard/wallet",
+          icon: Wallet
         }
       ]
     }

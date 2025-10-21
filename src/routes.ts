@@ -9,7 +9,7 @@ import AdminProductsCloudinaryReport from './pages/AdminProductsCloudinary-repor
 import EditProduct from './pages/admin/EditProduct'
 import AdminProductsImport from './pages/AdminProductsImport'
 import AdminServiceProviders from './pages/AdminService-providers'
-import AdminUsers from './pages/AdminUsers'
+import AdminUsers from './pages/admin/AdminUsers'
 import AdminVendors from './pages/AdminVendors'
 import AdminPayouts from './pages/AdminPayouts'
 import AdminBulkOrders from './pages/admin/AdminBulkOrders'
@@ -74,11 +74,21 @@ import VendorDashboardReviews from './pages/VendorDashboardReviews'
 import VendorDashboardSettings from './pages/VendorDashboardSettings'
 import VendorDashboardPayouts from './pages/VendorDashboardPayouts'
 import VendorDashboardBulkOrders from './pages/VendorDashboardBulkOrders'
+import VendorDashboardKyc from './pages/VendorDashboardKyc'
+import VendorDashboardWallet from './pages/VendorDashboardWallet'
 import VendorParam from './pages/VendorParam'
 import VendorRegister from './pages/VendorRegister'
 import VendorStores from './pages/VendorStores'
 import Wishlist from './pages/Wishlist'
 // import GuestOrderTracking from './pages/OrderTrackingDetail'
+
+// Import the new Delivery Dashboard components
+import DeliveryDashboard from './pages/DeliveryDashboard'
+import DeliveryLogin from './pages/DeliveryLogin'
+// Import the new Slider Management component
+import SliderManagement from './pages/admin/SliderManagement.tsx'
+import AdminKyc from './pages/admin/AdminKyc'
+import KycTestPage from './pages/KycTest'
 
 type RouteDef = {
   path: string
@@ -98,6 +108,8 @@ const routes: RouteDef[] = [
   { path: '/admin/products/edit/:id', Component: EditProduct },
   { path: '/admin/products/import', Component: AdminProductsImport },
   { path: '/admin/service-providers', Component: AdminServiceProviders },
+  { path: '/admin/slider-management', Component: SliderManagement },
+  { path: '/admin/kyc', Component: AdminKyc },
   { path: '/admin/users', Component: AdminUsers },
   { path: '/admin/vendors', Component: AdminVendors },
   { path: '/admin/payouts', Component: AdminPayouts },
@@ -163,8 +175,15 @@ const routes: RouteDef[] = [
   { path: '/vendor/dashboard/settings', Component: VendorDashboardSettings },
   { path: '/vendor/dashboard/payouts', Component: VendorDashboardPayouts },
   { path: '/vendor/dashboard/bulk-orders', Component: VendorDashboardBulkOrders },
+  { path: '/vendor/dashboard/kyc', Component: VendorDashboardKyc },
+  { path: '/vendor/dashboard/wallet', Component: VendorDashboardWallet },
   { path: '/vendor/:vendorId', Component: VendorParam },
-  { path: '/wishlist', Component: Wishlist }
+  { path: '/wishlist', Component: Wishlist },
+  
+  // Delivery Dashboard Routes
+  { path: '/delivery-login', Component: DeliveryLogin },
+  { path: '/delivery-dashboard', Component: DeliveryDashboard },
+  { path: '/kyc-test', Component: KycTestPage },
 ]
 
 export default routes

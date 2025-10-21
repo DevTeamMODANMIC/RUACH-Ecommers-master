@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../components/ui/card"
-import { Package, PlusCircle, ShoppingCart, Users, CloudUpload, Wrench, Package2 } from "lucide-react"
+import { Package, PlusCircle, ShoppingCart, Users, CloudUpload, Wrench, Package2, Image as ImageIcon, Shield } from "lucide-react"
 import { useAdmin } from "../hooks/use-admin"
 
 export default function AdminDashboard() {
@@ -58,6 +58,9 @@ export default function AdminDashboard() {
               </Link>
               <Link to="/admin/products/import" className="bg-slate-100 text-slate-800 hover:bg-slate-200 px-3 py-2 rounded-md font-medium">
                 Import Products
+              </Link>
+              <Link to="/admin/kyc" className="bg-slate-100 text-slate-800 hover:bg-slate-200 px-3 py-2 rounded-md font-medium">
+                KYC Management
               </Link>
               <Link to="/" className="bg-slate-100 text-slate-800 hover:bg-slate-200 px-3 py-2 rounded-md font-medium">
                 Back to Site
@@ -234,6 +237,29 @@ export default function AdminDashboard() {
             </CardFooter>
           </Card>
 
+          {/* Slider Management Card */}
+          <Card className="border-4 border-red-500 bg-yellow-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ImageIcon className="h-5 w-5" />
+                <span>Slider Management</span>
+              </CardTitle>
+              <CardDescription>
+                Manage homepage slider images and content
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm">Update slider images, titles, descriptions, and call-to-action buttons.</p>
+            </CardContent>
+            <CardFooter className="flex flex-col sm:flex-row">
+              <Button asChild className="w-full sm:w-auto">
+                <Link to="/admin/slider-management">
+                  Manage Sliders
+                </Link>
+              </Button>
+            </CardFooter>
+          </Card>
+
           {/* Users Card */}
           <Card>
             <CardHeader>
@@ -252,6 +278,29 @@ export default function AdminDashboard() {
               <Button asChild className="w-full sm:w-auto">
                 <Link to="/admin/users">
                   Manage Users
+                </Link>
+              </Button>
+            </CardFooter>
+          </Card>
+
+          {/* KYC Management Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                <span>KYC Management</span>
+              </CardTitle>
+              <CardDescription>
+                Manage customer verification records
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm">View and manage customer KYC verification records and status.</p>
+            </CardContent>
+            <CardFooter className="flex flex-col sm:flex-row">
+              <Button asChild className="w-full sm:w-auto">
+                <Link to="/admin/kyc">
+                  Manage KYC
                 </Link>
               </Button>
             </CardFooter>

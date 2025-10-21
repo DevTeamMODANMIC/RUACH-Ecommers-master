@@ -1,11 +1,14 @@
 import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Package, PlusCircle, ShoppingCart, Users, CloudUpload, Wallet } from "lucide-react"
+import { Package, PlusCircle, ShoppingCart, Users, CloudUpload, Wallet, Image } from "lucide-react"
 import { useAdmin } from "@/hooks/use-admin"
 
 export default function AdminDashboard() {
   const { isAdmin, loading } = useAdmin()
+
+  // Debug log to check if component is rendering
+  console.log('AdminDashboard rendering')
 
   if (loading) {
     return (
@@ -47,6 +50,9 @@ export default function AdminDashboard() {
               <Link to="/admin/payouts" className="bg-slate-100 text-slate-800 hover:bg-slate-200 px-3 py-2 rounded-md font-medium">
                 Payouts
               </Link>
+              <Link to="/admin/slider-management" className="bg-slate-100 text-slate-800 hover:bg-slate-200 px-3 py-2 rounded-md font-medium">
+                Slider Management
+              </Link>
               <Link to="/admin/products/cloudinary-migration" className="bg-slate-100 text-slate-800 hover:bg-slate-200 px-3 py-2 rounded-md font-medium">
                 Cloudinary Migration
               </Link>
@@ -64,6 +70,11 @@ export default function AdminDashboard() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* DEBUG: Card count indicator */}
+          <div className="col-span-full text-center bg-blue-100 p-2 rounded">
+            Total cards in grid: 7
+          </div>
+          
           {/* Product Management Card */}
           <Card>
             <CardHeader>
@@ -88,6 +99,29 @@ export default function AdminDashboard() {
                 <Link to="/admin/products/add">
                   <PlusCircle className="h-4 w-4 mr-2" />
                   Add New
+                </Link>
+              </Button>
+            </CardFooter>
+          </Card>
+
+          {/* Slider Management Card */}
+          <Card className="border-4 border-red-500 bg-yellow-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Image className="h-5 w-5" />
+                <span>Slider Management</span>
+              </CardTitle>
+              <CardDescription>
+                Manage homepage slider images and content
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm">Update slider images, titles, descriptions, and call-to-action buttons.</p>
+            </CardContent>
+            <CardFooter className="flex flex-col sm:flex-row">
+              <Button asChild className="w-full sm:w-auto">
+                <Link to="/admin/slider-management">
+                  Manage Sliders
                 </Link>
               </Button>
             </CardFooter>
