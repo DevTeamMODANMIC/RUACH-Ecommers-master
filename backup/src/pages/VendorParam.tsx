@@ -4,7 +4,7 @@ import { getVendor, getVendorProducts } from "../lib/firebase-vendors";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
-import { Store, MapPin, Calendar, Package, Star } from "lucide-react";
+import { Store, MapPin, Calendar, Package, Star, Mail, Phone } from "lucide-react";
 
 interface Product {
   id: string;
@@ -44,8 +44,9 @@ export default function VendorStorefront() {
         const vendorData = await getVendor(vendorId);
         console.log("📊 Vendor data:", vendorData);
         
-        if (!vendorData || !vendorData.approved) {
-          console.log("❌ Vendor not found or not approved");
+        // Check if vendor exists and is approved, and not rejected
+        if (!vendorData || !vendorData.approved || vendorData.rejected) {
+          console.log("❌ Vendor not found, not approved, or rejected");
           setVendor(null);
           setLoading(false);
           return;
@@ -122,6 +123,18 @@ export default function VendorStorefront() {
                   <MapPin className="h-4 w-4" />
                   <span>Nigeria</span>
                 </div>
+                {vendor.contactEmail && (
+                  <div className="flex items-center gap-1">
+                    <Mail className="h-4 w-4" />
+                    <span>{vendor.contactEmail}</span>
+                  </div>
+                )}
+                {vendor.contactPhone && (
+                  <div className="flex items-center gap-1">
+                    <Phone className="h-4 w-4" />
+                    <span>{vendor.contactPhone}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

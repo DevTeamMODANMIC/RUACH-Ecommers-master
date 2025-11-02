@@ -2,6 +2,7 @@ import { ReactNode } from "react"
 import { useVendor } from "../hooks/use-vendor"
 import { VendorSidebar } from "./vendor-sidebar"
 import { Navigate } from "react-router-dom"
+import VendorDashboardAIChatbot from "./vendor-dashboard-ai-chatbot"
 
 interface VendorLayoutProps {
   children: ReactNode
@@ -63,6 +64,8 @@ export function VendorLayout({ children, title, description }: VendorLayoutProps
           </div>
         </main>
       </div>
+      
+      <VendorDashboardAIChatbot userId={activeStore?.id} />
     </div>
   )
 }

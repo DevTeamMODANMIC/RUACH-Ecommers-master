@@ -165,6 +165,11 @@ export default function GuestOrderTracking() {
     }
   };
 
+  // Function to handle contact support
+  const handleContactSupport = () => {
+    navigate('/contact?subject=Order Support&orderId=' + (orderDetails?.id || orderId));
+  };
+
   return (
     <div className="min-h-screen py-8">
       <div className="container mx-auto px-4 max-w-4xl">
@@ -191,7 +196,7 @@ export default function GuestOrderTracking() {
 
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
           <div>
-            <h1 className="text-2xl font-bold">Order #{orderDetails.orderNumber ? orderDetails.orderNumber.slice(-8) : orderDetails.id.slice(-8)}</h1>
+            <h1 className="text-2xl font-bold">Order #{orderDetails?.id || orderId}</h1>
             <p className="text-muted-foreground">
               Placed on {new Date(orderDetails.createdAt || Date.now()).toLocaleDateString()}
             </p>
@@ -417,11 +422,10 @@ export default function GuestOrderTracking() {
                 <CardTitle>Need Help?</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button variant="outline" className="w-full justify-start" asChild>
-                  <Link to="/contact">
-                    <Mail className="h-4 w-4 mr-2" />
-                    Contact Support
-                  </Link>
+                {/* Fix: Add onClick handler to contact support button */}
+                <Button variant="outline" className="w-full justify-start" onClick={handleContactSupport}>
+                  <Mail className="h-4 w-4 mr-2" />
+                  Contact Support
                 </Button>
                 <Button variant="outline" className="w-full justify-start" asChild>
                   <Link to="/faq">

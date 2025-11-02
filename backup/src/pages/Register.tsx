@@ -1,6 +1,6 @@
 import type React from "react"
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useState, useEffect } from "react"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { Link } from "react-router-dom";
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
@@ -19,9 +19,19 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
+  const [searchParams] = useSearchParams()
+  const [referrerId, setReferrerId] = useState<string | null>(null)
   const { register, loginWithGoogle } = useAuth()
   const { toast } = useToast()
   const navigate = useNavigate()
+
+  // Check for referral code in URL
+  useEffect(() => {
+    const refCode = searchParams.get('ref')
+    if (refCode) {
+      setReferrerId(refCode)
+    }
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -48,6 +58,7 @@ export default function RegisterPage() {
 
     try {
       await register(email, password, name)
+      
       toast({
         title: "Account created!",
         description: "Your account has been successfully created.",
@@ -213,6 +224,13 @@ export default function RegisterPage() {
                   </button>
                 </div>
               </div>
+              
+              {referrerId && (
+                <div className="p-3 bg-green-900/20 border border-green-500/20 rounded-md text-sm">
+                  <p className="font-medium mb-1 text-green-400">🎁 Referral Bonus</p>
+                  <p className="text-green-300/90">You were referred by a friend! You'll both earn a 500 Naira bonus when you make your first purchase.</p>
+                </div>
+              )}
               
               <div className="p-4 bg-blue-900/20 border border-blue-500/20 rounded-md text-sm mt-2">
                 <p className="font-medium mb-1 text-blue-400">🔒 Secure Account Creation</p>

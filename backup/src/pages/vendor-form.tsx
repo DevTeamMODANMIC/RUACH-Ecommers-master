@@ -5,17 +5,22 @@ import * as z from "zod"
 import { useNavigate } from 'react-router-dom'
 import { createVendorStore } from "../lib/firebase-vendors"
 import { useVendor } from "../hooks/use-vendor"
-import { useState } from "react"
+import { useServiceProvider } from "../hooks/use-service-provider"
+import { useState, useEffect } from "react"
+import { toast } from "sonner"
 import { Input } from "../components/ui/input"
 import { Textarea } from "../components/ui/textarea"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import CloudinaryUploadWidget from "../components/cloudinary-upload-widget"
+import { Mail, Phone } from "lucide-react"
 
 const schema = z.object({
   shopName: z.string().min(3, "Shop name is required"),
   bio: z.string().min(10, "Please provide a short description"),
   logoUrl: z.string().url("Please upload a valid logo image"),
+  contactEmail: z.string().email("Please enter a valid email address").optional(),
+  contactPhone: z.string().optional(),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -23,67 +28,121 @@ type FormValues = z.infer<typeof schema>
 export default function VendorForm() {
   const { user } = useAuth()
   const { allStores, canCreateMoreStores, refreshStores } = useVendor()
+  const { isServiceProvider, loading: serviceProviderLoading } = useServiceProvider()
   const navigate = useNavigate()
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Redirect if user is already a service provider
+  useEffect(() => {
+    if (!serviceProviderLoading && isServiceProvider) {
+      toast.error("You are already registered as a service provider. Users can only be either a vendor or service provider, not both.")
+      navigate("/service-provider/dashboard")
+    }
+  }, [isServiceProvider, serviceProviderLoading, navigate])
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     setValue,
-  } = useForm<FormValues>({
+  } = useForm<FormValues & { contactEmail?: string; contactPhone?: string }>({
     resolver: zodResolver(schema),
     defaultValues: {
       shopName: "",
       bio: "",
       logoUrl: "",
+      contactEmail: "",
+      contactPhone: "",
     },
   })
 
-  const onSubmit: SubmitHandler<FormValues> = async (values) => {
+  const onSubmit: SubmitHandler<FormValues & { contactEmail?: string; contactPhone?: string }> = async (values) => {
     if (!user) {
-      alert("You must be logged in to register as a vendor")
+      toast.error("You must be logged in to register as a vendor")
       return
     }
     
     if (!canCreateMoreStores) {
-      alert("You have reached the maximum limit of 3 stores per account")
+      toast.error("You have reached the maximum limit of 3 stores per account")
       return
     }
     
     // Ensure all required fields are present
     if (!values.shopName || !values.bio || !values.logoUrl) {
-      alert("Please fill in all required fields")
+      toast.error("Please fill in all required fields")
       return
     }
     
     setIsSubmitting(true)
     try {
       // Type assertion to ensure we have the required fields
-      const vendorData: { shopName: string; bio: string; logoUrl: string } = {
+      const vendorData: { 
+        shopName: string; 
+        bio: string; 
+        logoUrl: string;
+        contactEmail?: string;
+        contactPhone?: string;
+      } = {
         shopName: values.shopName,
         bio: values.bio,
         logoUrl: values.logoUrl,
+        contactEmail: values.contactEmail,
+        contactPhone: values.contactPhone,
       }
       
       const storeId = await createVendorStore(user.uid, vendorData)
       await refreshStores()
       
       const storeNumber = allStores.length + 1
-      alert(
-        `Your ${storeNumber === 1 ? 'first' : storeNumber === 2 ? 'second' : 'third'} store application has been submitted! We will notify you once it has been reviewed.`,
+      toast.success(
+        `Your ${storeNumber === 1 ? 'first' : storeNumber === 2 ? 'second' : 'third'} store application has been submitted! We will notify you once it has been reviewed.`
       )
       navigate("/vendor/dashboard")
     } catch (err: any) {
       console.error(err)
-      alert(err.message)
+      toast.error(err.message || "An error occurred while submitting your application. Please try again.")
     } finally {
       setIsSubmitting(false)
     }
   }
 
+  // Show loading while checking service provider status
+  if (serviceProviderLoading) {
+    return (
+      <div className="container mx-auto px-4 py-16 max-w-xl">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Don't render form if user is a service provider
+  if (isServiceProvider) {
+    return null
+  }
+
   return (
     <div className="container mx-auto px-4 py-16 max-w-xl">
+      {/* Warning about service provider exclusivity */}
+      <div className="mb-6 bg-amber-50 border border-amber-200 rounded-lg p-4">
+        <div className="flex items-start">
+          <div className="flex-shrink-0">
+            <svg className="h-5 w-5 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="ml-3">
+            <h3 className="text-sm font-medium text-amber-800">Important Notice</h3>
+            <p className="mt-1 text-sm text-amber-700">
+              By registering as a vendor, you will not be able to offer services as a service provider. 
+              Users can only be either a vendor or service provider, not both.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <Card className="shadow-lg">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl text-gray-900">Vendor Application</CardTitle>
@@ -107,6 +166,36 @@ export default function VendorForm() {
               />
               {errors.bio && (
                 <p className="text-xs text-red-500 mt-1">{errors.bio.message}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Contact Email (Optional)</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input 
+                  type="email" 
+                  {...register("contactEmail")} 
+                  placeholder="contact@example.com" 
+                  className="pl-10"
+                />
+              </div>
+              {errors.contactEmail && (
+                <p className="text-xs text-red-500 mt-1">{errors.contactEmail.message}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Contact Phone (Optional)</label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input 
+                  type="tel" 
+                  {...register("contactPhone")} 
+                  placeholder="+1 (555) 123-4567" 
+                  className="pl-10"
+                />
+              </div>
+              {errors.contactPhone && (
+                <p className="text-xs text-red-500 mt-1">{errors.contactPhone.message}</p>
               )}
             </div>
             <div>

@@ -21,6 +21,7 @@ const VENDORS_COLLECTION = "vendors";
 const VENDOR_OWNERS_COLLECTION = "vendorOwners";
 const PRODUCTS_COLLECTION = "products";
 const ORDERS_COLLECTION = "orders";
+const PAYOUTS_COLLECTION = "payouts";
 
 /** Vendor model */
 export interface Vendor {
@@ -34,6 +35,19 @@ export interface Vendor {
   isActive: boolean;
   status?: "pending" | "approved" | "rejected";
   rejected?: boolean;
+  contactEmail?: string;
+  contactPhone?: string;
+  kycStatus?: "pending" | "verified" | "rejected" | "flagged";
+  walletBalance?: number;
+  payoutSettings?: {
+    bankName: string;
+    accountNumber: string;
+    accountName: string;
+    routingNumber?: string;
+    swiftCode?: string;
+    payoutFrequency: "weekly" | "biweekly" | "monthly";
+    minimumPayout: number;
+  };
 }
 
 /** Vendor owner model */
@@ -55,6 +69,13 @@ export const createVendorStore = async (
     const ownerStores = await getUserStores(ownerId);
     if (ownerStores.length >= 3) {
       throw new Error("Maximum of 3 stores allowed per user");
+    }
+
+    // Check if user is already a service provider (mutual exclusivity)
+    const { getServiceProviderByOwnerId } = await import("./firebase-service-providers")
+    const existingServiceProvider = await getServiceProviderByOwnerId(ownerId)
+    if (existingServiceProvider) {
+      throw new Error("Cannot create vendor store: User is already a service provider. Users can only be either a vendor or service provider, not both.")
     }
 
     const vendorRef = await addDoc(collection(db, VENDORS_COLLECTION), {
@@ -168,12 +189,22 @@ export const approveVendor = async (storeId: string): Promise<void> => {
  */
 export const rejectVendor = async (storeId: string): Promise<void> => {
   try {
+    // First, get the vendor to retrieve the ownerId
+    const vendor = await getVendor(storeId);
+    if (!vendor) {
+      throw new Error("Vendor not found");
+    }
+
+    // Update the vendor status to rejected
     await updateDoc(doc(db, VENDORS_COLLECTION, storeId), {
       approved: false,
       isActive: false,
       rejected: true,
       status: "rejected",
     });
+
+    // Then delete the vendor store and all related data
+    await deleteVendorStore(vendor.ownerId, storeId);
   } catch (error) {
     console.error("Error rejecting vendor:", error);
     throw error;

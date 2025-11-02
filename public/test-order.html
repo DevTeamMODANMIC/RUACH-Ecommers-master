@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Order Creation</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+</head>
+<body>
+    <h1>Test Order Creation</h1>
+    <button id="createOrder">Create Test Order</button>
+    <div id="result"></div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            // Add your Firebase config here
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        document.getElementById('createOrder').addEventListener('click', async () => {
+            try {
+                const testOrder = {
+                    userId: "test-user-123",
+                    items: [
+                        {
+                            productId: "test-product-1",
+                            name: "Test Product 1",
+                            price: 29.99,
+                            image: "https://via.placeholder.com/150",
+                            quantity: 2,
+                            options: {}
+                        },
+                        {
+                            productId: "test-product-2",
+                            name: "Test Product 2",
+                            price: 19.99,
+                            image: "https://via.placeholder.com/150",
+                            quantity: 1,
+                            options: {}
+                        }
+                    ],
+                    subtotal: 79.97,
+                    shipping: 5.99,
+                    tax: 6.40,
+                    total: 92.36,
+                    status: "pending",
+                    paymentStatus: "paid",
+                    paymentMethod: "card",
+                    shippingAddress: {
+                        firstName: "John",
+                        lastName: "Doe",
+                        address1: "123 Main St",
+                        city: "New York",
+                        state: "NY",
+                        postalCode: "10001",
+                        country: "USA",
+                        phone: "555-123-4567",
+                        email: "john.doe@example.com"
+                    },
+                    billingAddress: {
+                        firstName: "John",
+                        lastName: "Doe",
+                        address1: "123 Main St",
+                        city: "New York",
+                        state: "NY",
+                        postalCode: "10001",
+                        country: "USA",
+                        phone: "555-123-4567",
+                        email: "john.doe@example.com"
+                    },
+                    estimatedDelivery: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+                    orderNumber: "ORD-TEST-001",
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                };
+
+                const docRef = await db.collection("orders").add(testOrder);
+                document.getElementById('result').innerHTML = `<p>Test order created successfully with ID: ${docRef.id}</p>`;
+            } catch (error) {
+                document.getElementById('result').innerHTML = `<p>Error creating test order: ${error.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>

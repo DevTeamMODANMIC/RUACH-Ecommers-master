@@ -1,18 +1,17 @@
-
-
 import { useState } from "react"
-import { Button } from "../../src/components/ui/button"
+import { Button } from "../components/ui/button"
 import { Package2 } from "lucide-react"
-import { BulkOrderModal } from "../../src/components/bulk-order-modal"
+import { BulkOrderModal } from "../components/bulk-order-modal"
 
 interface BulkOrderButtonProps {
   productId: number
   productName: string
   basePrice: number
   country: string
+  vendorId?: string // Add vendorId prop
 }
 
-export function BulkOrderButton({ productId, productName, basePrice, country }: BulkOrderButtonProps) {
+export function BulkOrderButton({ productId, productName, basePrice, country, vendorId }: BulkOrderButtonProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   return (
@@ -33,6 +32,7 @@ export function BulkOrderButton({ productId, productName, basePrice, country }: 
         productName={productName}
         basePrice={basePrice}
         country={country}
+        vendorId={vendorId} // Pass vendorId to modal
       />
     </>
   )

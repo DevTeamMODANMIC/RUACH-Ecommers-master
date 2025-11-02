@@ -8,6 +8,7 @@ import { Card, CardContent } from "../components/ui/card"
 import { Input } from "../components/ui/input"
 import { Store, MapPin, Package, Star, Search, Filter, Users, Calendar } from "lucide-react"
 import { Loader2 } from "lucide-react"
+import AIChatbot from "../components/ai-chatbot"
 
 // Using Vendor type from firebase-vendors with additional optional fields
 interface ExtendedVendor extends Vendor {
@@ -291,6 +292,9 @@ export default function StoresPage() {
           </Link>
         </div>
       </div>
+
+      {/* Add the chatbot at the end */}
+      <AIChatbot />
     </div>
   )
 }

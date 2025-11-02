@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import routes from './routes'
+import routes from './routes.tsx'
 import HeaderImproved from './components/site-header'
 import Footer from './components/footer'
 import KeyboardNavigation from './components/keyboard-navigation'
@@ -26,6 +26,5 @@ export default function App() {
       <Footer />
       <Toaster />
     </>
-    
   )
 }

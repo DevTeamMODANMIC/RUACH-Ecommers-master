@@ -1,5 +1,3 @@
-
-
 import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
@@ -47,6 +45,10 @@ export default function KeyboardShortcutsHelp() {
       keys: ["Ctrl", "Shift", "D"],
       description: "Admin Dashboard",
       condition: "Admins only"
+    },
+    {
+      keys: ["Ctrl", "Shift", "L"],
+      description: "Delivery Dashboard"
     },
     {
       keys: ["Ctrl", "K"],

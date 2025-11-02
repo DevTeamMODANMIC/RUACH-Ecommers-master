@@ -19,7 +19,8 @@ import {
   Download,
   MoreHorizontal,
   Plus,
-  ShoppingBag
+  ShoppingBag,
+  Loader2
 } from "lucide-react"
 import { Link } from "react-router-dom";
 import {
@@ -28,51 +29,47 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu"
-
-interface OrderItem {
-  id: string
-  productName: string
-  quantity: number
-  price: number
-  image: string
-}
-
-interface Order {
-  id: string
-  orderNumber: string
-  customerName: string
-  customerEmail: string
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
-  items: OrderItem[]
-  total: number
-  orderDate: string
-  shippingAddress: {
-    street: string
-    city: string
-    postalCode: string
-    country: string
-  }
-  trackingNumber?: string
-}
+import { listenToVendorOrders, updateOrderStatus, type Order } from "../lib/firebase-orders"
+import { useToast } from "../hooks/use-toast"
 
 export default function VendorOrdersPage() {
-  const { vendor, activeStore } = useVendor()
+  const { vendor, activeStore, loading: vendorLoading } = useVendor()
+  const { toast } = useToast()
   const [orders, setOrders] = useState<Order[]>([])
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [activeTab, setActiveTab] = useState("all")
-  const [hasOrders, setHasOrders] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null)
 
-  // Empty orders for new vendors - replace with actual API calls
+  // Load orders for vendor
   useEffect(() => {
-    // For new vendors, start with empty orders
-    const mockOrders: Order[] = []
+    // If vendor data is still loading, show loading state
+    if (vendorLoading) {
+      return
+    }
+
+    // If no vendor or vendor ID, show no orders
+    if (!vendor?.id) {
+      setOrders([])
+      setLoading(false)
+      return
+    }
+
+    setLoading(true)
     
-    setOrders(mockOrders)
-    setFilteredOrders(mockOrders)
-    setHasOrders(mockOrders.length > 0)
-  }, [])
+    // Set up real-time listener for vendor orders
+    const unsubscribe = listenToVendorOrders(vendor.id, (vendorOrders) => {
+      setOrders(vendorOrders)
+      setLoading(false)
+    })
+
+    // Cleanup listener on unmount
+    return () => {
+      unsubscribe()
+    }
+  }, [vendor?.id, vendorLoading])
 
   // Filter orders based on search and status
   useEffect(() => {
@@ -80,9 +77,11 @@ export default function VendorOrdersPage() {
 
     if (searchTerm) {
       filtered = filtered.filter(order => 
+        order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.customerEmail.toLowerCase().includes(searchTerm.toLowerCase())
+        order.shippingAddress.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.shippingAddress.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.shippingAddress.email.toLowerCase().includes(searchTerm.toLowerCase())
       )
     }
 
@@ -129,10 +128,69 @@ export default function VendorOrdersPage() {
 
   const counts = getOrderCounts()
 
-  const updateOrderStatus = (orderId: string, newStatus: Order['status']) => {
-    setOrders(prev => prev.map(order => 
-      order.id === orderId ? { ...order, status: newStatus } : order
-    ))
+  const handleUpdateOrderStatus = async (orderId: string, newStatus: Order['status']) => {
+    if (!orderId) return;
+    
+    setUpdatingOrderId(orderId)
+    try {
+      await updateOrderStatus(orderId, newStatus)
+      toast({
+        title: "Order updated",
+        description: `Order status changed to ${newStatus}`
+      })
+    } catch (error: any) {
+      console.error("Error updating order status:", error)
+      toast({
+        title: "Error updating order",
+        description: error.message || "Failed to update order status",
+        variant: "destructive"
+      })
+    } finally {
+      setUpdatingOrderId(null)
+    }
+  }
+
+  // Show loading state while vendor data is loading
+  if (vendorLoading) {
+    return (
+      <VendorLayout 
+        title="Orders" 
+        description="Manage and track your customer orders"
+      >
+        <Card>
+          <CardContent className="p-12 text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p>Loading vendor information...</p>
+          </CardContent>
+        </Card>
+      </VendorLayout>
+    )
+  }
+
+  // Show message if user is not a vendor
+  if (!vendor?.id) {
+    return (
+      <VendorLayout 
+        title="Orders" 
+        description="Manage and track your customer orders"
+      >
+        <Card>
+          <CardContent className="p-12 text-center">
+            <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Vendor Access Required</h3>
+            <p className="text-gray-600 mb-6">
+              You need to be a registered vendor to view orders. Please register as a vendor first.
+            </p>
+            <Button asChild>
+              <Link to="/vendor/register">
+                <Plus className="h-4 w-4 mr-2" />
+                Register as Vendor
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </VendorLayout>
+    )
   }
 
   return (
@@ -192,7 +250,14 @@ export default function VendorOrdersPage() {
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-6">
-          {!hasOrders ? (
+          {loading ? (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                <p>Loading orders...</p>
+              </CardContent>
+            </Card>
+          ) : orders.length === 0 ? (
             <Card>
               <CardContent className="p-12 text-center">
                 <div className="flex justify-center mb-4">
@@ -242,13 +307,13 @@ export default function VendorOrdersPage() {
                       {/* Order Info */}
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-semibold text-lg">{order.orderNumber}</h3>
+                          <h3 className="font-semibold text-lg">#{order.orderNumber}</h3>
                           {getStatusBadge(order.status)}
                         </div>
                         <div className="text-sm text-gray-600 space-y-1">
-                          <p><strong>Customer:</strong> {order.customerName}</p>
-                          <p><strong>Email:</strong> {order.customerEmail}</p>
-                          <p><strong>Date:</strong> {new Date(order.orderDate).toLocaleDateString()}</p>
+                          <p><strong>Customer:</strong> {order.shippingAddress.firstName} {order.shippingAddress.lastName}</p>
+                          <p><strong>Email:</strong> {order.shippingAddress.email}</p>
+                          <p><strong>Date:</strong> {new Date(order.createdAt).toLocaleDateString()}</p>
                           <p><strong>Total:</strong> ₦{order.total.toFixed(2)}</p>
                           {order.trackingNumber && (
                             <p><strong>Tracking:</strong> {order.trackingNumber}</p>
@@ -258,42 +323,56 @@ export default function VendorOrdersPage() {
 
                       {/* Order Items */}
                       <div className="flex-1 max-w-md">
-                        <h4 className="font-medium mb-2">Items ({order.items.length})</h4>
+                        <h4 className="font-medium mb-2">Items ({order.items.filter(item => item.vendorId === vendor?.id).length})</h4>
                         <div className="space-y-2">
-                          {order.items.map((item) => (
-                            <div key={item.id} className="flex justify-between text-sm">
-                              <span className="truncate">{item.productName}</span>
-                              <span>×{item.quantity}</span>
-                            </div>
-                          ))}
+                          {order.items
+                            .filter(item => item.vendorId === vendor?.id)
+                            .map((item) => (
+                              <div key={`${order.id}-${item.productId}`} className="flex justify-between text-sm">
+                                <span className="truncate">{item.name}</span>
+                                <span>×{item.quantity}</span>
+                              </div>
+                            ))}
                         </div>
                       </div>
 
                       {/* Actions */}
                       <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm">
-                          <Eye className="h-4 w-4 mr-2" />
-                          View
+                        <Button variant="outline" size="sm" asChild>
+                          <Link to={`/profile/orders/${order.id}`}>
+                            <Eye className="h-4 w-4 mr-2" />
+                            View
+                          </Link>
                         </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
+                            <Button variant="outline" size="sm" disabled={updatingOrderId === order.id}>
+                              {updatingOrderId === order.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <MoreHorizontal className="h-4 w-4" />
+                              )}
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             {order.status === 'pending' && (
-                              <DropdownMenuItem onClick={() => updateOrderStatus(order.id, 'processing')}>
+                              <DropdownMenuItem 
+                                onClick={() => handleUpdateOrderStatus(order.id, 'processing')}
+                              >
                                 Mark as Processing
                               </DropdownMenuItem>
                             )}
                             {order.status === 'processing' && (
-                              <DropdownMenuItem onClick={() => updateOrderStatus(order.id, 'shipped')}>
+                              <DropdownMenuItem 
+                                onClick={() => handleUpdateOrderStatus(order.id, 'shipped')}
+                              >
                                 Mark as Shipped
                               </DropdownMenuItem>
                             )}
                             {order.status === 'shipped' && (
-                              <DropdownMenuItem onClick={() => updateOrderStatus(order.id, 'delivered')}>
+                              <DropdownMenuItem 
+                                onClick={() => handleUpdateOrderStatus(order.id, 'delivered')}
+                              >
                                 Mark as Delivered
                               </DropdownMenuItem>
                             )}
@@ -316,4 +395,4 @@ export default function VendorOrdersPage() {
       </Tabs>
     </VendorLayout>
   )
-} 
+}

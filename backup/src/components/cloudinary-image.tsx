@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { buildImageUrl, buildSrcSet } from "../lib/cloudinary-client";
-// import slide show libery for roduct images 
 
 interface CloudinaryImageProps {
   publicId: string;

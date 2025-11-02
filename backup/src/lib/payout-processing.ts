@@ -1,7 +1,7 @@
-import { collection, query, where, getDocs, writeBatch, doc, updateDoc, addDoc, Timestamp } from "firebase/firestore"
+import { collection, query, where, getDocs, writeBatch, doc, updateDoc, addDoc, Timestamp, getDoc } from "firebase/firestore"
 import { db } from "./firebase"
 import { Vendor } from "./firebase-vendors"
-import { Order } from "./firebase-orders"
+import { Order } from "../types"
 import { processVendorPayout } from "./payment-provider"
 
 // Payout record interface
@@ -23,7 +23,7 @@ export interface PayoutRecord {
  * This function calculates how much a vendor should earn from their sales
  * after deducting the platform fee
  */
-export const calculateVendorEarnings = async (vendorId: string, periodStart: Date, periodEnd: Date): Promise<number> => {
+export const calculateVendorEarnings = async (vendorId: string, periodStart: Date, periodEnd: Date): Promise<{ totalEarnings: number, walletAddition: number }> => {
   try {
     // Get all orders for this vendor in the specified period
     const ordersQuery = query(
@@ -35,6 +35,7 @@ export const calculateVendorEarnings = async (vendorId: string, periodStart: Dat
     
     const ordersSnapshot = await getDocs(ordersQuery)
     let totalEarnings = 0
+    let walletAddition = 0
     
     // Platform fee percentage (10%)
     const PLATFORM_FEE = 0.10
@@ -48,16 +49,19 @@ export const calculateVendorEarnings = async (vendorId: string, periodStart: Dat
       order.items.forEach((item) => {
         // Check if the item belongs to this vendor
         if (item.vendorId === vendorId) {
-          orderEarnings += item.total
+          orderEarnings += item.price * item.quantity
         }
       })
       
       // Deduct platform fee
       const earningsAfterFee = orderEarnings * (1 - PLATFORM_FEE)
       totalEarnings += earningsAfterFee
+      
+      // Add to wallet (this is the amount before fees)
+      walletAddition += orderEarnings
     })
     
-    return totalEarnings
+    return { totalEarnings, walletAddition }
   } catch (error) {
     console.error("Error calculating vendor earnings:", error)
     throw error
@@ -92,15 +96,18 @@ export const processScheduledPayouts = async (): Promise<void> => {
         const { periodStart, periodEnd } = calculatePayoutPeriod(vendor.payoutSettings.payoutFrequency)
         
         // Calculate earnings
-        const earnings = await calculateVendorEarnings(vendor.id, periodStart, periodEnd)
+        const { totalEarnings, walletAddition } = await calculateVendorEarnings(vendor.id, periodStart, periodEnd)
         
         // Check if earnings meet minimum payout threshold
-        if (earnings >= vendor.payoutSettings.minimumPayout) {
+        if (totalEarnings >= vendor.payoutSettings.minimumPayout) {
+          // Update wallet balance
+          await updateVendorWalletBalance(vendor.id, walletAddition)
+          
           // Create payout record
-          const payoutId = await createPayoutRecord(vendor.id, earnings, periodStart, periodEnd)
+          const payoutId = await createPayoutRecord(vendor.id, totalEarnings, periodStart, periodEnd)
           
           // Process the actual payout
-          await processPayout(vendor, earnings, payoutId)
+          await processPayout(vendor, totalEarnings, payoutId)
         }
       }
     }
@@ -293,6 +300,59 @@ export const getVendorPayoutHistory = async (vendorId: string): Promise<PayoutRe
     } as PayoutRecord))
   } catch (error) {
     console.error("Error fetching vendor payout history:", error)
+    throw error
+  }
+}
+
+/**
+ * Update vendor wallet balance
+ */
+export const updateVendorWalletBalance = async (vendorId: string, amount: number): Promise<void> => {
+  try {
+    const vendorRef = doc(db, "vendors", vendorId)
+    const vendorDoc = await getDoc(vendorRef)
+    
+    if (!vendorDoc.exists()) {
+      throw new Error("Vendor not found")
+    }
+    
+    const vendor = vendorDoc.data() as Vendor
+    const currentBalance = vendor.walletBalance || 0
+    const newBalance = currentBalance + amount
+    
+    await updateDoc(vendorRef, {
+      walletBalance: newBalance
+    })
+  } catch (error) {
+    console.error("Error updating vendor wallet balance:", error)
+    throw error
+  }
+}
+
+/**
+ * Simulate adding funds to vendor's wallet when a sale is made
+ * This function would be called when an order is completed
+ */
+export const addToVendorWallet = async (vendorId: string, amount: number): Promise<void> => {
+  try {
+    const vendorRef = doc(db, "vendors", vendorId)
+    const vendorDoc = await getDoc(vendorRef)
+    
+    if (!vendorDoc.exists()) {
+      throw new Error("Vendor not found")
+    }
+    
+    const vendor = vendorDoc.data() as Vendor
+    const currentBalance = vendor.walletBalance || 0
+    const newBalance = currentBalance + amount
+    
+    await updateDoc(vendorRef, {
+      walletBalance: newBalance
+    })
+    
+    console.log(`Added ${amount} to vendor ${vendorId}'s wallet. New balance: ${newBalance}`)
+  } catch (error) {
+    console.error("Error updating vendor wallet balance:", error)
     throw error
   }
 }

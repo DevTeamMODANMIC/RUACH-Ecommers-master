@@ -1,150 +1,138 @@
-import { Order } from "../types"
+import { Order as OrderType } from "../types"
+export type Order = OrderType
+import { 
+  collection, 
+  query, 
+  where, 
+  getDocs, 
+  onSnapshot,
+  orderBy,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  addDoc
+} from "firebase/firestore"
+import { db } from "./firebase"
+import { getVendorProducts } from "./firebase-vendors"
 
+// ✅ Get user orders
 export const getUserOrders = async (userId: string): Promise<Order[]> => {
-  // In a real implementation, this would fetch from Firebase Firestore
-  // For now, return mock data for demonstration
-  return [
-    {
-      id: `ORD-${Date.now()}-001`,
-      userId,
-      items: [
-        {
-          productId: "prod-1",
-          name: "Premium Wireless Headphones",
-          price: 89.99,
-          image: "/placeholder.svg",
-          quantity: 1,
-          options: {}
-        },
-        {
-          productId: "prod-2",
-          name: "Smartphone Case",
-          price: 24.99,
-          image: "/placeholder.svg",
-          quantity: 2,
-          options: {}
-        }
-      ],
-      subtotal: 139.97,
-      shipping: 10.00,
-      tax: 15.00,
-      total: 164.97,
-      status: "delivered",
-      paymentStatus: "paid",
-      paymentMethod: "card",
-      shippingAddress: {
-        firstName: "John",
-        lastName: "Doe",
-        address1: "123 Main Street",
-        city: "London",
-        state: "England",
-        postalCode: "SW1A 1AA",
-        country: "United Kingdom",
-        phone: "+44 20 7123 4567"
-      },
-      billingAddress: {
-        firstName: "John",
-        lastName: "Doe",
-        address1: "123 Main Street",
-        city: "London",
-        state: "England",
-        postalCode: "SW1A 1AA",
-        country: "United Kingdom",
-        phone: "+44 20 7123 4567"
-      },
-      trackingNumber: "GB123456789",
-      estimatedDelivery: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-      createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-      orderNumber: "ORD-2024-001"
-    },
-    {
-      id: `ORD-${Date.now()}-002`,
-      userId,
-      items: [
-        {
-          productId: "prod-3",
-          name: "Laptop Backpack",
-          price: 45.50,
-          image: "/placeholder.svg",
-          quantity: 1,
-          options: {}
-        }
-      ],
-      subtotal: 45.50,
-      shipping: 5.00,
-      tax: 5.05,
-      total: 55.55,
-      status: "processing",
-      paymentStatus: "paid",
-      paymentMethod: "card",
-      shippingAddress: {
-        firstName: "John",
-        lastName: "Doe",
-        address1: "123 Main Street",
-        city: "London",
-        state: "England",
-        postalCode: "SW1A 1AA",
-        country: "United Kingdom",
-        phone: "+44 20 7123 4567"
-      },
-      billingAddress: {
-        firstName: "John",
-        lastName: "Doe",
-        address1: "123 Main Street",
-        city: "London",
-        state: "England",
-        postalCode: "SW1A 1AA",
-        country: "United Kingdom",
-        phone: "+44 20 7123 4567"
-      },
-      estimatedDelivery: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-      createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-      orderNumber: "ORD-2024-002"
-    }
-  ]
+  try {
+    const q = query(
+      collection(db, "orders"),
+      where("userId", "==", userId),
+      orderBy("createdAt", "desc")
+    )
+    
+    const snapshot = await getDocs(q)
+    const orders = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate?.() || doc.data().createdAt,
+      updatedAt: doc.data().updatedAt?.toDate?.() || doc.data().updatedAt,
+      estimatedDelivery: doc.data().estimatedDelivery?.toDate?.() || doc.data().estimatedDelivery,
+    } as Order))
+    
+    return orders
+  } catch (error) {
+    console.error("Error fetching user orders:", error)
+    return []
+  }
 }
 
+// ✅ Live listener for user orders
 export const listenToUserOrders = (
   callback: (orders: Order[]) => void,
   userId: string
 ): (() => void) => {
-  // In a real implementation, this would set up a Firestore listener
-  // For now, just call the callback once with initial data
-  getUserOrders(userId).then(callback)
-
-  // Return unsubscribe function
-  return () => {
-    // Clean up listener
+  try {
+    const q = query(
+      collection(db, "orders"),
+      where("userId", "==", userId),
+      orderBy("createdAt", "desc")
+    )
+    
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        const orders = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate?.() || doc.data().createdAt,
+          updatedAt: doc.data().updatedAt?.toDate?.() || doc.data().updatedAt,
+          estimatedDelivery: doc.data().estimatedDelivery?.toDate?.() || doc.data().estimatedDelivery,
+        } as Order))
+        callback(orders)
+      },
+      (error) => {
+        console.error("Error listening to user orders:", error)
+        callback([])
+      }
+    )
+  } catch (error) {
+    console.error("Error setting up user orders listener:", error)
+    callback([])
+    return () => {}
   }
-}
-
-export const getOrderById = async (orderId: string): Promise<Order | null> => {
-  // In a real implementation, this would fetch a specific order from Firebase
-  // For now, return null if not found
-  return null
 }
 
 // ✅ Get single order
 export const getOrder = async (id: string): Promise<Order | null> => {
-  // In a real implementation, this would fetch a specific order from Firebase
-  // For now, return null if not found
-  return null
+  try {
+    const docRef = doc(db, "orders", id)
+    const docSnap = await getDoc(docRef)
+    
+    if (docSnap.exists()) {
+      return {
+        id: docSnap.id,
+        ...docSnap.data(),
+        createdAt: docSnap.data().createdAt?.toDate?.() || docSnap.data().createdAt,
+        updatedAt: docSnap.data().updatedAt?.toDate?.() || docSnap.data().updatedAt,
+        estimatedDelivery: docSnap.data().estimatedDelivery?.toDate?.() || docSnap.data().estimatedDelivery,
+      } as Order
+    }
+    
+    return null
+  } catch (error) {
+    console.error("Error fetching order:", error)
+    return null
+  }
 }
 
 // ✅ Live listener for single order
 export const listenToOrder = (
   orderId: string,
   callback: (orderData: Order | null) => void
-) => {
-  // In a real implementation, this would set up a Firestore listener for a specific order
-  // For now, just call the callback once with null and return a mock unsubscribe function
-  callback(null)
-  
-  // Return unsubscribe function
-  return () => {
-    // Clean up listener
+): (() => void) => {
+  try {
+    const docRef = doc(db, "orders", orderId)
+    
+    return onSnapshot(
+      docRef,
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const order = {
+            id: docSnap.id,
+            ...docSnap.data(),
+            createdAt: docSnap.data().createdAt?.toDate?.() || docSnap.data().createdAt,
+            updatedAt: docSnap.data().updatedAt?.toDate?.() || docSnap.data().updatedAt,
+            estimatedDelivery: docSnap.data().estimatedDelivery?.toDate?.() || docSnap.data().estimatedDelivery,
+          } as Order
+          callback(order)
+        } else {
+          callback(null)
+        }
+      },
+      (error) => {
+        console.error("Error listening to order:", error)
+        callback(null)
+      }
+    )
+  } catch (error) {
+    console.error("Error setting up order listener:", error)
+    callback(null)
+    return () => {}
   }
 }
 
@@ -153,215 +141,200 @@ export const getOrderByIdAndEmail = async (
   orderIdOrNumber: string,
   email: string
 ): Promise<Order | null> => {
-  // In a real implementation, this would fetch a specific order by ID or number and verify with email
-  // For now, return null if not found
-  return null
-}
-
-export const getAllOrders = async (): Promise<Order[]> => {
-  // In a real implementation, this would fetch all orders from Firebase
-  // For admin purposes, return a comprehensive list of mock orders
-  return [
-    {
-      id: "ORD-001",
-      userId: "user-1",
-      items: [
-        {
-          productId: "prod-1",
-          name: "Premium Wireless Headphones",
-          price: 299.99,
-          image: "/placeholder.svg",
-          quantity: 1,
-          options: {}
-        }
-      ],
-      subtotal: 299.99,
-      shipping: 15.00,
-      tax: 30.00,
-      total: 344.99,
-      status: "pending",
-      paymentStatus: "paid",
-      paymentMethod: "card",
-      shippingAddress: {
-        firstName: "John",
-        lastName: "Doe",
-        address1: "123 Main Street",
-        city: "London",
-        state: "England",
-        postalCode: "SW1A 1AA",
-        country: "United Kingdom",
-        phone: "+44 20 7123 4567"
-      },
-      billingAddress: {
-        firstName: "John",
-        lastName: "Doe",
-        address1: "123 Main Street",
-        city: "London",
-        state: "England",
-        postalCode: "SW1A 1AA",
-        country: "United Kingdom",
-        phone: "+44 20 7123 4567"
-      },
-      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      orderNumber: "ORD-2024-001"
-    },
-    {
-      id: "ORD-002",
-      userId: "user-2",
-      items: [
-        {
-          productId: "prod-2",
-          name: "Smartphone Case",
-          price: 89.99,
-          image: "/placeholder.svg",
-          quantity: 2,
-          options: {}
-        }
-      ],
-      subtotal: 179.98,
-      shipping: 10.00,
-      tax: 19.00,
-      total: 208.98,
-      status: "delivered",
-      paymentStatus: "paid",
-      paymentMethod: "card",
-      shippingAddress: {
-        firstName: "Jane",
-        lastName: "Smith",
-        address1: "456 Oak Avenue",
-        city: "Manchester",
-        state: "England",
-        postalCode: "M1 1AA",
-        country: "United Kingdom",
-        phone: "+44 20 7456 7890"
-      },
-      billingAddress: {
-        firstName: "Jane",
-        lastName: "Smith",
-        address1: "456 Oak Avenue",
-        city: "Manchester",
-        state: "England",
-        postalCode: "M1 1AA",
-        country: "United Kingdom",
-        phone: "+44 20 7456 7890"
-      },
-      trackingNumber: "GB987654321",
-      estimatedDelivery: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-      createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-      orderNumber: "ORD-2024-002"
-    },
-    {
-      id: "ORD-003",
-      userId: "user-3",
-      items: [
-        {
-          productId: "prod-3",
-          name: "Laptop Backpack",
-          price: 159.99,
-          image: "/placeholder.svg",
-          quantity: 1,
-          options: {}
-        }
-      ],
-      subtotal: 159.99,
-      shipping: 12.00,
-      tax: 17.20,
-      total: 189.19,
-      status: "shipped",
-      paymentStatus: "paid",
-      paymentMethod: "paypal",
-      shippingAddress: {
-        firstName: "Bob",
-        lastName: "Johnson",
-        address1: "789 Pine Road",
-        city: "Birmingham",
-        state: "England",
-        postalCode: "B1 1AA",
-        country: "United Kingdom",
-        phone: "+44 20 7987 6543"
-      },
-      billingAddress: {
-        firstName: "Bob",
-        lastName: "Johnson",
-        address1: "789 Pine Road",
-        city: "Birmingham",
-        state: "England",
-        postalCode: "B1 1AA",
-        country: "United Kingdom",
-        phone: "+44 20 7987 6543"
-      },
-      trackingNumber: "GB456789123",
-      estimatedDelivery: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-      createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-      orderNumber: "ORD-2024-003"
+  try {
+    // First try to find by order ID
+    const docRef = doc(db, "orders", orderIdOrNumber)
+    const docSnap = await getDoc(docRef)
+    
+    if (docSnap.exists()) {
+      const orderData = docSnap.data()
+      // Verify email matches billing or shipping address
+      if (orderData.billingAddress?.email === email || orderData.shippingAddress?.email === email) {
+        return {
+          id: docSnap.id,
+          ...orderData,
+          createdAt: orderData.createdAt?.toDate?.() || orderData.createdAt,
+          updatedAt: orderData.updatedAt?.toDate?.() || orderData.updatedAt,
+          estimatedDelivery: orderData.estimatedDelivery?.toDate?.() || orderData.estimatedDelivery,
+        } as Order
+      }
     }
-  ]
+    
+    // If not found by ID, try to find by order number
+    const q = query(
+      collection(db, "orders"),
+      where("orderNumber", "==", orderIdOrNumber)
+    )
+    
+    const snapshot = await getDocs(q)
+    if (!snapshot.empty) {
+      const docSnap = snapshot.docs[0]
+      const orderData = docSnap.data()
+      // Verify email matches billing or shipping address
+      if (orderData.billingAddress?.email === email || orderData.shippingAddress?.email === email) {
+        return {
+          id: docSnap.id,
+          ...orderData,
+          createdAt: orderData.createdAt?.toDate?.() || orderData.createdAt,
+          updatedAt: orderData.updatedAt?.toDate?.() || orderData.updatedAt,
+          estimatedDelivery: orderData.estimatedDelivery?.toDate?.() || orderData.estimatedDelivery,
+        } as Order
+      }
+    }
+    
+    return null
+  } catch (error) {
+    console.error("Error fetching order by ID/number and email:", error)
+    return null
+  }
 }
 
+// ✅ Get all orders (admin)
+export const getAllOrders = async (): Promise<Order[]> => {
+  try {
+    const q = query(
+      collection(db, "orders"),
+      orderBy("createdAt", "desc")
+    )
+    
+    const snapshot = await getDocs(q)
+    const orders = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate?.() || doc.data().createdAt,
+      updatedAt: doc.data().updatedAt?.toDate?.() || doc.data().updatedAt,
+      estimatedDelivery: doc.data().estimatedDelivery?.toDate?.() || doc.data().estimatedDelivery,
+    } as Order))
+    
+    return orders
+  } catch (error) {
+    console.error("Error fetching all orders:", error)
+    return []
+  }
+}
+
+// ✅ Get all orders (for ML algorithms)
 export const getAllOrdersNoMax = async (): Promise<Order[]> => {
-  // In a real implementation, this would fetch all orders from Firebase without a limit
-  // For now, return an empty array
-  return []
+  // Same as getAllOrders but without limits for ML processing
+  return getAllOrders()
 }
 
+// ✅ Live listener for all orders (admin)
 export const listenToAllOrders = (
   callback: (orders: Order[]) => void
 ): (() => void) => {
-  // In a real implementation, this would set up a Firestore listener for all orders
-  // For now, just call the callback once with initial data
-  getAllOrders().then(callback)
-
-  // Return unsubscribe function
-  return () => {
-    // Clean up listener
+  try {
+    const q = query(
+      collection(db, "orders"),
+      orderBy("createdAt", "desc")
+    )
+    
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        const orders = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate?.() || doc.data().createdAt,
+          updatedAt: doc.data().updatedAt?.toDate?.() || doc.data().updatedAt,
+          estimatedDelivery: doc.data().estimatedDelivery?.toDate?.() || doc.data().estimatedDelivery,
+        } as Order))
+        callback(orders)
+      },
+      (error) => {
+        console.error("Error listening to all orders:", error)
+        callback([])
+      }
+    )
+  } catch (error) {
+    console.error("Error setting up all orders listener:", error)
+    callback([])
+    return () => {}
   }
 }
 
+// ✅ Update order
 export const updateOrder = async (orderId: string, updates: Partial<Order>): Promise<Order> => {
-  // In a real implementation, this would update the order in Firebase
-  // For now, return a mock updated order
-  const allOrders = await getAllOrders()
-  const orderToUpdate = allOrders.find(order => order.id === orderId)
-
-  if (!orderToUpdate) {
-    throw new Error("Order not found")
+  try {
+    const docRef = doc(db, "orders", orderId)
+    await updateDoc(docRef, {
+      ...updates,
+      updatedAt: new Date()
+    })
+    
+    // Return the updated order
+    const updatedOrder = await getOrder(orderId)
+    if (!updatedOrder) {
+      throw new Error("Failed to fetch updated order")
+    }
+    
+    return updatedOrder
+  } catch (error) {
+    console.error("Error updating order:", error)
+    throw error
   }
-
-  const updatedOrder: Order = {
-    ...orderToUpdate,
-    ...updates,
-    updatedAt: new Date().toISOString()
-  }
-
-  return updatedOrder
 }
 
+// ✅ Create order
 export const createOrder = async (orderData: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>): Promise<Order> => {
-  // In a real implementation, this would create the order in Firebase
-  // For now, return a mock created order
-  const newOrder: Order = {
-    ...orderData,
-    id: `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+  try {
+    const newOrder = {
+      ...orderData,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+    
+    const docRef = await addDoc(collection(db, "orders"), newOrder)
+    
+    // Return the created order with ID
+    const createdOrder = await getOrder(docRef.id)
+    if (!createdOrder) {
+      throw new Error("Failed to fetch created order")
+    }
+    
+    return createdOrder
+  } catch (error) {
+    console.error("Error creating order:", error)
+    throw error
   }
-
-  return newOrder
 }
 
 // ✅ Get vendor orders
 export const getVendorOrders = async (vendorId: string): Promise<Order[]> => {
-  // In a real implementation, this would fetch vendor orders from Firebase
-  // For now, filter mock orders by vendor ID
-  const allOrders = await getAllOrders()
-  
-  // Filter orders that contain items from this vendor
-  return allOrders.filter(order => 
-    order.items.some(item => item.vendorId === vendorId)
-  )
+  try {
+    // First, get all products for this vendor
+    const vendorProducts = await getVendorProducts(vendorId)
+    const vendorProductIds = vendorProducts.map(product => product.id)
+    
+    if (vendorProductIds.length === 0) {
+      return []
+    }
+    
+    // Get all orders
+    const q = query(
+      collection(db, "orders"),
+      orderBy("createdAt", "desc")
+    )
+    
+    const snapshot = await getDocs(q)
+    const allOrders = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate?.() || doc.data().createdAt,
+      updatedAt: doc.data().updatedAt?.toDate?.() || doc.data().updatedAt,
+      estimatedDelivery: doc.data().estimatedDelivery?.toDate?.() || doc.data().estimatedDelivery,
+    } as Order))
+    
+    // Filter orders that contain vendor's products
+    const vendorOrders = allOrders.filter(order => 
+      order.items.some(item => vendorProductIds.includes(item.productId))
+    )
+    
+    return vendorOrders
+  } catch (error) {
+    console.error("Error fetching vendor orders:", error)
+    return []
+  }
 }
 
 // ✅ Live listener for vendor orders
@@ -369,19 +342,59 @@ export const listenToVendorOrders = (
   vendorId: string,
   callback: (orders: Order[]) => void
 ): (() => void) => {
-  // In a real implementation, this would set up a Firestore listener for vendor orders
-  // For now, just call the callback once with initial data
-  getVendorOrders(vendorId).then(callback)
-
-  // Return unsubscribe function
-  return () => {
-    // Clean up listener
+  try {
+    // Set up real-time listener for all orders
+    const q = query(
+      collection(db, "orders"),
+      orderBy("createdAt", "desc")
+    )
+    
+    return onSnapshot(
+      q,
+      async (snapshot) => {
+        try {
+          // First, get all products for this vendor
+          const vendorProducts = await getVendorProducts(vendorId)
+          const vendorProductIds = vendorProducts.map(product => product.id)
+          
+          if (vendorProductIds.length === 0) {
+            callback([])
+            return
+          }
+          
+          // Process orders
+          const orders = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate?.() || doc.data().createdAt,
+            updatedAt: doc.data().updatedAt?.toDate?.() || doc.data().updatedAt,
+            estimatedDelivery: doc.data().estimatedDelivery?.toDate?.() || doc.data().estimatedDelivery,
+          } as Order))
+          
+          // Filter orders that contain vendor's products
+          const vendorOrders = orders.filter(order => 
+            order.items.some(item => vendorProductIds.includes(item.productId))
+          )
+          
+          callback(vendorOrders)
+        } catch (error) {
+          console.error("Error processing vendor orders:", error)
+          callback([])
+        }
+      },
+      (error) => {
+        console.error("Error listening to vendor orders:", error)
+        callback([])
+      }
+    )
+  } catch (error) {
+    console.error("Error setting up vendor orders listener:", error)
+    callback([])
+    return () => {}
   }
 }
 
 // ✅ Update order status
 export const updateOrderStatus = async (orderId: string, status: Order['status']): Promise<Order> => {
-  // In a real implementation, this would update the order status in Firebase
-  // For now, use the existing updateOrder function
   return updateOrder(orderId, { status })
 }

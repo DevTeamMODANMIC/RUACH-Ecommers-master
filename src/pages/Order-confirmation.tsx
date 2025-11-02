@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { useSearchParams, Link } from "react-router-dom"
+import { useSearchParams, Link, useNavigate } from "react-router-dom"
 
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
@@ -14,6 +14,7 @@ import { useAuth } from "../components/auth-provider"
 
 export default function OrderConfirmationPage() {
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const orderId = searchParams.get("orderId")
   const { formatPrice } = useSafeCurrency()
   const { user } = useAuth()
@@ -123,6 +124,51 @@ export default function OrderConfirmationPage() {
         return "bg-gray-100 text-gray-800"
     }
   }
+
+  // Function to handle receipt download
+  const handleDownloadReceipt = () => {
+    if (!orderDetails) return;
+    
+    // Create a simple text receipt
+    const receiptContent = `
+Receipt for Order #${orderDetails.id}
+=================================
+Order Date: ${new Date(orderDetails.createdAt || Date.now()).toLocaleDateString()}
+Status: ${orderDetails.status}
+Payment Status: ${orderDetails.paymentStatus || 'pending'}
+
+Items Ordered:
+${orderDetails.items.map(item => 
+  `${item.name} x ${item.quantity} @ ${formatPrice(item.price)} = ${formatPrice(item.price * item.quantity)}`
+).join('\n')}
+
+---------------------------------
+Subtotal: ${formatPrice(orderDetails.subtotal)}
+Shipping: ${formatPrice(orderDetails.shipping)}
+Tax: ${formatPrice(orderDetails.tax)}
+Total: ${formatPrice(orderDetails.total)}
+
+Payment Method: ${orderDetails.paymentMethod}
+    `.trim();
+
+    // Create a blob and download
+    const blob = new Blob([receiptContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `receipt-${orderDetails.id}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // Function to handle email receipt
+  const handleEmailReceipt = () => {
+    // In a real app, this would trigger an API call to send the receipt via email
+    // For now, we'll just show an alert
+    alert("In a real application, this would email the receipt to your registered email address.");
+  };
 
   return (
     <div className="min-h-screen py-8">
@@ -279,11 +325,11 @@ export default function OrderConfirmationPage() {
                 <CardTitle>Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button variant="outline" className="w-full justify-start">
+                <Button variant="outline" className="w-full justify-start" onClick={handleDownloadReceipt}>
                   <Download className="h-4 w-4 mr-2" />
                   Download Receipt
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button variant="outline" className="w-full justify-start" onClick={handleEmailReceipt}>
                   <Mail className="h-4 w-4 mr-2" />
                   Email Receipt
                 </Button>

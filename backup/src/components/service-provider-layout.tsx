@@ -5,6 +5,7 @@ import { Menu, ArrowLeft, Home } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet"
 import { useServiceProvider } from "../hooks/use-service-provider"
 import { ServiceProviderSidebar } from "./service-provider-sidebar.tsx"
+import ServiceProviderDashboardAIChatbot from "./service-provider-dashboard-ai-chatbot"
 
 interface ServiceProviderLayoutProps {
   children: ReactNode
@@ -112,6 +113,8 @@ export function ServiceProviderLayout({ children, title, description }: ServiceP
           </div>
         </main>
       </div>
+      
+      <ServiceProviderDashboardAIChatbot userId={serviceProvider?.id} />
     </div>
   )
 }

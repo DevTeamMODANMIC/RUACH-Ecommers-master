@@ -10,6 +10,7 @@ import { products } from "../lib/product-data"
 import { getProducts, ProductFilters } from "../lib/firebase-products"
 import { getAllOrdersNoMax } from "@/lib/firebase-orders";
 import { recommendTrendingProducts } from "@/components/ML-AllProducts-modeul";
+import ShopAIChatbot from "../components/shop-ai-chatbot";
 
 import {
   DropdownMenu,
@@ -747,6 +748,8 @@ export default function ShopPage() {
           </div>
         </div>
       </div>
+      {/* Add the chatbot at the end */}
+      <ShopAIChatbot />
     </div>
   );
 }

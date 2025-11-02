@@ -18,7 +18,11 @@ import {
   Menu,
   Eye,
   ArrowLeft,
-  Layers
+  Layers,
+  DollarSign,
+  Package2,
+  Shield,
+  Wallet
 } from "lucide-react"
 
 interface NavItem {
@@ -81,6 +85,11 @@ export function VendorSidebar() {
           title: "Orders",
           href: "/vendor/dashboard/orders",
           icon: ShoppingCart
+        },
+        {
+          title: "Bulk Orders",
+          href: "/vendor/dashboard/bulk-orders",
+          icon: Package2
         }
       ]
     },
@@ -100,6 +109,16 @@ export function VendorSidebar() {
       ]
     },
     {
+      title: "Compliance",
+      items: [
+        {
+          title: "KYC Verification",
+          href: "/vendor/dashboard/kyc",
+          icon: Shield
+        }
+      ]
+    },
+    {
       title: "Account",
       items: [
         {
@@ -111,6 +130,16 @@ export function VendorSidebar() {
           title: "Settings",
           href: "/vendor/dashboard/settings",
           icon: Settings
+        },
+        {
+          title: "Payouts",
+          href: "/vendor/dashboard/payouts",
+          icon: DollarSign
+        },
+        {
+          title: "Wallet",
+          href: "/vendor/dashboard/wallet",
+          icon: Wallet
         }
       ]
     }

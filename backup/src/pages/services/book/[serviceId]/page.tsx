@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useLocation } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -18,23 +18,22 @@ import {
   AlertCircle
 } from "lucide-react"
 import { Service, ServiceProvider, ServiceBooking, UserAddress } from "@/types"
-
-// Service data will be loaded from the database based on serviceId
-const mockService: Service | null = null
-
-const mockProvider: ServiceProvider | null = null
+import { getService } from "@/lib/firebase-services"
+import { getServiceProvider } from "@/lib/firebase-service-providers"
 
 export default function ServiceBookingPage() {
-  // const params = useParams() // Currently unused
   const navigate = useNavigate()
-  // const serviceId = params.serviceId as string // Currently unused
-
-  const [service] = useState<Service | null>(mockService)
-  const [provider] = useState<ServiceProvider | null>(mockProvider)
+  const location = useLocation()
+  
+  const [service, setService] = useState<Service | null>(null)
+  const [provider, setProvider] = useState<ServiceProvider | null>(null)
   const [selectedDate, setSelectedDate] = useState("")
   const [selectedTime, setSelectedTime] = useState("")
   const [bookingStep, setBookingStep] = useState(1) // 1: Service Info, 2: Schedule, 3: Details, 4: Payment
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [isProviderOnlyBooking, setIsProviderOnlyBooking] = useState(false)
 
   const [bookingForm, setBookingForm] = useState({
     customerName: "",
@@ -56,11 +55,54 @@ export default function ServiceBookingPage() {
 
   const [availableSlots] = useState<any[]>([])
 
+  // Extract serviceId or providerId from URL
   useEffect(() => {
-    if (service?.basePrice) {
-      setBookingForm(prev => ({ ...prev, agreedPrice: service.basePrice || 0 }))
+    const loadBookingData = async () => {
+      setIsLoading(true)
+      setError(null)
+      
+      try {
+        // Check for serviceId in path
+        const pathParts = location.pathname.split('/')
+        const serviceId = pathParts[pathParts.length - 1]
+        
+        // Check for providerId in query params
+        const searchParams = new URLSearchParams(location.search)
+        const providerId = searchParams.get('providerId')
+        
+        if (serviceId && serviceId !== 'book') {
+          // Load service and provider
+          console.log('Loading service:', serviceId)
+          const serviceData = await getService(serviceId)
+          if (serviceData) {
+            setService(serviceData)
+            const providerData = await getServiceProvider(serviceData.providerId)
+            if (providerData) {
+              setProvider(providerData)
+              setBookingForm(prev => ({ ...prev, agreedPrice: serviceData.basePrice || 0 }))
+            }
+          }
+        } else if (providerId) {
+          // Load provider only (for providers without services)
+          console.log('Loading provider only:', providerId)
+          setIsProviderOnlyBooking(true)
+          const providerData = await getServiceProvider(providerId)
+          if (providerData) {
+            setProvider(providerData)
+          }
+        } else {
+          setError("No service or provider specified")
+        }
+      } catch (err: any) {
+        console.error("Error loading booking data:", err)
+        setError(err?.message || "Failed to load booking data")
+      } finally {
+        setIsLoading(false)
+      }
     }
-  }, [service])
+    
+    loadBookingData()
+  }, [location])
 
   const handleBookingSubmit = async () => {
     if (!selectedDate || !selectedTime || !bookingForm.customerName) {
@@ -71,28 +113,35 @@ export default function ServiceBookingPage() {
     setIsSubmitting(true)
     
     try {
-      if (!service || !provider) {
+      if ((!service && !isProviderOnlyBooking) || !provider) {
         alert("Service or provider information is not available")
         return
       }
 
       const booking: Partial<ServiceBooking> = {
-        serviceId: service.id,
-        providerId: service.providerId,
+        serviceId: service?.id || undefined,
+        providerId: isProviderOnlyBooking ? provider.id : (service ? service.providerId : ""),
+        customerId: "", // This would be set by the backend
         customerName: bookingForm.customerName,
         customerEmail: bookingForm.customerEmail,
         customerPhone: bookingForm.customerPhone,
-        serviceDate: selectedDate,
-        serviceTime: selectedTime,
-        agreedPrice: bookingForm.agreedPrice,
-        pricingType: service.pricingType || "fixed",
-        duration: service.duration,
+        serviceDetails: {
+          name: isProviderOnlyBooking ? `${provider.name} - Custom Service` : (service?.name || ""),
+          description: isProviderOnlyBooking ? `Custom service request for ${provider.name}` : (service?.description || ""),
+          pricingType: service?.pricingType || "custom",
+          agreedPrice: bookingForm.agreedPrice,
+          duration: service?.duration || 60
+        },
+        scheduledDate: selectedDate,
+        scheduledTime: selectedTime,
         address: bookingForm.address,
         specialRequirements: bookingForm.specialRequirements,
-        status: service.bookingRequiresApproval ? "pending" : "confirmed",
+        status: service?.bookingRequiresApproval ? "pending" : "confirmed",
         paymentStatus: "pending",
         totalAmount: bookingForm.agreedPrice,
-        depositAmount: service.depositAmount
+        depositAmount: service?.depositAmount,
+        createdAt: null,
+        updatedAt: null
       }
 
       console.log("Submitting booking:", booking)
@@ -116,40 +165,77 @@ export default function ServiceBookingPage() {
     return slot?.timeSlots || []
   }
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Loading Booking Information</h3>
+          <p className="text-gray-600">Please wait while we prepare your booking form...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-gray-500 mb-4">
+            <AlertCircle className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Booking</h3>
+            <p className="text-gray-600">{error}</p>
+          </div>
+          <Button onClick={() => navigate('/services')} variant="outline">
+            Back to Services
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   const renderStepContent = () => {
     switch (bookingStep) {
       case 1:
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold mb-4">Service Information</h3>
+              <h3 className="text-lg font-semibold mb-4">
+                {isProviderOnlyBooking ? "Provider Information" : "Service Information"}
+              </h3>
               <div className="space-y-4">
-                <div className="flex items-start space-x-4">
-                  <img
-                    src={service?.images?.[0]?.url || '/placeholder.jpg'}
-                    alt={service?.name || 'Service'}
-                    className="w-20 h-20 rounded-lg object-cover"
-                  />
-                  <div className="flex-1">
-                    <h4 className="font-semibold">{service?.name || 'Service Name'}</h4>
-                    <p className="text-gray-600 text-sm mb-2">{service?.description || 'Service description'}</p>
-                    <div className="flex items-center text-sm text-gray-500">
-                      <Clock className="h-4 w-4 mr-1" />
-                      {service?.duration || 0} minutes
+                {service && (
+                  <div className="flex items-start space-x-4">
+                    <img
+                      src={service.images?.[0]?.url || '/placeholder.jpg'}
+                      alt={service.name || 'Service'}
+                      className="w-20 h-20 rounded-lg object-cover"
+                    />
+                    <div className="flex-1">
+                      <h4 className="font-semibold">{service.name || 'Service Name'}</h4>
+                      <p className="text-gray-600 text-sm mb-2">{service.description || 'Service description'}</p>
+                      <div className="flex items-center text-sm text-gray-500">
+                        <Clock className="h-4 w-4 mr-1" />
+                        {service.duration || 0} minutes
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
                 
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h5 className="font-medium mb-2">What's included:</h5>
-                  <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-                    {service?.features?.map((feature: string, index: number) => (
-                      <li key={index}>{feature}</li>
-                    )) || <li>No features listed</li>}
-                  </ul>
-                </div>
+                {!isProviderOnlyBooking && service && (
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h5 className="font-medium mb-2">What's included:</h5>
+                    <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                      {service?.features?.map((feature: string, index: number) => (
+                        <li key={index}>{feature}</li>
+                      )) || <li>No features listed</li>}
+                    </ul>
+                  </div>
+                )}
 
-                {service?.requirements && service.requirements.length > 0 && (
+                {!isProviderOnlyBooking && service?.requirements && service.requirements.length > 0 && (
                   <div className="bg-yellow-50 p-4 rounded-lg">
                     <h5 className="font-medium mb-2 text-yellow-800">Please ensure:</h5>
                     <ul className="list-disc list-inside text-sm text-yellow-700 space-y-1">
@@ -157,6 +243,15 @@ export default function ServiceBookingPage() {
                         <li key={index}>{req}</li>
                       ))}
                     </ul>
+                  </div>
+                )}
+                
+                {isProviderOnlyBooking && (
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <h5 className="font-medium mb-2 text-blue-800">Provider Booking</h5>
+                    <p className="text-sm text-blue-700">
+                      You're booking directly with {provider?.name}. They will contact you to discuss your specific needs and provide a custom quote.
+                    </p>
                   </div>
                 )}
               </div>
@@ -395,7 +490,7 @@ export default function ServiceBookingPage() {
                   ...bookingForm,
                   specialRequirements: e.target.value
                 })}
-                placeholder="Any special requirements or notes for the service provider..."
+                placeholder={`Any special requirements or notes for the ${isProviderOnlyBooking ? 'provider' : 'service'}...`}
                 className="min-h-[100px]"
               />
             </div>
@@ -413,8 +508,10 @@ export default function ServiceBookingPage() {
               
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span>Service:</span>
-                  <span className="font-medium">{service?.name || 'Service Name'}</span>
+                  <span>{isProviderOnlyBooking ? "Provider:" : "Service:"}</span>
+                  <span className="font-medium">
+                    {isProviderOnlyBooking ? (provider?.name || 'Provider Name') : (service?.name || 'Service Name')}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Provider:</span>
@@ -426,10 +523,12 @@ export default function ServiceBookingPage() {
                     {new Date(selectedDate).toLocaleDateString()} at {selectedTime}
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Duration:</span>
-                  <span className="font-medium">{service?.duration || 0} minutes</span>
-                </div>
+                {!isProviderOnlyBooking && (
+                  <div className="flex justify-between">
+                    <span>Duration:</span>
+                    <span className="font-medium">{service?.duration || 0} minutes</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span>Customer:</span>
                   <span className="font-medium">{bookingForm.customerName}</span>
@@ -449,7 +548,9 @@ export default function ServiceBookingPage() {
               
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span>Service Fee:</span>
+                  <span>
+                    {isProviderOnlyBooking ? "Estimated Cost:" : "Service Fee:"}
+                  </span>
                   <span>₦{bookingForm.agreedPrice.toLocaleString()}</span>
                 </div>
                 {service?.depositRequired && (
@@ -505,6 +606,21 @@ export default function ServiceBookingPage() {
                 </div>
               </div>
             )}
+            
+            {isProviderOnlyBooking && (
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <div className="flex items-start space-x-3">
+                  <User className="h-5 w-5 text-blue-600 mt-0.5" />
+                  <div className="text-blue-800">
+                    <p className="font-medium">Direct Provider Booking</p>
+                    <p className="text-sm">
+                      You're booking directly with {provider?.name}. They will contact you to discuss your specific needs and provide a custom quote. 
+                      Payment details will be arranged directly with the provider.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )
 
@@ -514,14 +630,18 @@ export default function ServiceBookingPage() {
   }
 
   // Show loading or error state if service/provider data is not available
-  if (!service || !provider) {
+  if ((!service && !isProviderOnlyBooking) || !provider) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="text-gray-500 mb-4">
             <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Service Not Found</h3>
-            <p className="text-gray-600">The requested service could not be found or is no longer available.</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {isProviderOnlyBooking ? "Provider" : "Service"} Not Found
+            </h3>
+            <p className="text-gray-600">
+              The requested {isProviderOnlyBooking ? "provider" : "service"} could not be found or is no longer available.
+            </p>
           </div>
           <Button onClick={() => navigate('/services')} variant="outline">
             Back to Services
@@ -545,7 +665,9 @@ export default function ServiceBookingPage() {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold">Book Service</h1>
+              <h1 className="text-2xl font-bold">
+                {isProviderOnlyBooking ? "Book Provider" : "Book Service"}
+              </h1>
               <p className="text-gray-600">Step {bookingStep} of 4</p>
             </div>
           </div>

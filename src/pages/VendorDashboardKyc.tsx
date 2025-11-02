@@ -8,7 +8,7 @@ import { useVendor } from "@/hooks/use-vendor"
 import { VendorLayout } from "@/components/vendor-layout"
 import { updateVendorStore } from "@/lib/firebase-vendors"
 import { useToast } from "@/hooks/use-toast"
-import { Shield, CheckCircle, AlertCircle, Clock, UserCheck } from "lucide-react"
+import { Shield, CheckCircle, AlertCircle, Clock, UserCheck, ArrowRight, ArrowLeft } from "lucide-react"
 import { validateBankAccountData, createCustomer, resolveBankAccount, resolveBvn, resolveBankFromAccountNumber, CustomerData, BankAccountData, BvnData } from "@/lib/paystack-kyc"
 import { NIGERIAN_BANKS, getCurrentBanksInfo } from "@/lib/nigerian-banks"
 import {
@@ -36,6 +36,8 @@ export default function VendorDashboardKyc() {
 
   const [nigerianBank, setNigerianBank] = useState(NIGERIAN_BANKS)
   
+  // Step-by-step KYC process
+  const [currentStep, setCurrentStep] = useState(1) // 1: Customer Info, 2: Bank Account, 3: BVN
   const [verificationStatus, setVerificationStatus] = useState<"pending" | "verified" | "rejected" | "flagged">("pending")
   const [isVerifyingCustomer, setIsVerifyingCustomer] = useState(false)
   const [isVerifyingBank, setIsVerifyingBank] = useState(false)
@@ -45,8 +47,6 @@ export default function VendorDashboardKyc() {
 
   // Ref to track if we've already resolved the bank for the current account number
   const resolvedAccountNumberRef = useRef<string>("")
-
-  let getAllCurrentBank = []
 
   const requestCurrentBanks = async()=>{
 
@@ -59,7 +59,24 @@ export default function VendorDashboardKyc() {
       requestCurrentBanks()
   }, [])
 
+  // Initialize verificationStatus based on vendor's KYC status
+  useEffect(() => {
+    if (activeStore?.kycStatus) {
+      setVerificationStatus(activeStore.kycStatus)
+    }
+    
+    // Populate form with existing vendor data if available
+    if (activeStore) {
+      setKycData(prev => ({
+        ...prev,
+        email: activeStore.contactEmail || "",
+        phone: activeStore.contactPhone || "",
+        // Note: Bank information and BVN are not stored in the vendor object for security reasons
+      }))
+    }
+  }, [activeStore])
 
+  // Auto-detect bank and account name when account number is entered
   // Auto-resolve bank when account number is entered
   useEffect(() => {
     
@@ -80,7 +97,7 @@ export default function VendorDashboardKyc() {
             try {
               // Call the Paystack API to resolve the bank from account number
               const bankResult = await resolveBankFromAccountNumber(kycData.accountNumber, kycData.bankCode)
-              
+              console.log("bankResult", bankResult)
               // Also try to resolve the account name
               let accountName = ""
               try {
@@ -91,13 +108,14 @@ export default function VendorDashboardKyc() {
                   account_number: bankResult?.account_number || kycData.accountNumber,
                   account_name: bankResult?.account_name
                 }
-                // const accountResult = await resolveBankAccount(bankAccountData, fullName)
-                accountName = bankResult.account_name
+                const accountResult = await resolveBankAccount(bankAccountData, fullName)
+                // console.log(accountResult, "accountResult")
+                accountName = accountResult.account_name
               } catch (accountError) {
                 console.error("Error resolving account name:", accountError)
                 // Use a default account name if we can't resolve it
                 accountName = `${kycData.firstName} ${kycData.lastName}`.trim() || "Account Holder"
-              }
+              } 
               
               setKycData(prev => ({
                 ...prev,
@@ -133,20 +151,22 @@ export default function VendorDashboardKyc() {
     }, 500)
     
     return () => clearTimeout(timer)
-  }, [kycData.accountNumber, kycData.bankCode, isResolvingAccount, toast])
+  }, [kycData.accountNumber, kycData.bankCode])
 
   const handleInputChange = (field: string, value: string) => {
     setKycData(prev => ({ ...prev, [field]: value }))
     
-    // Clear bank selection when account number changes significantly
+    // Clear bank selection and account name when account number changes significantly
     if (field === "accountNumber") {
       // Reset the resolved account number ref when the account number changes significantly
       if (value.length < 10 || !/^\d+$/.test(value)) {
         resolvedAccountNumberRef.current = ""
-        
-        const selectedBank = nigerianBank.find(bank => bank.code === value)
-
-        setKycData(prev => ({ ...prev, bankCode: kycData?.bankCode, bankName: selectedBank?.name, accountName: "" }))
+        setKycData(prev => ({ 
+          ...prev, 
+          // bankCode: "",
+          bankName: "",
+          accountName: ""
+        }))
       }
     }
     
@@ -172,53 +192,23 @@ export default function VendorDashboardKyc() {
         phone: kycData.phone
       }
       
-      // In a real implementation, this would call the Paystack API
-      // For now, we'll simulate the verification
+      // Create customer with Paystack
       const result = await createCustomer(customerData);
+      console.log('result', result)
       setCustomerId(result.customer_code);
-      console.log(`CUSTOMER ID  ${result.id} CUSTOMER CODE ${result.customer_code}`)
-      // Update vendor's KYC status
-      await updateVendorStore(activeStore.id, {
-        kycStatus: "Pending"
-      })
-      
-      await refreshStores()
-      setVerificationStatus("Pending")
       
       toast({
         title: "Customer Created",
         description: `Customer ID: ${result.id}`
       });
-      setKycData({
-        firstName: "",
-        lastName: "",
-        email: "",
-        phone: "",
-        bankName: "",
-        bankCode: "",
-        accountNumber: "",
-        accountName: "",
-        bvn: ""
-      })
-      // await new Promise(resolve => setTimeout(resolve, 1000))
       
-      // // Update vendor's KYC status
-      // await updateVendorStore(activeStore.id, {
-      //   kycStatus: "verified"
-      // })
-      
-      // await refreshStores()
-      // setVerificationStatus("verified")
-      
-      // toast({
-      //   title: "Success",
-      //   description: "Customer information verified successfully.",
-      // })
-    } catch (error) {
+      // Move to next step
+      setCurrentStep(2);
+    } catch (error: any) {
       console.error("Error verifying customer:", error)
       toast({
         title: "Error",
-        description: "Failed to verify customer information. Please try again.",
+        description: error.message || "Failed to verify customer information. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -239,28 +229,44 @@ export default function VendorDashboardKyc() {
         account_name: kycData.accountName
       }
       
-      // In a real implementation, this would call the Paystack API
-      // For now, we'll simulate the verification
-      // await new Promise(resolve => setTimeout(resolve, 1000))
-      await validateBankAccountData(bankAccountData)
-      // Update vendor's KYC status if not already verified
-      if (verificationStatus !== "verified") {
-        await updateVendorStore(activeStore.id, {
-          kycStatus: "verified"
-        })
-        await refreshStores()
-        setVerificationStatus("verified")
+      // Validate bank account data first
+      if (!validateBankAccountData(bankAccountData)) {
+        throw new Error("Invalid bank account data. Please check your inputs.");
       }
       
-      toast({
-        title: "Success",
-        description: "Bank account verified successfully.",
-      })
-    } catch (error) {
+      // Resolve bank account with Paystack
+      const result = await resolveBankAccount(
+        bankAccountData,
+        `${kycData.firstName} ${kycData.lastName}`
+      );
+      // STORE TO FIRBBASE RHAPEH VICTORE !!!!!!
+      const getBankName = nigerianBank.filter( bank=>bank.code === kycData.bankCode  )
+      const storeUserAccountData = {
+        ...result,
+        bank_name: getBankName[0].name
+      }
+      // this is what u want to store @storeUserAccountData@
+
+      if (result.verified) {
+        toast({
+          title: "Success",
+          description: "Bank account verified successfully.",
+        });
+        
+        // Move to next step
+        setCurrentStep(3);
+      } else {
+        toast({
+          title: "Verification Failed",
+          description: "Bank account verification was not successful. Please check the details and try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
       console.error("Error verifying bank account:", error)
       toast({
         title: "Error",
-        description: "Failed to verify bank account. Please try again.",
+        description: error.message || "Failed to verify bank account. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -277,10 +283,12 @@ export default function VendorDashboardKyc() {
       const bvnData: BvnData = {
         bvn: kycData.bvn,
         first_name: kycData.firstName,
-        last_name: kycData.lastName
+        last_name: kycData.lastName,
+        account_number: kycData.accountNumber, // Optional but recommended
+        bank_code: kycData.bankCode, 
       }
       
-      // In a real implementation, this would call the Paystack API
+      // Resolve BVN with Paystack
       const result = await resolveBvn(bvnData, `${kycData.firstName} ${kycData.lastName}`)
       
       // Update vendor's KYC status if verification is successful
@@ -293,7 +301,7 @@ export default function VendorDashboardKyc() {
         
         toast({
           title: "Success",
-          description: "BVN verified successfully.",
+          description: "BVN verified successfully. Your KYC process is now complete!",
         })
       } else {
         toast({
@@ -302,17 +310,30 @@ export default function VendorDashboardKyc() {
           variant: "destructive",
         })
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error verifying BVN:", error)
       toast({
         title: "Error",
-        description: "Failed to verify BVN. Please try again.",
+        description: error.message || "Failed to verify BVN. Please try again.",
         variant: "destructive",
       })
     } finally {
       setIsVerifyingBvn(false)
     }
   }
+
+  // Navigation functions
+  const goToNextStep = () => {
+    if (currentStep < 3) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const goToPreviousStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
 
   return (
     <VendorLayout 
@@ -329,6 +350,28 @@ export default function VendorDashboardKyc() {
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
+              {/* Progress indicator */}
+              <div className="flex items-center justify-between mb-8">
+                {[1, 2, 3].map((step) => (
+                  <div key={step} className="flex items-center">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      currentStep === step 
+                        ? "bg-blue-600 text-white" 
+                        : step < currentStep 
+                          ? "bg-green-600 text-white" 
+                          : "bg-gray-200 text-gray-600"
+                    }`}>
+                      {step}
+                    </div>
+                    {step < 3 && (
+                      <div className={`w-16 h-1 mx-2 ${
+                        step < currentStep ? "bg-green-600" : "bg-gray-200"
+                      }`}></div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h3 className="font-medium text-blue-800 mb-2">Why KYC is Important</h3>
                 <p className="text-sm text-blue-700">
@@ -337,33 +380,23 @@ export default function VendorDashboardKyc() {
                 </p>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Customer Information */}
+              {/* Step 1: Customer Information */}
+              {currentStep === 1 && (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Customer Information</CardTitle>
+                    <CardTitle className="text-lg">Step 1: Customer Information</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div>
                         <p className="text-sm text-gray-600">Customer ID</p>
-                        <p className="font-medium">CUS_xxx</p>
+                        <p className="font-medium">{customerId || "Not created yet"}</p>
                       </div>
                       <Badge variant="outline">
-                        {verificationStatus === "verified" ? (
+                        {customerId ? (
                           <span className="flex items-center gap-1 text-green-600">
                             <CheckCircle className="h-3 w-3" />
-                            Verified
-                          </span>
-                        ) : verificationStatus === "rejected" ? (
-                          <span className="flex items-center gap-1 text-red-600">
-                            <AlertCircle className="h-3 w-3" />
-                            Rejected
-                          </span>
-                        ) : verificationStatus === "flagged" ? (
-                          <span className="flex items-center gap-1 text-yellow-600">
-                            <AlertCircle className="h-3 w-3" />
-                            Flagged
+                            Created
                           </span>
                         ) : (
                           <span className="flex items-center gap-1 text-blue-600">
@@ -410,20 +443,31 @@ export default function VendorDashboardKyc() {
                       />
                     </div>
                     
-                    <Button 
-                      className="w-full" 
-                      onClick={handleVerifyCustomer}
-                      disabled={verificationStatus === "verified" || isVerifyingCustomer}
-                    >
-                      {isVerifyingCustomer ? "Verifying..." : verificationStatus === "verified" ? "Customer Verified" : "Verify Customer Information"}
-                    </Button>
+                    <div className="flex justify-between pt-4">
+                      <Button 
+                        variant="outline" 
+                        disabled
+                      >
+                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        Previous
+                      </Button>
+                      <Button 
+                        onClick={handleVerifyCustomer}
+                        disabled={isVerifyingCustomer || !kycData.firstName || !kycData.lastName || !kycData.email || !kycData.phone}
+                      >
+                        {isVerifyingCustomer ? "Verifying..." : "Verify Customer Information"}
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
-                
-                {/* Bank Account Verification */}
+              )}
+              
+              {/* Step 2: Bank Account Verification */}
+              {currentStep === 2 && (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Bank Account</CardTitle>
+                    <CardTitle className="text-lg">Step 2: Bank Account</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -439,30 +483,23 @@ export default function VendorDashboardKyc() {
                             <CheckCircle className="h-3 w-3" />
                             Verified
                           </span>
-                        ) : verificationStatus === "rejected" ? (
-                          <span className="flex items-center gap-1 text-red-600">
-                            <AlertCircle className="h-3 w-3" />
-                            Rejected
-                          </span>
-                        ) : verificationStatus === "flagged" ? (
-                          <span className="flex items-center gap-1 text-yellow-600">
-                            <AlertCircle className="h-3 w-3" />
-                            Flagged
-                          </span>
                         ) : (
                           <span className="flex items-center gap-1 text-blue-600">
-                            <Clock className="h-3 w-3" />
+                            <Clock className="h-33 w-3" />
                             Pending
                           </span>
                         )}
                       </Badge>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4">
-
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Bank Name</Label>
-                        <Select onValueChange={(value) => handleInputChange("bankCode", value)} value={kycData.bankCode} disabled={isResolvingAccount}>
+                        <Select 
+                          onValueChange={(value) => handleInputChange("bankCode", value)} 
+                          value={kycData.bankCode} 
+                          disabled={isResolvingAccount}
+                        >
                           <SelectTrigger>
                             <SelectValue placeholder="Select or auto-detected bank" />
                           </SelectTrigger>
@@ -475,7 +512,6 @@ export default function VendorDashboardKyc() {
                           </SelectContent>
                         </Select>
                       </div>
-
                       <div className="space-y-2">
                         <Label>Account Number</Label>
                         <Input 
@@ -489,16 +525,7 @@ export default function VendorDashboardKyc() {
                         )}
                       </div>
                       
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label>Bank Name</Label>
-                      <Input 
-                        value={kycData.bankName} 
-                        onChange={(e) => handleInputChange("bankName", e.target.value)}
-                        placeholder="Bank name will be auto-filled"
-                        readOnly
-                      />
+                      
                     </div>
                     
                     <div className="space-y-2">
@@ -511,22 +538,33 @@ export default function VendorDashboardKyc() {
                       />
                     </div>
                     
-                    <Button 
-                      className="w-full" 
-                      onClick={handleVerifyBankAccount}
-                      disabled={verificationStatus === "verified" || isVerifyingBank || !kycData.accountNumber || !kycData.bankCode}
-                    >
-                      {isVerifyingBank ? "Verifying..." : verificationStatus === "verified" ? "Bank Account Verified" : "Verify Bank Account"}
-                    </Button>
+                    <div className="flex justify-between pt-4">
+                      <Button 
+                        variant="outline" 
+                        onClick={goToPreviousStep}
+                      >
+                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        Previous
+                      </Button>
+                      <Button 
+                        onClick={handleVerifyBankAccount}
+                        disabled={isVerifyingBank || !kycData.accountNumber || !kycData.bankCode || !kycData.accountName}
+                      >
+                        {isVerifyingBank ? "Verifying..." : "Verify Bank Account"}
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
-                
-                {/* BVN Verification */}
-                <Card className="md:col-span-2">
+              )}
+              
+              {/* Step 3: BVN Verification */}
+              {currentStep === 3 && (
+                <Card>
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
                       <UserCheck className="h-5 w-5" />
-                      Bank Verification Number (BVN)
+                      Step 3: Bank Verification Number (BVN)
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -551,16 +589,6 @@ export default function VendorDashboardKyc() {
                             <CheckCircle className="h-3 w-3" />
                             Verified
                           </span>
-                        ) : verificationStatus === "rejected" ? (
-                          <span className="flex items-center gap-1 text-red-600">
-                            <AlertCircle className="h-3 w-3" />
-                            Rejected
-                          </span>
-                        ) : verificationStatus === "flagged" ? (
-                          <span className="flex items-center gap-1 text-yellow-600">
-                            <AlertCircle className="h-3 w-3" />
-                            Flagged
-                          </span>
                         ) : (
                           <span className="flex items-center gap-1 text-blue-600">
                             <Clock className="h-3 w-3" />
@@ -579,22 +607,30 @@ export default function VendorDashboardKyc() {
                         placeholder="Enter your 11-digit BVN"
                         maxLength={11}
                       />
+                      {kycData.bvn.length > 0 && kycData.bvn.length !== 11 && (
+                        <p className="text-sm text-red-500">BVN must be exactly 11 digits</p>
+                      )}
                     </div>
                     
-                    <Button 
-                      className="w-full" 
-                      onClick={handleVerifyBvn}
-                      disabled={verificationStatus === "verified" || isVerifyingBvn || kycData.bvn.length !== 11}
-                    >
-                      {isVerifyingBvn ? "Verifying..." : verificationStatus === "verified" ? "BVN Verified" : "Verify BVN"}
-                    </Button>
-                    
-                    {kycData.bvn.length > 0 && kycData.bvn.length !== 11 && (
-                      <p className="text-sm text-red-500">BVN must be exactly 11 digits</p>
-                    )}
+                    <div className="flex justify-between pt-4">
+                      <Button 
+                        variant="outline" 
+                        onClick={goToPreviousStep}
+                      >
+                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        Previous
+                      </Button>
+                      <Button 
+                        onClick={handleVerifyBvn}
+                        disabled={isVerifyingBvn || kycData.bvn.length !== 11}
+                      >
+                        {isVerifyingBvn ? "Verifying..." : "Verify BVN"}
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
-              </div>
+              )}
               
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                 <h3 className="font-medium text-yellow-800 mb-2">Next Steps</h3>

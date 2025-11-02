@@ -63,6 +63,7 @@ export interface Product {
   isBulk?: boolean
   discount?: number
   vendorId?: string
+  size?: string // Add size field
 }
 
 export interface ProductFilters {

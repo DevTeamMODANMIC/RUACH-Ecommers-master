@@ -32,6 +32,19 @@ export interface UserProfile {
     notifications: boolean
   }
   roles?: ("admin" | "user" | "vendor")[]
+  
+  // KYC fields
+  kycStatus?: "not-started" | "pending" | "verified" | "rejected"
+  kycData?: {
+    bvn?: string
+    bankAccount?: {
+      bank_code: string
+      bank_name: string
+      account_number: string
+      account_name: string
+    }
+    verifiedAt?: Date
+  }
 
   // Backward compatibility - keep role for now but mark as deprecated
   /** @deprecated Use roles array instead */

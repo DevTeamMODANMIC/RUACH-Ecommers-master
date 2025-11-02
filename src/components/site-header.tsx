@@ -41,6 +41,7 @@ import { useServiceProvider } from "../../src/hooks/use-service-provider"
 import { VendorHeaderSwitcher } from "../../src/components/vendor-header-switcher"
 import { ServiceProviderHeaderSwitcher } from "../../src/components/service-provider-header-switcher"
 import { DesktopMegaMenu, MobileMegaMenu } from "../../src/components/mega-menu"
+import WalletBalance from "../../src/components/wallet-balance"
 import clsx from "clsx"
 
 // React doesn't need Image component from Next.js
@@ -191,13 +192,20 @@ export default function HeaderImproved() {
               </div>
 
               {/* Mobile Vendor CTA */}
-              <div className="pt-4 border-t border-gray-200/50 bg-gray-50/30 backdrop-blur-sm rounded-lg p-4 mt-4">
+              <div className="pt-4 border-t border-gray-200/50 bg-gray-50/30 backdrop-blur-sm rounded-lg p-4 mt-4 space-y-3">
                 <Link
                   to="/vendor/register"
                   onClick={() => setMobileOpen(false)}
                   className="block w-full bg-blue-600 hover:bg-blue-700 text-white text-center py-2 px-4 rounded font-medium"
                 >
                   Become a Vendor
+                </Link>
+                <Link
+                  to="/wallet"
+                  onClick={() => setMobileOpen(false)}
+                  className="block w-full bg-green-600 hover:bg-green-700 text-white text-center py-2 px-4 rounded font-medium"
+                >
+                  My Wallet
                 </Link>
               </div>
             </nav>
@@ -234,6 +242,9 @@ export default function HeaderImproved() {
           
           {/* Service Provider Switcher */}
           <ServiceProviderHeaderSwitcher />
+          
+          {/* Wallet Balance */}
+          <WalletBalance />
           
           <Link to="/wishlist" className="relative" aria-label="Wishlist">
             <Button variant="ghost" size="icon" className="hover:text-green-600">

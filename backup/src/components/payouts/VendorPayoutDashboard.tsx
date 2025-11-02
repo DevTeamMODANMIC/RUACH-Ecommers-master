@@ -2,7 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { formatCurrency } from "@/lib/utils"
 import { useVendor } from "@/hooks/use-vendor"
-import { DollarSign, Clock, TrendingUp } from "lucide-react"
+import { DollarSign, Clock, TrendingUp, Wallet } from "lucide-react"
+import { Link } from "react-router-dom"
 
 export default function VendorPayoutDashboard() {
   const { activeStore } = useVendor()
@@ -16,11 +17,12 @@ export default function VendorPayoutDashboard() {
   
   const lifetimeEarnings = 125000
   const pendingBalance = 15000
+  const walletBalance = activeStore?.walletBalance || 0
 
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -58,6 +60,23 @@ export default function VendorPayoutDashboard() {
             <div className="text-2xl font-bold">{formatCurrency(upcomingPayout.amount)}</div>
             <p className="text-xs text-muted-foreground">
               {upcomingPayout.date.toLocaleDateString()}
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Wallet className="h-4 w-4 text-purple-500" />
+              Wallet Balance
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(walletBalance)}</div>
+            <p className="text-xs text-muted-foreground">
+              <Link to="/vendor/dashboard/wallet" className="text-blue-600 hover:underline">
+                View details
+              </Link>
             </p>
           </CardContent>
         </Card>

@@ -47,8 +47,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = async (email: string, password: string, name: string) => {
     const { signUp } = await import("../lib/firebase-auth"); // Correct relative path
+    const { initializeWallet } = await import("../lib/firebase-wallet"); // Import wallet functions
+    const { updateReferralWithUserId } = await import("../lib/firebase-wallet"); // Import referral functions
+    
     const { user, profile } = await signUp(email, password, name);
     setProfile(profile);
+    
+    // Initialize user wallet
+    try {
+      await initializeWallet(user.uid);
+    } catch (error) {
+      console.error("Error initializing wallet for new user:", error);
+    }
+    
+    // Update any referrals with this user's email
+    try {
+      await updateReferralWithUserId(email, user.uid);
+    } catch (error) {
+      console.error("Error updating referrals for new user:", error);
+    }
   };
 
   const loginWithGoogle = async () => {

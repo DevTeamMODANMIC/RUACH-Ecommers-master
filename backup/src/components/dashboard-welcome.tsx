@@ -4,7 +4,7 @@ import { Button } from "./ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Badge } from "./ui/badge"
 
-import {Link} from "react-router-dom"
+import { Link } from "react-router-dom"
 import { 
   Sparkles, 
   CheckCircle, 
@@ -21,9 +21,10 @@ interface DashboardWelcomeProps {
   userType: "vendor" | "service-provider"
   userName?: string
   onGetStarted?: () => void
+  vendorId?: string // Add vendorId prop for vendor storefront link
 }
 
-export function DashboardWelcome({ userType, userName, onGetStarted }: DashboardWelcomeProps) {
+export function DashboardWelcome({ userType, userName, onGetStarted, vendorId }: DashboardWelcomeProps) {
   const isVendor = userType === "vendor"
   const title = isVendor ? "Vendor" : "Service Provider"
   const icon = isVendor ? ShoppingBag : Wrench
@@ -34,6 +35,7 @@ export function DashboardWelcome({ userType, userName, onGetStarted }: Dashboard
   const addLink = isVendor ? "/vendor/dashboard/products/new" : "/service-provider/dashboard/services/add"
   const analyticsLink = isVendor ? "/vendor/dashboard/analytics" : "/service-provider/dashboard/analytics"
   const registerLink = isVendor ? "/vendor/register" : "/vendor/register?type=service-provider"
+  const storefrontLink = vendorId ? `/vendor/${vendorId}` : "/vendor/dashboard" // Use vendor's public page if ID available
   
   const welcomeText = isVendor 
     ? "Let's get your store set up and start selling amazing products." 
@@ -97,13 +99,13 @@ export function DashboardWelcome({ userType, userName, onGetStarted }: Dashboard
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button asChild size="lg" className={buttonColor}>
-            <Link href={addLink}>
+            <Link to={addLink}>
               <Plus className="h-5 w-5 mr-2" />
               {isVendor ? "Add Your First Product" : "Add Your First Service"}
             </Link>
           </Button>
           <Button asChild variant="outline" size="lg">
-            <Link href={analyticsLink}>
+            <Link to={analyticsLink}>
               <Eye className="h-5 w-5 mr-2" />
               View Analytics
             </Link>
@@ -159,7 +161,7 @@ export function DashboardWelcome({ userType, userName, onGetStarted }: Dashboard
                 </div>
                 {!item.completed && item.link && (
                   <Button asChild size="sm">
-                    <Link href={item.link}>
+                    <Link to={item.link}>
                       {isVendor ? "Add Product" : "Add Service"}
                     </Link>
                   </Button>

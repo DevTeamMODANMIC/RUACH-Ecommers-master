@@ -13,14 +13,17 @@ import { Textarea } from "../components/ui/textarea"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import CloudinaryUploadWidget from "../components/cloudinary-upload-widget"
+import { Mail, Phone } from "lucide-react"
 
 const schema = z.object({
   shopName: z.string().min(3, "Shop name is required"),
   bio: z.string().min(10, "Please provide a short description"),
   logoUrl: z.string().url().nonempty("Logo is required"),
+  contactEmail: z.string().email("Please enter a valid email address").optional(),
+  contactPhone: z.string().optional(),
 })
 
-type FormValues = z.infer<typeof schema>
+type FormValues = z.infer<typeof schema> & { contactEmail?: string; contactPhone?: string }
 
 export default function VendorProfilePage(){
 	const { user } = useAuth()
@@ -39,6 +42,8 @@ export default function VendorProfilePage(){
       shopName: activeStore?.shopName || "",
       bio: activeStore?.bio || "",
       logoUrl: activeStore?.logoUrl || "",
+      contactEmail: activeStore?.contactEmail || "",
+      contactPhone: activeStore?.contactPhone || "",
     },
   })
 
@@ -80,6 +85,36 @@ export default function VendorProfilePage(){
               <Input type="text" {...register("shopName")} />
               {errors.shopName && (
                 <p className="text-xs text-red-500 mt-1">{errors.shopName.message}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Contact Email (Optional)</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input 
+                  type="email" 
+                  {...register("contactEmail")} 
+                  className="pl-10"
+                  placeholder="contact@example.com"
+                />
+              </div>
+              {errors.contactEmail && (
+                <p className="text-xs text-red-500 mt-1">{errors.contactEmail.message}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Contact Phone (Optional)</label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input 
+                  type="tel" 
+                  {...register("contactPhone")} 
+                  className="pl-10"
+                  placeholder="+1 (555) 123-4567"
+                />
+              </div>
+              {errors.contactPhone && (
+                <p className="text-xs text-red-500 mt-1">{errors.contactPhone.message}</p>
               )}
             </div>
             <div>

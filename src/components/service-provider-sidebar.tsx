@@ -86,8 +86,7 @@ export function ServiceProviderSidebar() {
         {
           title: "Messages",
           href: "/service-provider/dashboard/messages",
-          icon: MessageSquare,
-          disabled: true
+          icon: MessageSquare
         }
       ]
     },

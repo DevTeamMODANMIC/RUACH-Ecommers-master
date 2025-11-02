@@ -7,6 +7,7 @@ import {
   MessageCircle,
   Headphones
 } from "lucide-react"
+import ContactAIChatbot from "../components/contact-ai-chatbot"
 
 const officeLocations = [
   {
@@ -16,7 +17,6 @@ const officeLocations = [
     email: "lagos@ruachestore.com.ng",
     hours: "Mon-Fri: 8AM-8PM, Sat: 9AM-6PM"
   },
-
 ]
 
 const supportTypes = [
@@ -226,6 +226,9 @@ export default function ContactPage() {
           </div>
         </div>
       </div>
+
+      {/* Contact AI Chatbot */}
+      <ContactAIChatbot />
     </div>
   )
 }

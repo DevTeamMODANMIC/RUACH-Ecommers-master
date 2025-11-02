@@ -41,9 +41,9 @@ export default function FeaturedProducts() {
         const recomendation = recommendProducts(train_x, train_y)
         console.log("recomendation", recomendation, "featured", featured)
 
-        const getRecommendation = recomendation.map(v=>v?.product).slice(0, 8)
+        const getRecommendations = recomendation.map(v=>v?.product).slice(0, 8)
 
-        setProducts(getRecommendation);
+        setProducts(getRecommendations);
         // setProducts(featured);
 
       } catch (error: unknown) {

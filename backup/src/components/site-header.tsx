@@ -1,6 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { useState } from "react"
-import comLogog from "../a/new_logo.jpg"
 // React doesn't need Image component from Next.js
 import {
   Heart,
@@ -9,10 +8,14 @@ import {
   X,
   Search,
   ChevronDown,
+  ChevronRight,
   Phone,
   LogOut,
   Package,
   User,
+  ArrowLeft,
+  Layers,
+  DollarSign
 } from "lucide-react"
 import { Input } from "../../src/components/ui/input"
 import { Button } from "../../src/components/ui/button"
@@ -36,8 +39,34 @@ import { useAuth } from "../../src/components/auth-provider"
 import { useVendor } from "../../src/hooks/use-vendor"
 import { useServiceProvider } from "../../src/hooks/use-service-provider"
 import { VendorHeaderSwitcher } from "../../src/components/vendor-header-switcher"
+import { ServiceProviderHeaderSwitcher } from "../../src/components/service-provider-header-switcher"
 import { DesktopMegaMenu, MobileMegaMenu } from "../../src/components/mega-menu"
+import WalletBalance from "../../src/components/wallet-balance"
 import clsx from "clsx"
+
+// React doesn't need Image component from Next.js
+const Logo = () => {
+  const [logoError, setLogoError] = useState(false);
+  const [logoLoaded, setLogoLoaded] = useState(false);
+
+  if (logoError) {
+    return (
+      <div className="h-10 w-10 rounded-full bg-green-600 flex items-center justify-center border border-green-700">
+        <span className="text-white font-bold text-lg">R</span>
+      </div>
+    );
+  }
+
+  return (
+    <img 
+      src="/logo/new_logo.jpg" 
+      alt="RUACH Logo" 
+      className={`h-10 w-10 rounded-full object-cover ${logoLoaded ? 'block' : 'hidden'}`}
+      onLoad={() => setLogoLoaded(true)}
+      onError={() => setLogoError(true)}
+    />
+  );
+};
 
 // Legacy categories - keeping for backward compatibility if needed
 const legacyCategories = [
@@ -63,6 +92,7 @@ const primaryLinks = [
   { title: "Bulk Order", href: "/bulk-order" },
   { title: "Track Order", href: "/track-order" },
   { title: "FAQs", href: "/faq" },
+  { title: "Delivery Login", href: "/delivery-login" },
 ]
 
 export default function HeaderImproved() {
@@ -75,6 +105,7 @@ export default function HeaderImproved() {
   const { isVendor } = useVendor()
   const { isServiceProvider } = useServiceProvider()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [categoriesOpen, setCategoriesOpen] = useState(true) // Default to open
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -83,6 +114,19 @@ export default function HeaderImproved() {
     setSearch("")
   }
 
+  const handleNavigate = () => {
+    // Only close the mobile menu when navigating to a specific page
+    setMobileOpen(false)
+  }
+
+  const handleCategoriesToggle = () => {
+    setCategoriesOpen(!categoriesOpen)
+  }
+
+  const handleCategoryClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setCategoriesOpen(true);
+  }
   return (
     <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur shadow-sm">
       {/* Top Utility Bar */}
@@ -99,7 +143,7 @@ export default function HeaderImproved() {
       </div>
 
       {/* Main Header */}
-      <div className="overflow-scrol flex items-center justify-between px-4 md:px-6 py-3 md:py-4">
+      <div className="flex items-center justify-between px-4 md:px-6 py-3 md:py-4">
         {/* Mobile Nav */}
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger asChild>
@@ -112,7 +156,7 @@ export default function HeaderImproved() {
               <Menu className="h-6 w-6" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="pr-0 bg-white/95 backdrop-blur-md border-r border-gray-200/50 shadow-2xl">
+          <SheetContent side="left" className="pr-0 bg-white/95 backdrop-blur-md border-r border-gray-200/50 shadow-2xl overflow-y-auto mobile-menu-scrollbar">
             <SheetHeader className="px-6 bg-gray-50/80 backdrop-blur-sm border-b border-gray-200/50 mb-4">
               <SheetTitle>Menu</SheetTitle>
             </SheetHeader>
@@ -121,7 +165,14 @@ export default function HeaderImproved() {
                 <Link
                   key={link.title}
                   to={link.href}
-                  onClick={() => setMobileOpen(false)}
+                  onClick={(e) => {
+                    if (link.title === "Shop") {
+                      // Always navigate to the shop page when clicking on Shop
+                      handleNavigate();
+                    } else {
+                      setMobileOpen(false);
+                    }
+                  }}
                   className={clsx(
                     "block py-3 px-4 rounded-lg transition-all duration-300 backdrop-blur-sm", 
                     pathname === link.href 
@@ -133,18 +184,28 @@ export default function HeaderImproved() {
                 </Link>
               ))}
               <div className="bg-gray-50/50 backdrop-blur-sm rounded-lg p-4 border border-gray-200/30">
-                <p className="uppercase text-xs text-gray-500 mb-3 font-medium">Categories</p>
-                <MobileMegaMenu onNavigate={() => setMobileOpen(false)} />
+                <MobileMegaMenu 
+                  onNavigate={handleNavigate}
+                  isOpen={categoriesOpen}
+                  onToggle={handleCategoriesToggle}
+                />
               </div>
 
               {/* Mobile Vendor CTA */}
-              <div className="pt-4 border-t border-gray-200/50 bg-gray-50/30 backdrop-blur-sm rounded-lg p-4 mt-4">
+              <div className="pt-4 border-t border-gray-200/50 bg-gray-50/30 backdrop-blur-sm rounded-lg p-4 mt-4 space-y-3">
                 <Link
                   to="/vendor/register"
                   onClick={() => setMobileOpen(false)}
                   className="block w-full bg-blue-600 hover:bg-blue-700 text-white text-center py-2 px-4 rounded font-medium"
                 >
                   Become a Vendor
+                </Link>
+                <Link
+                  to="/wallet"
+                  onClick={() => setMobileOpen(false)}
+                  className="block w-full bg-green-600 hover:bg-green-700 text-white text-center py-2 px-4 rounded font-medium"
+                >
+                  My Wallet
                 </Link>
               </div>
             </nav>
@@ -153,7 +214,7 @@ export default function HeaderImproved() {
 
         {/* Logo */}
         <Link to="/" className="flex items-center space-x-2">
-          <img src={comLogog} alt="RUACH Logo" className="h-10 w-10 rounded-full object-cover" />
+          <Logo />
           <span className="font-bold tracking-tight text-gray-900 hidden sm:inline">
             RUACH E-STORE
           </span>
@@ -178,6 +239,12 @@ export default function HeaderImproved() {
         <div className="flex items-center space-x-3 md:space-x-4">
           {/* Vendor Store Switcher */}
           <VendorHeaderSwitcher />
+          
+          {/* Service Provider Switcher */}
+          <ServiceProviderHeaderSwitcher />
+          
+          {/* Wallet Balance */}
+          <WalletBalance />
           
           <Link to="/wishlist" className="relative" aria-label="Wishlist">
             <Button variant="ghost" size="icon" className="hover:text-green-600">
@@ -231,6 +298,7 @@ export default function HeaderImproved() {
                 <>
                   <DropdownMenuItem onSelect={() => navigate("/profile")} className="cursor-pointer hover:bg-gray-50 transition-colors">Profile</DropdownMenuItem>
                   <DropdownMenuItem onSelect={() => navigate("/profile/orders")} className="cursor-pointer hover:bg-gray-50 transition-colors">Orders</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => navigate("/my-bookings")} className="cursor-pointer hover:bg-gray-50 transition-colors">My Bookings</DropdownMenuItem>
                   {isVendor && (
                     <DropdownMenuItem onSelect={() => navigate("/vendor/dashboard")} className="cursor-pointer hover:bg-gray-50 transition-colors">
                       Vendor Dashboard

@@ -33,6 +33,8 @@ import ClientOnly from "../../src/components/client-only";
 import { useVendor } from "../../src/hooks/use-vendor";
 import { useServiceProvider } from "../../src/hooks/use-service-provider";
 import { ServiceProviderHeaderSwitcher } from "../../src/components/service-provider-header-switcher";
+import SmartSearch from "../../src/components/smart-search";
+import { products } from "../lib/product-data";
 
 // We'll use CSS classes instead of inline styles
 
@@ -162,25 +164,12 @@ export default function Header() {
               </div>
             </Link>
 
-            {/* Search Bar - Desktop */}
+            {/* Smart Search Bar - Desktop */}
             <div className="hidden md:flex flex-1 max-w-lg mx-6">
-              <form onSubmit={handleSearch} className="relative w-full flex">
-                <Input
-                  type="search"
-                  placeholder="Search for products..."
-                  className="pr-10 h-10 bg-gray-50 border border-gray-200 text-gray-800 placeholder:text-gray-400 rounded-l-md focus:border-green-500 focus:ring-green-500 shadow-sm text-sm"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                <Button
-                  type="submit"
-                  size="icon"
-                  className="h-10 bg-green-600 hover:bg-green-700 rounded-l-none rounded-r-md shadow-sm w-10"
-                >
-                  <Search className="h-5 w-5" />
-                  <span className="sr-only">Search</span>
-                </Button>
-              </form>
+              <SmartSearch
+                placeholder="Search for products, categories, or brands..."
+                className="w-full"
+              />
             </div>
 
             {/* Desktop Navigation */}
@@ -508,25 +497,7 @@ export default function Header() {
             </div>
           </div>
 
-          {/* Search Bar - Mobile */}
-          <div className="py-1 md:hidden">
-            <div className="relative flex">
-              <Input
-                type="search"
-                placeholder="Search products..."
-                className="pr-10 h-9 bg-gray-100 border-gray-200 text-gray-800 placeholder:text-gray-400 rounded-l-full focus:border-green-500 focus:ring-green-500 text-sm"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <Button
-                size="sm"
-                className="h-9 bg-green-600 hover:bg-green-700 rounded-l-none rounded-r-full"
-              >
-                <Search className="h-4 w-4" />
-                <span className="sr-only">Search</span>
-              </Button>
-            </div>
-          </div>
+
         </div>
         
         {/* Category Navigation removed – categories are now accessed via the "Shop" dropdown to create a cleaner header */}
@@ -723,25 +694,14 @@ export default function Header() {
               </div>
             </li>
 
-            {/* Mobile Search - Top of mobile menu */}
+            {/* Mobile Smart Search - Top of mobile menu */}
             <li className="py-2">
               <div className="font-medium text-gray-900 py-2">Search</div>
               <div className="lg:hidden pt-4 px-4">
-                <form onSubmit={handleSearch} className="flex w-full">
-                  <Input
-                    type="search"
-                    placeholder="Search products..."
-                    className="rounded-r-none border-r-0"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                  <Button 
-                    type="submit"
-                    className="rounded-l-none bg-green-600 hover:bg-green-700"
-                  >
-                    <Search className="h-4 w-4" />
-                  </Button>
-                </form>
+                <SmartSearch
+                  placeholder="Search products..."
+                  className="w-full"
+                />
               </div>
             </li>
           </ul>

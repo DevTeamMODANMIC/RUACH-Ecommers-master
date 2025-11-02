@@ -79,6 +79,7 @@ import VendorDashboardWallet from './pages/VendorDashboardWallet'
 import VendorParam from './pages/VendorParam'
 import VendorRegister from './pages/VendorRegister'
 import VendorStores from './pages/VendorStores'
+import WalletPage from './pages/Wallet'
 import Wishlist from './pages/Wishlist'
 // import GuestOrderTracking from './pages/OrderTrackingDetail'
 
@@ -88,6 +89,7 @@ import DeliveryLogin from './pages/DeliveryLogin'
 // Import the new Slider Management component
 import SliderManagement from './pages/admin/SliderManagement.tsx'
 import AdminKyc from './pages/admin/AdminKyc'
+import KycVerificationPage from './pages/KycVerificationPage'
 import KycTestPage from './pages/KycTest'
 
 type RouteDef = {
@@ -177,12 +179,14 @@ const routes: RouteDef[] = [
   { path: '/vendor/dashboard/bulk-orders', Component: VendorDashboardBulkOrders },
   { path: '/vendor/dashboard/kyc', Component: VendorDashboardKyc },
   { path: '/vendor/dashboard/wallet', Component: VendorDashboardWallet },
+  { path: '/wallet', Component: WalletPage },
   { path: '/vendor/:vendorId', Component: VendorParam },
   { path: '/wishlist', Component: Wishlist },
   
   // Delivery Dashboard Routes
   { path: '/delivery-login', Component: DeliveryLogin },
   { path: '/delivery-dashboard', Component: DeliveryDashboard },
+  { path: '/kyc-verification', Component: KycVerificationPage },
   { path: '/kyc-test', Component: KycTestPage },
 ]
 

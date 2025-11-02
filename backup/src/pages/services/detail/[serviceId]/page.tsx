@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Link, useNavigate, useParams } from "react-router-dom"
+import { Link, useNavigate, useParams, useLocation } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { 
@@ -23,6 +23,7 @@ import { getServiceProvider } from "@/lib/firebase-service-providers"
 
 export default function ServiceDetailPage() {
   const params = useParams()
+  const location = useLocation()
   const navigate = useNavigate()
   const serviceId = params.serviceId as string
 
@@ -31,71 +32,137 @@ export default function ServiceDetailPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [isProviderOnly, setIsProviderOnly] = useState(false)
 
   // Load service and provider data
   useEffect(() => {
     const loadServiceData = async () => {
-      if (!serviceId) {
-        setError("No service ID provided")
-        setIsLoading(false)
+      // Check if we're viewing a provider directly (no service)
+      const searchParams = new URLSearchParams(location.search)
+      const providerIdParam = searchParams.get('providerId')
+      
+      // If we have a providerId query parameter, load provider only
+      if (providerIdParam) {
+        // Load provider only
+        setIsProviderOnly(true)
+        try {
+          setIsLoading(true)
+          setError(null)
+
+          console.log('🔍 Loading provider only:', providerIdParam)
+          
+          const providerData = await getServiceProvider(providerIdParam)
+          
+          if (!providerData) {
+            setError("Service provider not found")
+            setIsLoading(false)
+            return
+          }
+
+          // Check if provider is active and approved
+          if (!providerData.isActive || !providerData.isApproved) {
+            setError("This service provider is currently not available")
+            setIsLoading(false)
+            return
+          }
+
+          console.log('✅ Provider loaded:', providerData.name)
+          setProvider(providerData)
+        } catch (err: any) {
+          console.error('💥 Error loading provider data:', err)
+          setError(err.message || 'Failed to load provider data')
+        } finally {
+          setIsLoading(false)
+        }
         return
       }
 
-      try {
-        setIsLoading(true)
-        setError(null)
+      // If the serviceId parameter looks like a provider ID (no service found with this ID),
+      // treat it as a provider detail request
+      if (serviceId) {
+        try {
+          setIsLoading(true)
+          setError(null)
 
-        console.log('🔍 Loading service:', serviceId)
-        
-        // Load service data
-        const serviceData = await getService(serviceId)
-        
-        if (!serviceData) {
-          setError("Service not found or is no longer available")
+          console.log('🔍 Attempting to load as service ID:', serviceId)
+          
+          // Load service data
+          const serviceData = await getService(serviceId)
+          
+          if (serviceData) {
+            // Valid service found
+            // Check if service is active
+            if (!serviceData.isActive) {
+              setError("This service is currently not available")
+              setIsLoading(false)
+              return
+            }
+
+            console.log('✅ Service loaded:', serviceData.name)
+            setService(serviceData)
+
+            // Load provider data
+            console.log('🔍 Loading provider:', serviceData.providerId)
+            const providerData = await getServiceProvider(serviceData.providerId)
+            
+            if (!providerData) {
+              setError("Service provider not found")
+              setIsLoading(false)
+              return
+            }
+
+            // Check if provider is active and approved
+            if (!providerData.isActive || !providerData.isApproved) {
+              setError("This service provider is currently not available")
+              setIsLoading(false)
+              return
+            }
+
+            console.log('✅ Provider loaded:', providerData.name)
+            setProvider(providerData)
+            setIsProviderOnly(false)
+            return
+          } else {
+            // No service found with this ID, check if it's a provider ID
+            console.log('🔍 No service found, checking if ID is a provider ID:', serviceId)
+            
+            const providerData = await getServiceProvider(serviceId)
+            
+            if (providerData) {
+              // Valid provider found
+              setIsProviderOnly(true)
+              
+              // Check if provider is active and approved
+              if (!providerData.isActive || !providerData.isApproved) {
+                setError("This service provider is currently not available")
+                setIsLoading(false)
+                return
+              }
+
+              console.log('✅ Provider loaded:', providerData.name)
+              setProvider(providerData)
+              return
+            }
+            
+            // Neither service nor provider found
+            setError("Service or provider not found")
+            setIsLoading(false)
+            return
+          }
+        } catch (err: any) {
+          console.error('💥 Error loading service/provider data:', err)
+          setError(err.message || 'Failed to load service or provider data')
+        } finally {
           setIsLoading(false)
-          return
         }
-
-        // Check if service is active
-        if (!serviceData.isActive) {
-          setError("This service is currently not available")
-          setIsLoading(false)
-          return
-        }
-
-        console.log('✅ Service loaded:', serviceData.name)
-        setService(serviceData)
-
-        // Load provider data
-        console.log('🔍 Loading provider:', serviceData.providerId)
-        const providerData = await getServiceProvider(serviceData.providerId)
-        
-        if (!providerData) {
-          setError("Service provider not found")
-          setIsLoading(false)
-          return
-        }
-
-        // Check if provider is active and approved
-        if (!providerData.isActive || !providerData.isApproved) {
-          setError("This service provider is currently not available")
-          setIsLoading(false)
-          return
-        }
-
-        console.log('✅ Provider loaded:', providerData.name)
-        setProvider(providerData)
-
-      } catch (err: any) {
-        console.error('💥 Error loading service data:', err)
-        setError(err.message || 'Failed to load service data')
-      } finally {
+      } else {
+        setError("No service or provider ID provided")
         setIsLoading(false)
       }
     }
 
     loadServiceData()
-  }, [serviceId])
+  }, [serviceId, location.search])
 
   // Navigation functions for image gallery
   const nextImage = () => {
@@ -122,7 +189,7 @@ export default function ServiceDetailPage() {
   // Keyboard navigation for images
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (service?.images && service.images.length > 1) {
+      if ((service?.images && service.images.length > 1) || (provider && !service)) {
         if (e.key === 'ArrowLeft') {
           prevImage()
         } else if (e.key === 'ArrowRight') {
@@ -133,7 +200,7 @@ export default function ServiceDetailPage() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [service?.images])
+  }, [service?.images, provider])
 
   // Show loading state
   if (isLoading) {
@@ -141,8 +208,10 @@ export default function ServiceDetailPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Loading Service Details</h3>
-          <p className="text-gray-600">Please wait while we fetch the service information...</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            {isProviderOnly ? "Loading Provider Details" : "Loading Service Details"}
+          </h3>
+          <p className="text-gray-600">Please wait while we fetch the information...</p>
         </div>
       </div>
     )
@@ -155,7 +224,7 @@ export default function ServiceDetailPage() {
         <div className="text-center">
           <div className="text-gray-500 mb-4">
             <AlertCircle className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Service</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Details</h3>
             <p className="text-gray-600">{error}</p>
           </div>
           <Button onClick={() => navigate('/services/marketplace')} variant="outline">
@@ -167,14 +236,20 @@ export default function ServiceDetailPage() {
   }
 
   // Show error state if service/provider data is not available
-  if (!service || !provider) {
+  if ((!service && !isProviderOnly) || !provider) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="text-gray-500 mb-4">
             <AlertCircle className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Service Not Found</h3>
-            <p className="text-gray-600">The requested service could not be found or is no longer available.</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {isProviderOnly ? "Provider Not Found" : "Service Not Found"}
+            </h3>
+            <p className="text-gray-600">
+              {isProviderOnly 
+                ? "The requested provider could not be found or is no longer available."
+                : "The requested service could not be found or is no longer available."}
+            </p>
           </div>
           <Button onClick={() => navigate('/services/marketplace')} variant="outline">
             Back to Marketplace
@@ -198,7 +273,9 @@ export default function ServiceDetailPage() {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold">Service Details</h1>
+              <h1 className="text-2xl font-bold">
+                {isProviderOnly ? "Provider Details" : "Service Details"}
+              </h1>
             </div>
           </div>
         </div>
@@ -208,12 +285,29 @@ export default function ServiceDetailPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left Column - Service Details */}
+            {/* Left Column - Service/Provider Details */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Service Images Gallery */}
+              {/* Images Gallery */}
               <Card>
                 <CardContent className="p-0">
-                  {service.images && service.images.length > 0 ? (
+                  {isProviderOnly ? (
+                    // Provider image gallery
+                    <div className="relative">
+                      {/* Main Image */}
+                      <div className="relative aspect-video overflow-hidden rounded-t-lg bg-gray-100">
+                        <img
+                          src={provider?.profileImage?.url || '/placeholder.jpg'}
+                          alt={`${provider?.name} profile`}
+                          className="w-full h-full object-contain"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = '/placeholder.jpg';
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ) : service?.images && service.images.length > 0 ? (
+                    // Service image gallery
                     <div className="relative">
                       {/* Main Image */}
                       <div className="relative aspect-video overflow-hidden rounded-t-lg bg-gray-100">
@@ -295,32 +389,38 @@ export default function ServiceDetailPage() {
                 </CardContent>
               </Card>
 
-              {/* Service Description */}
+              {/* Description */}
               <Card>
                 <CardContent className="p-6">
-                  <h2 className="text-2xl font-bold mb-2">{service.name}</h2>
-                  <p className="text-gray-600 mb-6">{service.description}</p>
+                  <h2 className="text-2xl font-bold mb-2">
+                    {isProviderOnly ? provider?.name : service?.name}
+                  </h2>
+                  <p className="text-gray-600 mb-6">
+                    {isProviderOnly ? provider?.description : service?.description}
+                  </p>
                   
-                  <div className="flex items-center space-x-4 text-sm text-gray-500 mb-6">
-                    <div className="flex items-center">
-                      <Clock className="h-4 w-4 mr-1" />
-                      {service.duration} minutes
+                  {!isProviderOnly && service && (
+                    <div className="flex items-center space-x-4 text-sm text-gray-500 mb-6">
+                      <div className="flex items-center">
+                        <Clock className="h-4 w-4 mr-1" />
+                        {service.duration} minutes
+                      </div>
+                      <div className="flex items-center">
+                        <MapPin className="h-4 w-4 mr-1" />
+                        {service.serviceAreas && service.serviceAreas.length > 0 ? (
+                          <>
+                            {service.serviceAreas.slice(0, 2).join(", ")}
+                            {service.serviceAreas.length > 2 && " +more"}
+                          </>
+                        ) : (
+                          "Location not specified"
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center">
-                      <MapPin className="h-4 w-4 mr-1" />
-                      {service.serviceAreas && service.serviceAreas.length > 0 ? (
-                        <>
-                          {service.serviceAreas.slice(0, 2).join(", ")}
-                          {service.serviceAreas.length > 2 && " +more"}
-                        </>
-                      ) : (
-                        "Location not specified"
-                      )}
-                    </div>
-                  </div>
+                  )}
 
                   {/* Features */}
-                  {service.features && service.features.length > 0 && (
+                  {!isProviderOnly && service?.features && service.features.length > 0 && (
                     <div className="mb-6">
                       <h3 className="text-lg font-semibold mb-3">What's included</h3>
                       <ul className="space-y-2">
@@ -335,7 +435,7 @@ export default function ServiceDetailPage() {
                   )}
 
                   {/* Requirements */}
-                  {service.requirements && service.requirements.length > 0 && (
+                  {!isProviderOnly && service?.requirements && service.requirements.length > 0 && (
                     <div className="bg-yellow-50 p-4 rounded-lg mb-6">
                       <h3 className="text-lg font-semibold mb-2 text-yellow-800">Please ensure</h3>
                       <ul className="space-y-2">
@@ -346,6 +446,16 @@ export default function ServiceDetailPage() {
                           </li>
                         ))}
                       </ul>
+                    </div>
+                  )}
+                  
+                  {isProviderOnly && (
+                    <div className="bg-blue-50 p-4 rounded-lg">
+                      <h3 className="text-lg font-semibold mb-2 text-blue-800">About This Provider</h3>
+                      <p className="text-blue-700">
+                        {provider?.name} is a verified service provider on our platform. 
+                        They offer a range of services and can provide custom solutions for your specific needs.
+                      </p>
                     </div>
                   )}
                 </CardContent>
@@ -363,14 +473,14 @@ export default function ServiceDetailPage() {
                       <User className="h-6 w-6 text-blue-600" />
                     </div>
                     <div className="flex-1">
-                      <h4 className="font-semibold">{provider.name}</h4>
+                      <h4 className="font-semibold">{provider?.name}</h4>
                       <div className="flex items-center mt-1">
                         <div className="flex items-center">
                           {[...Array(5)].map((_, i) => (
                             <Star
                               key={i}
                               className={`h-4 w-4 ${
-                                i < Math.floor(provider.rating || 0)
+                                i < Math.floor(provider?.rating || 0)
                                   ? "text-yellow-400 fill-current"
                                   : "text-gray-300"
                               }`}
@@ -378,14 +488,14 @@ export default function ServiceDetailPage() {
                           ))}
                         </div>
                         <span className="text-sm text-gray-600 ml-2">
-                          {provider.rating || 0} ({provider.reviewCount || 0} reviews)
+                          {provider?.rating || 0} ({provider?.reviewCount || 0} reviews)
                         </span>
                       </div>
                     </div>
                   </div>
-                  <p className="text-gray-600 text-sm mb-4">{provider.description}</p>
+                  <p className="text-gray-600 text-sm mb-4">{provider?.description}</p>
                   
-                  {provider.isApproved && (
+                  {provider?.isApproved && (
                     <div className="flex items-center text-green-600 text-sm mb-2">
                       <CheckCircle className="h-4 w-4 mr-1" />
                       <span>Verified Provider</span>
@@ -397,35 +507,54 @@ export default function ServiceDetailPage() {
               {/* Booking Card */}
               <Card className="border-blue-200 border-2">
                 <CardContent className="p-6">
-                  <h3 className="text-lg font-semibold mb-4">Book This Service</h3>
+                  <h3 className="text-lg font-semibold mb-4">
+                    {isProviderOnly ? "Book This Provider" : "Book This Service"}
+                  </h3>
                   
                   <div className="mb-4">
                     <div className="text-2xl font-bold text-green-600 mb-1">
-                      {service.pricingType === "custom" ? "Custom Quote" : 
-                       service.pricingType === "hourly" ? `₦${service.hourlyRate?.toLocaleString()}/hr` : 
-                       `₦${service.basePrice?.toLocaleString()}`}
+                      {isProviderOnly 
+                        ? "Contact for Quote" 
+                        : (service?.pricingType === "custom" ? "Custom Quote" : 
+                           service?.pricingType === "hourly" ? `₦${service.hourlyRate?.toLocaleString()}/hr` : 
+                           `₦${service.basePrice?.toLocaleString()}`)}
                     </div>
                     <div className="text-sm text-gray-600">
-                      {service.pricingType === "fixed" && "Fixed price"}
-                      {service.pricingType === "hourly" && "Hourly rate"}
-                      {service.pricingType === "custom" && "Custom pricing"}
+                      {isProviderOnly
+                        ? "Custom pricing based on your needs"
+                        : (service?.pricingType === "fixed" && "Fixed price") ||
+                          (service?.pricingType === "hourly" && "Hourly rate") ||
+                          (service?.pricingType === "custom" && "Custom pricing")}
                     </div>
                   </div>
 
-                  <div className="flex items-center text-sm text-gray-500 mb-6">
-                    <Clock className="h-4 w-4 mr-1" />
-                    <span>Duration: {service.duration} minutes</span>
-                  </div>
+                  {!isProviderOnly && service && (
+                    <div className="flex items-center text-sm text-gray-500 mb-6">
+                      <Clock className="h-4 w-4 mr-1" />
+                      <span>Duration: {service.duration} minutes</span>
+                    </div>
+                  )}
 
-                  <Link to={`/services/book/${serviceId}`} className="block">
-                    <Button className="w-full bg-blue-600 hover:bg-blue-700 mb-3">
-                      <Calendar className="h-4 w-4 mr-2" />
-                      Book Service
-                    </Button>
-                  </Link>
+                  {isProviderOnly ? (
+                    <Link to={`/services/book?providerId=${provider?.id}`} className="block">
+                      <Button className="w-full bg-blue-600 hover:bg-blue-700 mb-3">
+                        <Calendar className="h-4 w-4 mr-2" />
+                        Contact Provider
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Link to={`/services/book/${serviceId}`} className="block">
+                      <Button className="w-full bg-blue-600 hover:bg-blue-700 mb-3">
+                        <Calendar className="h-4 w-4 mr-2" />
+                        Book Service
+                      </Button>
+                    </Link>
+                  )}
                   
                   <p className="text-xs text-gray-500 text-center">
-                    You will be redirected to the booking form to complete your reservation
+                    {isProviderOnly
+                      ? "You will be redirected to contact the provider directly"
+                      : "You will be redirected to the booking form to complete your reservation"}
                   </p>
                 </CardContent>
               </Card>

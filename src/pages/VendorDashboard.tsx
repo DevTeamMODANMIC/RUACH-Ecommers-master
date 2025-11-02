@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { formatCurrency } from "@/lib/utils"
 import { useVendor } from "@/hooks/use-vendor"
+import { useVendorStats } from "@/hooks/use-vendor-stats"
 import { 
   Store, 
   ShoppingCart, 
@@ -12,12 +13,14 @@ import {
   Users, 
   Star,
   Wallet,
-  Lock
+  Lock,
+  Loader2
 } from "lucide-react"
 import { Link } from "react-router-dom"
 
 export default function VendorDashboard() {
   const { activeStore } = useVendor()
+  const { stats, loading: statsLoading } = useVendorStats(activeStore?.id || null)
   const [refreshing, setRefreshing] = useState(false)
 
   const handleRefresh = () => {
@@ -26,17 +29,24 @@ export default function VendorDashboard() {
     setTimeout(() => setRefreshing(false), 1000)
   }
 
-  // Mock data for dashboard stats
-  const stats = {
-    totalSales: 125000,
-    pendingOrders: 12,
-    completedOrders: 86,
-    averageRating: 4.8,
-    totalCustomers: 243,
-    walletBalance: activeStore?.walletBalance || 0
-  }
-
   const isKycVerified = activeStore?.kycStatus === "verified"
+
+  // Show loading state
+  if (statsLoading) {
+    return (
+      <VendorLayout 
+        title="Vendor Dashboard" 
+        description="Loading dashboard data..."
+      >
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-gray-600">Loading dashboard data...</p>
+          </div>
+        </div>
+      </VendorLayout>
+    )
+  }
 
   return (
     <VendorLayout 
@@ -50,7 +60,14 @@ export default function VendorDashboard() {
             <p className="text-gray-500">Welcome back! Here's what's happening with your store today.</p>
           </div>
           <Button onClick={handleRefresh} disabled={refreshing}>
-            Refresh
+            {refreshing ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Refreshing...
+              </>
+            ) : (
+              "Refresh"
+            )}
           </Button>
         </div>
 
@@ -103,7 +120,7 @@ export default function VendorDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(stats.walletBalance)}</div>
+              <div className="text-2xl font-bold">{formatCurrency(activeStore?.walletBalance || stats.walletBalance)}</div>
               <p className="text-xs text-muted-foreground">
                 <Link to="/vendor/dashboard/wallet" className="text-blue-600 hover:underline">
                   View wallet

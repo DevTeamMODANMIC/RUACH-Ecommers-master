@@ -316,3 +316,13 @@ export type Complaint = {
   createdAt: string | number | null
   updatedAt: string | number | null
 }
+
+// Add Message type for chat functionality
+export type Message = {
+  id: string
+  senderId: string
+  receiverId: string
+  content: string
+  timestamp: { seconds: number; nanoseconds: number } | Date
+  read: boolean
+}

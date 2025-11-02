@@ -1,7 +1,9 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { useLocalStorage } from "./use-local-storage"
+import { collection, query, where, orderBy, limit, getDocs, addDoc, updateDoc, doc, increment } from "firebase/firestore"
+import { db } from "../lib/firebase"
 
 interface Review {
   id: string
@@ -27,79 +29,6 @@ interface ReviewStats {
   totalReviews: number
   ratingDistribution: Record<number, number>
 }
-
-// Mock reviews data
-const mockReviews: Review[] = [
-  {
-    id: "1",
-    productId: 1,
-    rating: 5,
-    title: "Authentic taste, just like home!",
-    content:
-      "This jollof rice mix is absolutely fantastic! As someone from Lagos, I can confirm this tastes exactly like the traditional blend my grandmother used. The spices are well-balanced and the aroma is incredible. Perfect for making restaurant-quality jollof at home.",
-    country: "nigeria",
-    countrySpecificNotes:
-      "In Nigeria, this is exactly what we expect from premium jollof seasoning. The tomato base is rich and the spice level is perfect for Nigerian palates.",
-    images: ["/placeholder.svg?height=200&width=200"],
-    userName: "Adebayo O.",
-    date: "2024-01-15T10:30:00Z",
-    verifiedPurchase: true,
-    purchasePrice: 8.99,
-    helpfulVotes: 23,
-    notHelpfulVotes: 1,
-    reported: false,
-  },
-  {
-    id: "2",
-    productId: 1,
-    rating: 4,
-    title: "Great flavor, but a bit salty for my taste",
-    content:
-      "The flavor profile is excellent and very authentic. However, I found it slightly saltier than what I'm used to. I had to adjust by adding less salt when cooking. Overall, still a great product that saves time in the kitchen.",
-    country: "uk",
-    countrySpecificNotes:
-      "For UK customers, you might want to taste-test before adding additional salt as this blend is quite well-seasoned already.",
-    userName: "Sarah M.",
-    date: "2024-01-12T14:20:00Z",
-    verifiedPurchase: true,
-    purchasePrice: 8.99,
-    helpfulVotes: 15,
-    notHelpfulVotes: 3,
-    reported: false,
-  },
-  {
-    id: "3",
-    productId: 1,
-    rating: 5,
-    title: "Perfect for busy weeknights",
-    content:
-      "As a working mother, this product is a lifesaver! I can make delicious jollof rice in half the time it usually takes. My kids love it and always ask for seconds. The packaging is also very convenient.",
-    country: "nigeria",
-    userName: "Fatima A.",
-    date: "2024-01-10T09:15:00Z",
-    verifiedPurchase: true,
-    helpfulVotes: 18,
-    notHelpfulVotes: 0,
-    reported: false,
-  },
-  {
-    id: "4",
-    productId: 1,
-    rating: 3,
-    title: "Good but not exceptional",
-    content:
-      "It's a decent product that does the job. The taste is good but I've had better homemade blends. For the convenience factor, it's worth buying, but don't expect it to be exactly like your grandmother's recipe.",
-    country: "ghana",
-    countrySpecificNotes:
-      "In Ghana, we're used to slightly different spice combinations, so this might taste a bit different from local jollof preparations.",
-    userName: "Kwame D.",
-    date: "2024-01-08T16:45:00Z",
-    verifiedPurchase: false,
-    helpfulVotes: 8,
-    notHelpfulVotes: 5,
-    reported: false,
-  },
-]
 
 export function useReviews() {
   const [reviews, setReviews] = useState<Review[]>([])
@@ -139,43 +68,59 @@ export function useReviews() {
     async (productId: number, country = "all", sortBy = "newest", filterRating = "all") => {
       setLoading(true)
 
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 500))
-
       try {
-        let filteredReviews = mockReviews.filter((review) => review.productId === productId)
-
+        // Build the query
+        let q = query(collection(db, "reviews"), where("productId", "==", productId))
+        
         // Filter by country
         if (country !== "all") {
-          filteredReviews = filteredReviews.filter((review) => review.country === country)
+          q = query(q, where("country", "==", country))
         }
 
         // Filter by rating
         if (filterRating !== "all") {
           const rating = Number.parseInt(filterRating)
-          filteredReviews = filteredReviews.filter((review) => review.rating === rating)
+          q = query(q, where("rating", "==", rating))
         }
 
         // Sort reviews
-        filteredReviews.sort((a, b) => {
-          switch (sortBy) {
-            case "newest":
-              return new Date(b.date).getTime() - new Date(a.date).getTime()
-            case "oldest":
-              return new Date(a.date).getTime() - new Date(b.date).getTime()
-            case "highest":
-              return b.rating - a.rating
-            case "lowest":
-              return a.rating - b.rating
-            case "helpful":
-              return b.helpfulVotes - a.helpfulVotes
-            default:
-              return 0
-          }
+        // NOTE: Sorting by date with other filters requires a composite index in Firestore
+        // For development, we're temporarily removing date sorting to avoid the index requirement
+        // For production, create the composite index using the link in the Firebase error message:
+        // https://console.firebase.google.com/v1/r/project/mondanmic-ecommers/firestore/indexes?create_composite=ClJwcm9qZWN0cy9tb25kYW5taWMtZWNvbW1lcnMvZGF0YWJhc2VzLyhkZWZhdWx0KS9jb2xsZWN0aW9uR3JvdXBzL3Jldmlld3MvaW5kZXhlcy9fEAEaDQoJcHJvZHVjdElkEAEaCAoEZGF0ZRACGgwKCF9fbmFtZV9fEAI
+        switch (sortBy) {
+          case "newest":
+            // q = query(q, orderBy("date", "desc"))
+            break
+          case "oldest":
+            // q = query(q, orderBy("date", "asc"))
+            break
+          case "highest":
+            q = query(q, orderBy("rating", "desc"))
+            break
+          case "lowest":
+            q = query(q, orderBy("rating", "asc"))
+            break
+          case "helpful":
+            q = query(q, orderBy("helpfulVotes", "desc"))
+            break
+        }
+
+        // Limit results
+        q = query(q, limit(50))
+
+        const querySnapshot = await getDocs(q)
+        const reviewsData: Review[] = []
+        
+        querySnapshot.forEach((doc) => {
+          reviewsData.push({
+            id: doc.id,
+            ...doc.data()
+          } as Review)
         })
 
-        setReviews(filteredReviews)
-        setReviewStats(calculateStats(filteredReviews))
+        setReviews(reviewsData)
+        setReviewStats(calculateStats(reviewsData))
       } catch (error) {
         console.error("Error fetching reviews:", error)
         setReviews([])
@@ -189,23 +134,31 @@ export function useReviews() {
 
   const submitReview = useCallback(
     async (reviewData: Omit<Review, "id" | "helpfulVotes" | "notHelpfulVotes" | "reported">) => {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      try {
+        // Add the review to Firestore
+        const newReview = {
+          ...reviewData,
+          helpfulVotes: 0,
+          notHelpfulVotes: 0,
+          reported: false,
+        }
 
-      const newReview: Review = {
-        ...reviewData,
-        id: Date.now().toString(),
-        helpfulVotes: 0,
-        notHelpfulVotes: 0,
-        reported: false,
+        const docRef = await addDoc(collection(db, "reviews"), newReview)
+        
+        // Update local state
+        const reviewWithId: Review = {
+          ...newReview,
+          id: docRef.id
+        }
+        
+        setReviews(prev => [reviewWithId, ...prev])
+        setReviewStats(prev => calculateStats([reviewWithId, ...reviews]))
+        
+        console.log("Review submitted:", reviewWithId)
+      } catch (error) {
+        console.error("Error submitting review:", error)
+        throw error
       }
-
-      // In a real app, this would be sent to the server
-      mockReviews.unshift(newReview)
-
-      // Refresh reviews for the current product
-      // This would typically be handled by refetching from the server
-      console.log("Review submitted:", newReview)
     },
     [],
   )
@@ -217,48 +170,64 @@ export function useReviews() {
         return // User has already voted
       }
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 300))
+      try {
+        // Update local vote tracking
+        setUserVotes((prev) => ({
+          ...prev,
+          [reviewId]: voteType,
+        }))
 
-      // Update local vote tracking
-      setUserVotes((prev) => ({
-        ...prev,
-        [reviewId]: voteType,
-      }))
-
-      // Update review votes (in a real app, this would be handled by the server)
-      const reviewIndex = mockReviews.findIndex((r) => r.id === reviewId)
-      if (reviewIndex !== -1) {
+        // Update review votes in Firestore
+        const reviewRef = doc(db, "reviews", reviewId)
         if (voteType === "helpful") {
-          mockReviews[reviewIndex].helpfulVotes++
+          await updateDoc(reviewRef, {
+            helpfulVotes: increment(1)
+          })
         } else {
-          mockReviews[reviewIndex].notHelpfulVotes++
+          await updateDoc(reviewRef, {
+            notHelpfulVotes: increment(1)
+          })
         }
-      }
 
-      // Update local state
-      setReviews((prev) =>
-        prev.map((review) => {
-          if (review.id === reviewId) {
-            return {
-              ...review,
-              helpfulVotes: voteType === "helpful" ? review.helpfulVotes + 1 : review.helpfulVotes,
-              notHelpfulVotes: voteType === "not-helpful" ? review.notHelpfulVotes + 1 : review.notHelpfulVotes,
+        // Update local state
+        setReviews((prev) =>
+          prev.map((review) => {
+            if (review.id === reviewId) {
+              return {
+                ...review,
+                helpfulVotes: voteType === "helpful" ? review.helpfulVotes + 1 : review.helpfulVotes,
+                notHelpfulVotes: voteType === "not-helpful" ? review.notHelpfulVotes + 1 : review.notHelpfulVotes,
+              }
             }
-          }
-          return review
-        }),
-      )
+            return review
+          }),
+        )
+      } catch (error) {
+        console.error("Error voting on review:", error)
+        // Revert local vote tracking on error
+        setUserVotes((prev) => {
+          const newVotes = { ...prev }
+          delete newVotes[reviewId]
+          return newVotes
+        })
+      }
     },
     [userVotes, setUserVotes],
   )
 
   const reportReview = useCallback(async (reviewId: string) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 300))
-
-    console.log("Review reported:", reviewId)
-    // In a real app, this would flag the review for moderation
+    try {
+      // Update review reported status in Firestore
+      const reviewRef = doc(db, "reviews", reviewId)
+      await updateDoc(reviewRef, {
+        reported: true
+      })
+      
+      console.log("Review reported:", reviewId)
+      // In a real app, this would flag the review for moderation
+    } catch (error) {
+      console.error("Error reporting review:", error)
+    }
   }, [])
 
   return {

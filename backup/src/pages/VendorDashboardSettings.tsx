@@ -17,7 +17,9 @@ import {
   AlertTriangle,
   Eye,
   Edit3,
-  Upload
+  Upload,
+  Mail,
+  Phone
 } from "lucide-react"
 import {
   AlertDialog,
@@ -45,6 +47,8 @@ export default function StoreSettingsPage() {
     shopName: "",
     bio: "",
     logoUrl: "",
+    contactEmail: "",
+    contactPhone: "",
   })
 
   useEffect(() => {
@@ -53,6 +57,8 @@ export default function StoreSettingsPage() {
         shopName: activeStore.shopName,
         bio: activeStore.bio,
         logoUrl: activeStore.logoUrl,
+        contactEmail: activeStore.contactEmail || "",
+        contactPhone: activeStore.contactPhone || "",
       })
     }
   }, [activeStore])
@@ -116,6 +122,8 @@ export default function StoreSettingsPage() {
         shopName: activeStore.shopName,
         bio: activeStore.bio,
         logoUrl: activeStore.logoUrl,
+        contactEmail: activeStore.contactEmail || "",
+        contactPhone: activeStore.contactPhone || "",
       })
     }
     setIsEditing(false)
@@ -237,6 +245,42 @@ export default function StoreSettingsPage() {
               disabled={!isEditing}
               className={!isEditing ? "bg-gray-50" : ""}
             />
+          </div>
+
+          {/* Contact Email */}
+          <div>
+            <Label htmlFor="contactEmail">Contact Email (Optional)</Label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                id="contactEmail"
+                name="contactEmail"
+                type="email"
+                value={formData.contactEmail}
+                onChange={handleInputChange}
+                disabled={!isEditing}
+                className={!isEditing ? "bg-gray-50 pl-10" : "pl-10"}
+                placeholder="contact@example.com"
+              />
+            </div>
+          </div>
+
+          {/* Contact Phone */}
+          <div>
+            <Label htmlFor="contactPhone">Contact Phone (Optional)</Label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                id="contactPhone"
+                name="contactPhone"
+                type="tel"
+                value={formData.contactPhone}
+                onChange={handleInputChange}
+                disabled={!isEditing}
+                className={!isEditing ? "bg-gray-50 pl-10" : "pl-10"}
+                placeholder="+1 (555) 123-4567"
+              />
+            </div>
           </div>
 
           {/* Store Description */}

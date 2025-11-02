@@ -216,3 +216,4 @@ pnpm-lock.yaml
 *.pyc
 __pycache__
 >>>>>>> 22e1179c1da2199f9f7c0a7fb74042a5fe9614f9
+.kilocode/

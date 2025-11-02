@@ -11,7 +11,7 @@ import { Separator } from "../components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
 import { Switch } from "../components/ui/switch"
-import { User, Package, Heart, Settings, Bell, Shield, CreditCard, MapPin, Edit, Plus, Home, Building, Briefcase, ShoppingCart, Trash2, ExternalLink } from "lucide-react"
+import { User, Package, Heart, Settings, Bell, Shield, CreditCard, MapPin, Edit, Plus, Home, Building, Briefcase, ShoppingCart, Trash2, ExternalLink, Wallet as WalletIcon } from "lucide-react"
 import { useAuth } from "../components/auth-provider"
 import { useCurrency } from "../components/currency-provider"
 import { useToast } from "../hooks/use-toast"
@@ -29,6 +29,7 @@ import {
 } from "../components/ui/breadcrumb"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog"
 import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group"
+import AIChatbot from "../components/ai-chatbot"
 
 export default function ProfilePage() {
   const { user, logout } = useAuth()
@@ -593,6 +594,10 @@ export default function ProfilePage() {
             <TabsTrigger value="security" className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
               Security
+            </TabsTrigger>
+            <TabsTrigger value="wallet" className="flex items-center gap-2">
+              <WalletIcon className="h-4 w-4" />
+              Wallet
             </TabsTrigger>
           </TabsList>
 
@@ -1184,6 +1189,35 @@ export default function ProfilePage() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+          </TabsContent>
+
+          {/* Wallet Tab */}
+          <TabsContent value="wallet">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <WalletIcon className="h-5 w-5" />
+                  My Wallet
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <WalletIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Manage Your Wallet</h3>
+                  <p className="text-muted-foreground mb-4">
+                    View your wallet balance, add funds, and track transactions.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <Button asChild>
+                      <Link to="/wallet">Go to Wallet</Link>
+                    </Button>
+                    <Button asChild variant="outline">
+                      <Link to="/kyc-verification">Verify Identity (KYC)</Link>
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Settings Tab */}

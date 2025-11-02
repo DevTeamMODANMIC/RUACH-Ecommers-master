@@ -6,6 +6,7 @@ import { Separator } from "../components/ui/separator"
 import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft } from "lucide-react"
 import { useCart } from "../components/cart-provider"
 import { formatCurrency } from "../lib/utils"
+import AIChatbot from "../components/ai-chatbot"
 
 export default function CartPage() {
   const { items, updateQuantity, removeFromCart, getTotalPrice, getTotalItems } = useCart()

@@ -1,11 +1,10 @@
-
-
-import { Card, CardContent, CardHeader, CardTitle } from "../../src/components/ui/card"
-import { formatCurrency } from "../../src/lib/utils"
-import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore"
-import { db } from "../../src/lib/firebase"
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
+import { formatCurrency } from "@/lib/utils"
+import { collection, query, where, getDocs, orderBy } from "firebase/firestore"
+import { db } from "@/lib/firebase"
 import { useState, useEffect } from "react"
 import { Package, ShoppingCart, DollarSign } from "lucide-react"
+import { getVendorProducts } from "@/lib/firebase-vendors"
 
 interface VendorStats {
   totalProducts: number
@@ -19,31 +18,52 @@ export function VendorDashboardStats({ storeId }: { storeId: string }) {
     totalOrders: 0,
     totalSales: 0
   })
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
+        setLoading(true)
+        
         // Fetch total products
-        const productsQuery = query(
-          collection(db, "products"), 
-          where("vendorId", "==", storeId)
-        )
-        const productsSnapshot = await getDocs(productsQuery)
-        const totalProducts = productsSnapshot.size
+        const vendorProducts = await getVendorProducts(storeId)
+        const totalProducts = vendorProducts.length
 
         // Fetch total orders and sales
-        const ordersQuery = query(
+        // First get all orders
+        const allOrdersQuery = query(
           collection(db, "orders"), 
-          where("vendorId", "==", storeId),
           orderBy("createdAt", "desc")
         )
-        const ordersSnapshot = await getDocs(ordersQuery)
+        const allOrdersSnapshot = await getDocs(allOrdersQuery)
         
-        const totalOrders = ordersSnapshot.size
-        const totalSales = ordersSnapshot.docs.reduce((sum, doc) => {
-          const orderData = doc.data()
-          return sum + (orderData.total || 0)
-        }, 0)
+        // Filter orders that contain vendor's products
+        const vendorProductIds = vendorProducts.map(p => p.id)
+        let totalOrders = 0
+        let totalSales = 0
+        
+        if (vendorProductIds.length > 0) {
+          allOrdersSnapshot.docs.forEach(doc => {
+            const orderData: any = doc.data()
+            const orderItems = orderData.items || []
+            
+            // Check if any item in this order belongs to the vendor
+            const hasVendorProduct = orderItems.some((item: any) => 
+              vendorProductIds.includes(item.productId)
+            )
+            
+            if (hasVendorProduct) {
+              totalOrders++
+              
+              // Calculate sales for vendor's products in this order
+              const orderSales = orderItems
+                .filter((item: any) => vendorProductIds.includes(item.productId))
+                .reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0)
+              
+              totalSales += orderSales
+            }
+          })
+        }
 
         setStats({
           totalProducts,
@@ -52,6 +72,8 @@ export function VendorDashboardStats({ storeId }: { storeId: string }) {
         })
       } catch (error) {
         console.error("Failed to fetch vendor stats:", error)
+      } finally {
+        setLoading(false)
       }
     }
 
@@ -59,6 +81,25 @@ export function VendorDashboardStats({ storeId }: { storeId: string }) {
       fetchStats()
     }
   }, [storeId])
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {[1, 2, 3].map((i) => (
+          <Card key={i}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-4 w-4 bg-gray-200 rounded-full animate-pulse"></div>
+            </CardHeader>
+            <CardContent>
+              <div className="h-6 w-16 bg-gray-200 rounded animate-pulse"></div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    )
+  }
 
   const statCards = [
     {
@@ -96,4 +137,4 @@ export function VendorDashboardStats({ storeId }: { storeId: string }) {
       ))}
     </div>
   )
-} 
+}

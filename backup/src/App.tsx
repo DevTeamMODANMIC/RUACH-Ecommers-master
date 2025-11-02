@@ -1,11 +1,18 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import routes from './routes'
+import routes from './routes.tsx'
 import HeaderImproved from './components/site-header'
 import Footer from './components/footer'
 import KeyboardNavigation from './components/keyboard-navigation'
 import { Toaster } from './components/ui/toaster'
+import { useEffect } from 'react'
+import { initializeDeliveryEmails } from './lib/firebase-delivery-emails'
 
 export default function App() {
+  useEffect(() => {
+    // Initialize delivery authorized emails
+    initializeDeliveryEmails();
+  }, []);
+
   return (
     <>
       <KeyboardNavigation />
@@ -19,6 +26,5 @@ export default function App() {
       <Footer />
       <Toaster />
     </>
-    
   )
 }

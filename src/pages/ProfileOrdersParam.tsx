@@ -48,6 +48,11 @@ export default function OrderDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [updating, setUpdating] = useState(false)
 
+  // Type guard to check if a value is a Date object
+  const isDate = (value: any): value is Date => {
+    return value instanceof Date;
+  };
+
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
 
@@ -77,9 +82,9 @@ export default function OrderDetailPage() {
 
         setOrderDetails({
           ...initialOrder,
-          estimatedDelivery: initialOrder.estimatedDelivery instanceof Date ? initialOrder.estimatedDelivery.getTime() : initialOrder.estimatedDelivery,
-          createdAt: initialOrder.createdAt instanceof Date ? initialOrder.createdAt.getTime() : initialOrder.createdAt,
-          updatedAt: initialOrder.updatedAt instanceof Date ? initialOrder.updatedAt.getTime() : initialOrder.updatedAt
+          estimatedDelivery: initialOrder.estimatedDelivery && isDate(initialOrder.estimatedDelivery) ? initialOrder.estimatedDelivery.getTime() : initialOrder.estimatedDelivery,
+          createdAt: initialOrder.createdAt && isDate(initialOrder.createdAt) ? initialOrder.createdAt.getTime() : initialOrder.createdAt,
+          updatedAt: initialOrder.updatedAt && isDate(initialOrder.updatedAt) ? initialOrder.updatedAt.getTime() : initialOrder.updatedAt
         })
         setLoading(false)
         
@@ -88,9 +93,9 @@ export default function OrderDetailPage() {
           if (order) {
             setOrderDetails({
               ...order,
-              estimatedDelivery: order.estimatedDelivery instanceof Date ? order.estimatedDelivery.getTime() : order.estimatedDelivery,
-              createdAt: order.createdAt instanceof Date ? order.createdAt.getTime() : order.createdAt,
-              updatedAt: order.updatedAt instanceof Date ? order.updatedAt.getTime() : order.updatedAt
+              estimatedDelivery: order.estimatedDelivery && isDate(order.estimatedDelivery) ? order.estimatedDelivery.getTime() : order.estimatedDelivery,
+              createdAt: order.createdAt && isDate(order.createdAt) ? order.createdAt.getTime() : order.createdAt,
+              updatedAt: order.updatedAt && isDate(order.updatedAt) ? order.updatedAt.getTime() : order.updatedAt
             })
           }
         })
@@ -139,6 +144,59 @@ export default function OrderDetailPage() {
     } finally {
       setUpdating(false);
     }
+  };
+
+  // Function to handle invoice download
+  const handleDownloadInvoice = () => {
+    if (!orderDetails) return;
+    
+    // Create a simple text invoice
+    const invoiceContent = `
+Invoice for Order #${orderDetails.id || orderId}
+==============================================
+Order Date: ${new Date(orderDetails.createdAt || Date.now()).toLocaleDateString()}
+Status: ${orderDetails.status}
+Payment Status: ${orderDetails.paymentStatus || 'pending'}
+
+Items Ordered:
+${orderDetails.items.map(item => 
+  `${item.name} x ${item.quantity} @ ${formatPrice(item.price)} = ${formatPrice(item.price * item.quantity)}`
+).join('\n')}
+
+----------------------------------------------
+Subtotal: ${formatPrice(orderDetails.subtotal)}
+Shipping: ${formatPrice(orderDetails.shipping)}
+Tax: ${formatPrice(orderDetails.tax)}
+Total: ${formatPrice(orderDetails.total)}
+
+Shipping Address:
+${orderDetails.shippingAddress.firstName} ${orderDetails.shippingAddress.lastName}
+${orderDetails.shippingAddress.address1}
+${orderDetails.shippingAddress.city}, ${orderDetails.shippingAddress.postalCode}
+${orderDetails.shippingAddress.country}
+
+Billing Address:
+${orderDetails.billingAddress.firstName} ${orderDetails.billingAddress.lastName}
+${orderDetails.billingAddress.address1}
+${orderDetails.billingAddress.city}, ${orderDetails.billingAddress.postalCode}
+${orderDetails.billingAddress.country}
+    `.trim();
+
+    // Create a blob and download
+    const blob = new Blob([invoiceContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `invoice-${orderDetails.id || orderId}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // Function to handle contact support
+  const handleContactSupport = () => {
+    navigate('/contact?subject=Order Support&orderId=' + (orderDetails?.id || orderId));
   };
 
   if (loading) {
@@ -239,12 +297,12 @@ export default function OrderDetailPage() {
         </Breadcrumb>
 
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-            <div>
-            <h1 className="text-2xl font-bold">Order #{orderId.slice(-6)}</h1>
+          <div>
+            <h1 className="text-2xl font-bold">Order #{orderDetails?.id || orderId}</h1>
             <p className="text-muted-foreground">
               Placed on {new Date(orderDetails.createdAt || Date.now()).toLocaleDateString()}
             </p>
-            </div>
+          </div>
           <div className="mt-2 md:mt-0 flex flex-col md:items-end gap-2">
             <Badge variant="secondary" className={getStatusBadgeVariant(orderDetails.status)}>
               {orderDetails.status.charAt(0).toUpperCase() + orderDetails.status.slice(1)}
@@ -539,14 +597,14 @@ export default function OrderDetailPage() {
                 <CardTitle>Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button variant="outline" className="w-full justify-start">
+                <Button variant="outline" className="w-full justify-start" onClick={handleDownloadInvoice}>
                   <Download className="h-4 w-4 mr-2" />
                   Download Invoice
-              </Button>
-                <Button variant="outline" className="w-full justify-start">
+                </Button>
+                <Button variant="outline" className="w-full justify-start" onClick={handleContactSupport}>
                   <Mail className="h-4 w-4 mr-2" />
                   Contact Support
-              </Button>
+                </Button>
               </CardContent>
             </Card>
           </div>

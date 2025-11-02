@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useVendor } from "../../src/hooks/use-vendor"
+import { useServiceProvider } from "../../src/hooks/use-service-provider"
 import { Button } from "../../src/components/ui/button"
 import { Badge } from "../../src/components/ui/badge"
 import {
@@ -22,19 +23,15 @@ import { Link } from "react-router-dom"
 
 export function VendorHeaderSwitcher() {
   const { activeStore, allStores, switchStore, canCreateMoreStores, isVendor } = useVendor()
+  const { isServiceProvider } = useServiceProvider()
   const [isLoading, setIsLoading] = useState(false)
 
-  // Debug logging
-  console.log('VendorHeaderSwitcher Debug:', {
-    isVendor,
-    hasActiveStore: !!activeStore,
-    storeCount: allStores.length,
-    activeStoreName: activeStore?.shopName,
-    canCreateMore: canCreateMoreStores
-  })
+  // Don't show if user is a service provider (mutual exclusivity)
+  if (isServiceProvider) {
+    return null
+  }
 
   if (!isVendor || allStores.length === 0) {
-    console.log('VendorHeaderSwitcher hidden - no vendor status or stores')
     return null
   }
 

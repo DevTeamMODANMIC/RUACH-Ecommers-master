@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
-import { Heart, ShoppingCart, Minus, Plus } from "lucide-react";
+import { Heart, ShoppingCart, Minus, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { useCart } from "../components/cart-provider";
 import { formatCurrency } from "../lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "../components/ui/dialog";
@@ -25,6 +25,22 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
 
   if (!product) return null;
 
+  // Extract size from tags if it exists
+  let size = "";
+  if (product.tags && Array.isArray(product.tags)) {
+    const sizeTag = product.tags.find((tag: string) => tag.startsWith("size:"));
+    if (sizeTag) {
+      size = sizeTag.replace("size:", "");
+    }
+  }
+
+  // Get all available images (cloudinaryImages takes precedence over images)
+  const allImages = product.cloudinaryImages && product.cloudinaryImages.length > 0 
+    ? product.cloudinaryImages 
+    : product.images 
+      ? product.images.map((url: string, index: number) => ({ url, publicId: `image-${index}` }))
+      : [];
+
   // Calculate discounted price if applicable
   const discountedPrice =
     product.discount && product.discount > 0
@@ -42,7 +58,7 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
         product.images?.[0] ||
         "/placeholder.jpg",
       quantity,
-      options: {},
+      options: size ? { size } : {},
     });
   };
 
@@ -57,13 +73,32 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
         product.images?.[0] ||
         "/placeholder.jpg",
       category: product.category || product.displayCategory,
-      inStock: !product.outOfStock,
+      inStock: !product.outOfStock
     });
   };
 
   const incrementQuantity = () => setQuantity((prev) => prev + 1);
   const decrementQuantity = () =>
     setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
+
+  // Navigate to next image
+  const nextImage = () => {
+    if (allImages.length > 1) {
+      setSelectedImage((prev) => (prev + 1) % allImages.length);
+    }
+  };
+
+  // Navigate to previous image
+  const prevImage = () => {
+    if (allImages.length > 1) {
+      setSelectedImage((prev) => (prev - 1 + allImages.length) % allImages.length);
+    }
+  };
+
+  // Select specific image
+  const selectImage = (index: number) => {
+    setSelectedImage(index);
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -80,17 +115,17 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
           {/* Product Images */}
           <div className="space-y-4">
             <div className="relative aspect-square overflow-hidden rounded-md bg-gray-100">
-              {product.cloudinaryImages && product.cloudinaryImages.length > 0 ? (
+              {product.cloudinaryImages && product.cloudinaryImages.length > 0 && allImages[selectedImage]?.publicId ? (
                 <CloudinaryImage
-                  publicId={product.cloudinaryImages[selectedImage].publicId}
-                  alt={product.cloudinaryImages[selectedImage].alt || product.name}
+                  publicId={allImages[selectedImage].publicId}
+                  alt={allImages[selectedImage].alt || product.name}
                   size="medium"
                   className="w-full h-full object-contain"
                 />
               ) : (
                 <img
                   src={
-                    product.images?.[selectedImage] ||
+                    allImages[selectedImage]?.url ||
                     "/product_images/unknown-product.jpg"
                   }
                   alt={product.name}
@@ -100,6 +135,25 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
                       "/product_images/unknown-product.jpg";
                   }}
                 />
+              )}
+
+              {allImages.length > 1 && (
+                <>
+                  <button
+                    onClick={prevImage}
+                    className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-1 shadow-md transition-all"
+                    aria-label="Previous image"
+                  >
+                    <ChevronLeft className="h-5 w-5 text-gray-800" />
+                  </button>
+                  <button
+                    onClick={nextImage}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-1 shadow-md transition-all"
+                    aria-label="Next image"
+                  >
+                    <ChevronRight className="h-5 w-5 text-gray-800" />
+                  </button>
+                </>
               )}
 
               {product.outOfStock && (
@@ -114,6 +168,39 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
                 </div>
               )}
             </div>
+
+            {/* Thumbnails for multiple images */}
+            {allImages.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto py-2">
+                {allImages.map((image: any, index: number) => (
+                  <button
+                    key={image.publicId || index}
+                    onClick={() => selectImage(index)}
+                    className={`flex-shrink-0 w-16 h-16 rounded-md overflow-hidden border-2 ${selectedImage === index ? 'border-green-500' : 'border-gray-200'} focus:outline-none focus:ring-2 focus:ring-green-500`}
+                    aria-label={`View image ${index + 1}`}
+                  >
+                    {image.publicId ? (
+                      <CloudinaryImage
+                        publicId={image.publicId}
+                        alt={image.alt || product.name}
+                        size="thumbnail"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <img
+                        src={image.url}
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src =
+                            "/product_images/unknown-product.jpg";
+                        }}
+                      />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Product Info */}
@@ -132,6 +219,13 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
               <p className="text-gray-600 mt-1">
                 {product.displayCategory || product.category}
               </p>
+
+              {/* Size */}
+              {size && (
+                <p className="text-gray-600 mt-1">
+                  <span className="font-medium">Size:</span> {size}
+                </p>
+              )}
 
               {/* Price */}
               <div className="mt-4">

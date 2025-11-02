@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader } from "../../src/components/ui/card"
 import { Badge } from "../../src/components/ui/badge"
 import { Button } from "../../src/components/ui/button"
 import { Calendar, User } from "lucide-react"
+import { OptimizedImage } from "./optimized-image";
 
 const blogPosts = [
   {
@@ -54,12 +55,11 @@ export default function BlogPreview() {
             <Card key={post.id} className="group hover:shadow-lg transition-shadow">
               <CardHeader className="p-0">
                 <div className="relative overflow-hidden rounded-t-lg">
-                  <Image
+                  <OptimizedImage
                     src={post.image || "/placeholder.svg"}
                     alt={post.title}
                     width={400}
                     height={300}
-                    unoptimized
                     className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                   <Badge className="absolute top-4 left-4 bg-green-600">{post.category}</Badge>
@@ -67,7 +67,7 @@ export default function BlogPreview() {
               </CardHeader>
               <CardContent className="p-6">
                 <h3 className="text-xl font-semibold mb-3 group-hover:text-green-600 transition-colors">
-                  <Link href={`/blog/${post.id}`}>{post.title}</Link>
+                  <Link to={`/blog/${post.id}`}>{post.title}</Link>
                 </h3>
                 <p className="text-muted-foreground mb-4 line-clamp-3">{post.excerpt}</p>
                 <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
@@ -83,8 +83,8 @@ export default function BlogPreview() {
                   </div>
                   <span>{post.readTime}</span>
                 </div>
-                <Button variant="outline" asChild className="w-full">
-                  <Link href={`/blog/${post.id}`}>Read More</Link>
+                <Button asChild className="w-full">
+                  <Link to={`/blog/${post.id}`}>Read More</Link>
                 </Button>
               </CardContent>
             </Card>
