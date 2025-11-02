@@ -1,0 +1,9 @@
+{
+  "rules": {
+    "slider": {
+      ".read": "auth != null",
+      ".write": "auth != null && auth.token.admin == true",
+      ".indexOn": [".value"]
+    }
+  }
+}
