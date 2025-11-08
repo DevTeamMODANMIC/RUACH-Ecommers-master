@@ -1,24 +1,66 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect } from "react";
 
 import { Link } from "react-router-dom";
-import { Button } from "../components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
-import { Input } from "../components/ui/input"
-import { Label } from "../components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
-import { Badge } from "../components/ui/badge"
-import { Separator } from "../components/ui/separator"
-import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
-import { Switch } from "../components/ui/switch"
-import { User, Package, Heart, Settings, Bell, Shield, CreditCard, MapPin, Edit, Plus, Home, Building, Briefcase, ShoppingCart, Trash2, ExternalLink, Wallet as WalletIcon } from "lucide-react"
-import { useAuth } from "../components/auth-provider"
-import { useCurrency } from "../components/currency-provider"
-import { useToast } from "../hooks/use-toast"
-import { useLocalStorage } from "../hooks/use-local-storage"
-import { useWishlist } from "../hooks/use-wishlist"
-import { useCart } from "../components/cart-provider"
-import { getUserOrders, listenToUserOrders } from "../lib/firebase-orders"
+import {
+  getUserAddresses,
+  saveUserAddress,
+  deleteUserAddress,
+  listenToUserAddresses,
+  UserAddress,
+} from "../lib/firebase-profile";
+import { migrateAddressesToFirebase } from "../lib/migrate-addresses-to-firebase";
+import { Button } from "../components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../components/ui/tabs";
+import { Badge } from "../components/ui/badge";
+import { Separator } from "../components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
+import { Switch } from "../components/ui/switch";
+import {
+  User,
+  Package,
+  Heart,
+  Settings,
+  Bell,
+  Shield,
+  CreditCard,
+  MapPin,
+  Edit,
+  Plus,
+  Home,
+  Building,
+  Briefcase,
+  ShoppingCart,
+  Trash2,
+  ExternalLink,
+  Wallet as WalletIcon,
+} from "lucide-react";
+import { useAuth } from "../components/auth-provider";
+import { useCurrency } from "../components/currency-provider";
+import { useToast } from "../hooks/use-toast";
+import { useLocalStorage } from "../hooks/use-local-storage";
+import { useWishlist } from "../hooks/use-wishlist";
+import { useCart } from "../components/cart-provider";
+import { getUserOrders, listenToUserOrders } from "../lib/firebase-orders";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -26,16 +68,22 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "../components/ui/breadcrumb"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog"
-import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group"
-import AIChatbot from "../components/ai-chatbot"
+} from "../components/ui/breadcrumb";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "../components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
+import AIChatbot from "../components/ai-chatbot";
 
 export default function ProfilePage() {
-  const { user, logout } = useAuth()
-  const { formatPrice } = useCurrency()
-  const { toast } = useToast()
-  const [isEditing, setIsEditing] = useState(false)
+  const { user, logout } = useAuth();
+  const { formatPrice } = useCurrency();
+  const { toast } = useToast();
+  const [isEditing, setIsEditing] = useState(false);
   const [profileData, setProfileData] = useState({
     firstName: user?.displayName?.split(" ")[0] || "",
     lastName: user?.displayName?.split(" ")[1] || "",
@@ -43,36 +91,26 @@ export default function ProfilePage() {
     phone: "",
     dateOfBirth: "",
     gender: "",
-  })
-  const [addresses, setAddresses] = useState([
-    {
-      id: 1,
-      type: "Home",
-      name: "John Doe",
-      address: "123 Main Street",
-      city: "London",
-      postalCode: "SW1A 1AA",
-      country: "United Kingdom",
-      isDefault: true,
-    },
-  ])
+  });
+  const [addresses, setAddresses] = useState<UserAddress[]>([]);
 
   // Address dialog state
-  const [addressDialogOpen, setAddressDialogOpen] = useState(false)
-  const [currentAddress, setCurrentAddress] = useState<any>(null)
-  const [addressForm, setAddressForm] = useState({
-    id: 0,
+  const [addressDialogOpen, setAddressDialogOpen] = useState(false);
+  const [currentAddress, setCurrentAddress] = useState<UserAddress | null>(
+    null,
+  );
+  const [addressForm, setAddressForm] = useState<Partial<UserAddress>>({
     type: "Home",
     name: "",
     address: "",
     city: "",
     postalCode: "",
-    country: "",
+    country: "United Kingdom",
     isDefault: false,
-  })
+  });
 
   // Use localStorage for wishlist to maintain consistency with the main wishlist page
-  const { wishlistItems, removeFromWishlist } = useWishlist()
+  const { wishlistItems, removeFromWishlist } = useWishlist();
 
   const [preferences, setPreferences] = useState({
     emailNotifications: true,
@@ -82,22 +120,23 @@ export default function ProfilePage() {
     newsletter: true,
     language: "en",
     currency: "GBP",
-  })
+  });
 
   // Orders state
-  const [orders, setOrders] = useState<any[]>([])
-  const [ordersLoading, setOrdersLoading] = useState(false)
+  const [orders, setOrders] = useState<any[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
 
   // Security features state
-  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
-  const [twoFactorDialogOpen, setTwoFactorDialogOpen] = useState(false)
-  const [paymentMethodsDialogOpen, setPaymentMethodsDialogOpen] = useState(false)
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [twoFactorDialogOpen, setTwoFactorDialogOpen] = useState(false);
+  const [paymentMethodsDialogOpen, setPaymentMethodsDialogOpen] =
+    useState(false);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
-  })
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false)
+  });
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState([
     {
       id: 1,
@@ -108,138 +147,176 @@ export default function ProfilePage() {
       expiryYear: 2025,
       isDefault: true,
     },
-  ])
+  ]);
 
   // Load orders and profile data on component mount
   useEffect(() => {
     const loadOrders = async () => {
-      if (!user) return
+      if (!user) return;
 
-      setOrdersLoading(true)
+      setOrdersLoading(true);
       try {
-        const userOrders = await getUserOrders(user.uid)
-        setOrders(userOrders)
+        const userOrders = await getUserOrders(user.uid);
+        setOrders(userOrders);
       } catch (error) {
-        console.error("Error loading orders:", error)
+        console.error("Error loading orders:", error);
         toast({
           title: "Error loading orders",
           description: "There was a problem loading your order history",
-          variant: "destructive"
-        })
+          variant: "destructive",
+        });
       } finally {
-        setOrdersLoading(false)
+        setOrdersLoading(false);
       }
-    }
+    };
 
     // Load saved profile data from localStorage
     const loadProfileData = () => {
       try {
-        const savedProfile = localStorage.getItem('userProfile')
+        const savedProfile = localStorage.getItem("userProfile");
         if (savedProfile) {
-          const parsedProfile = JSON.parse(savedProfile)
-          setProfileData(prev => ({ ...prev, ...parsedProfile }))
-        }
-
-        // Load saved addresses
-        const savedAddresses = localStorage.getItem('userAddresses')
-        if (savedAddresses) {
-          setAddresses(JSON.parse(savedAddresses))
+          const parsedProfile = JSON.parse(savedProfile);
+          setProfileData((prev) => ({ ...prev, ...parsedProfile }));
         }
 
         // Load saved preferences
-        const savedPreferences = localStorage.getItem('userPreferences')
+        const savedPreferences = localStorage.getItem("userPreferences");
         if (savedPreferences) {
-          setPreferences(JSON.parse(savedPreferences))
+          setPreferences(JSON.parse(savedPreferences));
         }
 
         // Load saved payment methods
-        const savedPaymentMethods = localStorage.getItem('userPaymentMethods')
+        const savedPaymentMethods = localStorage.getItem("userPaymentMethods");
         if (savedPaymentMethods) {
-          setPaymentMethods(JSON.parse(savedPaymentMethods))
+          setPaymentMethods(JSON.parse(savedPaymentMethods));
         }
 
         // Load 2FA setting
-        const savedTwoFactor = localStorage.getItem('userTwoFactorEnabled')
+        const savedTwoFactor = localStorage.getItem("userTwoFactorEnabled");
         if (savedTwoFactor) {
-          setTwoFactorEnabled(JSON.parse(savedTwoFactor))
+          setTwoFactorEnabled(JSON.parse(savedTwoFactor));
         }
       } catch (error) {
-        console.error("Error loading saved data:", error)
+        console.error("Error loading saved data:", error);
       }
-    }
+    };
 
-    loadOrders()
-    loadProfileData()
-  }, [user, toast])
+    loadOrders();
+    loadProfileData();
+
+    // Migrate addresses from localStorage to Firebase and set up real-time listener
+    if (user) {
+      // Attempt migration first
+      migrateAddressesToFirebase(user.uid)
+        .then((result) => {
+          if (result.migratedCount > 0) {
+            toast({
+              title: "Data migrated",
+              description: `${result.migratedCount} address(es) moved to cloud storage`,
+            });
+          }
+          if (
+            result.errors.length > 0 &&
+            result.errors[0] !== "Addresses already exist in Firebase"
+          ) {
+            console.error("Migration errors:", result.errors);
+          }
+        })
+        .catch((error) => {
+          console.error("Migration failed:", error);
+        });
+
+      // Set up real-time listener for addresses from Firebase
+      const unsubscribeAddresses = listenToUserAddresses(
+        user.uid,
+        (firebaseAddresses) => {
+          setAddresses(firebaseAddresses);
+        },
+      );
+
+      return () => {
+        unsubscribeAddresses();
+      };
+    }
+  }, [user, toast]);
 
   // Order history - now using real data from Firebase
-  const orderHistory = orders.map(order => ({
+  const orderHistory = orders.map((order) => ({
     id: order.id,
     date: order.createdAt,
     status: order.status,
     total: order.total,
     items: order.items.length,
-  }))
+  }));
 
-  const { addToCart } = useCart()
+  const { addToCart } = useCart();
 
   const handleSaveProfile = () => {
-    const errors = []
+    const errors = [];
 
     // Validate first name
     if (!profileData.firstName.trim()) {
-      errors.push("First name is required")
+      errors.push("First name is required");
     } else if (profileData.firstName.trim().length < 2) {
-      errors.push("First name must be at least 2 characters long")
+      errors.push("First name must be at least 2 characters long");
     } else if (!/^[a-zA-Z\s'-]+$/.test(profileData.firstName.trim())) {
-      errors.push("First name can only contain letters, spaces, hyphens, and apostrophes")
+      errors.push(
+        "First name can only contain letters, spaces, hyphens, and apostrophes",
+      );
     }
 
     // Validate last name
     if (!profileData.lastName.trim()) {
-      errors.push("Last name is required")
+      errors.push("Last name is required");
     } else if (profileData.lastName.trim().length < 2) {
-      errors.push("Last name must be at least 2 characters long")
+      errors.push("Last name must be at least 2 characters long");
     } else if (!/^[a-zA-Z\s'-]+$/.test(profileData.lastName.trim())) {
-      errors.push("Last name can only contain letters, spaces, hyphens, and apostrophes")
+      errors.push(
+        "Last name can only contain letters, spaces, hyphens, and apostrophes",
+      );
     }
 
     // Validate email
     if (!profileData.email.trim()) {
-      errors.push("Email is required")
+      errors.push("Email is required");
     } else {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(profileData.email.trim())) {
-        errors.push("Please enter a valid email address")
+        errors.push("Please enter a valid email address");
       }
     }
 
     // Validate phone number if provided
     if (profileData.phone.trim()) {
-      const phoneRegex = /^[\+]?[0-9\s\-\(\)]{10,15}$/
+      const phoneRegex = /^[\+]?[0-9\s\-\(\)]{10,15}$/;
       if (!phoneRegex.test(profileData.phone.trim())) {
-        errors.push("Please enter a valid phone number")
+        errors.push("Please enter a valid phone number");
       }
     }
 
     // Validate date of birth if provided
     if (profileData.dateOfBirth) {
-      const birthDate = new Date(profileData.dateOfBirth)
-      const today = new Date()
-      const age = today.getFullYear() - birthDate.getFullYear()
+      const birthDate = new Date(profileData.dateOfBirth);
+      const today = new Date();
+      const age = today.getFullYear() - birthDate.getFullYear();
 
       if (birthDate > today) {
-        errors.push("Date of birth cannot be in the future")
+        errors.push("Date of birth cannot be in the future");
       } else if (age < 13) {
-        errors.push("You must be at least 13 years old")
+        errors.push("You must be at least 13 years old");
       } else if (age > 150) {
-        errors.push("Please enter a valid date of birth")
+        errors.push("Please enter a valid date of birth");
       }
     }
 
     // Validate gender if provided
-    if (profileData.gender && !['male', 'female', 'other', 'prefer-not-to-say'].includes(profileData.gender)) {
-      errors.push("Please select a valid gender option")
+    if (
+      profileData.gender &&
+      !["male", "female", "other", "prefer-not-to-say"].includes(
+        profileData.gender,
+      )
+    ) {
+      errors.push("Please select a valid gender option");
     }
 
     // If there are validation errors, show them
@@ -247,221 +324,243 @@ export default function ProfilePage() {
       toast({
         title: "Validation Error",
         description: errors[0], // Show first error
-        variant: "destructive"
-      })
-      return
+        variant: "destructive",
+      });
+      return;
     }
 
     try {
       // Save to localStorage for persistence
       const profileToSave = {
         ...profileData,
-        updatedAt: new Date().toISOString()
-      }
-      localStorage.setItem('userProfile', JSON.stringify(profileToSave))
+        updatedAt: new Date().toISOString(),
+      };
+      localStorage.setItem("userProfile", JSON.stringify(profileToSave));
 
       // Update the user display name if it changed
-      if (user && `${profileData.firstName} ${profileData.lastName}` !== user.displayName) {
+      if (
+        user &&
+        `${profileData.firstName} ${profileData.lastName}` !== user.displayName
+      ) {
         // In a real app, you'd update this in your backend/Firebase
-        console.log('Would update user display name:', `${profileData.firstName} ${profileData.lastName}`)
+        console.log(
+          "Would update user display name:",
+          `${profileData.firstName} ${profileData.lastName}`,
+        );
       }
 
       toast({
         title: "Profile updated",
         description: "Your profile information has been saved successfully.",
-      })
-      setIsEditing(false)
+      });
+      setIsEditing(false);
     } catch (error) {
       toast({
         title: "Save failed",
-        description: "There was an error saving your profile. Please try again.",
-        variant: "destructive"
-      })
+        description:
+          "There was an error saving your profile. Please try again.",
+        variant: "destructive",
+      });
     }
-  }
+  };
 
   const handlePreferenceChange = (key: string, value: boolean | string) => {
-    const updatedPreferences = { ...preferences, [key]: value }
-    setPreferences(updatedPreferences)
+    const updatedPreferences = { ...preferences, [key]: value };
+    setPreferences(updatedPreferences);
 
     // Save to localStorage
     try {
-      localStorage.setItem('userPreferences', JSON.stringify(updatedPreferences))
+      localStorage.setItem(
+        "userPreferences",
+        JSON.stringify(updatedPreferences),
+      );
     } catch (error) {
-      console.error("Error saving preferences:", error)
+      console.error("Error saving preferences:", error);
     }
 
     toast({
       title: "Preference updated",
       description: "Your preference has been saved.",
-    })
-  }
+    });
+  };
 
   const handleAddressChange = (key: string, value: any) => {
-    setAddressForm((prev) => ({ ...prev, [key]: value }))
-  }
+    setAddressForm((prev) => ({ ...prev, [key]: value }));
+  };
 
   const openAddAddressDialog = () => {
-    setCurrentAddress(null)
+    setCurrentAddress(null);
     setAddressForm({
-      id: Date.now(), // Generate a temporary ID
       type: "Home",
-      name: `${profileData.firstName} ${profileData.lastName}`.trim() || "John Doe",
+      name:
+        `${profileData.firstName} ${profileData.lastName}`.trim() || "John Doe",
       address: "",
       city: "",
       postalCode: "",
       country: "United Kingdom",
       isDefault: addresses.length === 0, // Make default if it's the first address
-    })
-    setAddressDialogOpen(true)
-  }
+    });
+    setAddressDialogOpen(true);
+  };
 
   const openEditAddressDialog = (address: any) => {
-    setCurrentAddress(address)
+    setCurrentAddress(address);
     setAddressForm({
-      ...address
-    })
-    setAddressDialogOpen(true)
-  }
+      ...address,
+    });
+    setAddressDialogOpen(true);
+  };
 
-  const handleDeleteAddress = (id: number) => {
-    const updatedAddresses = addresses.filter(address => address.id !== id)
-    
-    // If we deleted the default address and have other addresses, make another one default
-    if (addresses.find(a => a.id === id)?.isDefault && updatedAddresses.length > 0) {
-      updatedAddresses[0].isDefault = true
-    }
-    
-    setAddresses(updatedAddresses)
+  const handleDeleteAddress = async (id: string) => {
+    if (!user) return;
 
-    // Save to localStorage
     try {
-      localStorage.setItem('userAddresses', JSON.stringify(updatedAddresses))
+      await deleteUserAddress(user.uid, id);
+
+      toast({
+        title: "Address deleted",
+        description: "The address has been removed from your account.",
+      });
     } catch (error) {
-      console.error("Error saving addresses:", error)
+      console.error("Error deleting address:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete address. Please try again.",
+        variant: "destructive",
+      });
     }
+  };
 
-    toast({
-      title: "Address deleted",
-      description: "The address has been removed from your account.",
-    })
-  }
+  const handleSaveAddress = async () => {
+    if (!user) return;
 
-  const handleSaveAddress = () => {
     // Validate form data
-    if (!addressForm.name || !addressForm.address || !addressForm.city || !addressForm.postalCode || !addressForm.country) {
+    if (
+      !addressForm.name ||
+      !addressForm.address ||
+      !addressForm.city ||
+      !addressForm.postalCode ||
+      !addressForm.country
+    ) {
       toast({
         title: "Missing information",
-        description: "Please in all required fields.",
-        variant: "destructive"
-      })
-      return
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
     }
 
-    // If this is an update
-    if (currentAddress) {
-      setAddresses(addresses.map(address => 
-        address.id === currentAddress.id ? addressForm : address
-      ))
-      toast({
-        title: "Address updated",
-        description: "Your address has been updated successfully."
-      })
-    } else {
-      // If setting as default, update other addresses
-      let newAddresses = [...addresses]
-      if (addressForm.isDefault) {
-        newAddresses = newAddresses.map(addr => ({ ...addr, isDefault: false }))
-      }
-      newAddresses.push(addressForm)
-      setAddresses(newAddresses)
-    }
-
-    // Save to localStorage
     try {
-      localStorage.setItem('userAddresses', JSON.stringify(addresses))
+      await saveUserAddress(user.uid, addressForm);
+
+      toast({
+        title: currentAddress ? "Address updated" : "Address saved",
+        description: currentAddress
+          ? "Your address has been updated successfully."
+          : "Your address has been saved successfully.",
+      });
+
+      setAddressDialogOpen(false);
     } catch (error) {
-      console.error("Error saving addresses:", error)
+      console.error("Error saving address:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save address. Please try again.",
+        variant: "destructive",
+      });
     }
+  };
 
-    setAddressDialogOpen(false)
-    toast({
-      title: "Address saved",
-      description: "Your address has been saved successfully.",
-    })
-  }
+  const setStatusAsDefault = async (id: string) => {
+    if (!user) return;
 
-  const setStatusAsDefault = (id: number) => {
-    setAddresses(addresses.map(address => ({
-      ...address,
-      isDefault: address.id === id
-    })))
-    toast({
-      title: "Default address updated",
-      description: "Your default address has been changed."
-    })
-  }
+    try {
+      // Update the address to set it as default
+      const addressToUpdate = addresses.find((addr) => addr.id === id);
+      if (addressToUpdate) {
+        await saveUserAddress(user.uid, {
+          ...addressToUpdate,
+          isDefault: true,
+        });
+
+        toast({
+          title: "Default address updated",
+          description: "Your default address has been changed.",
+        });
+      }
+    } catch (error) {
+      console.error("Error setting default address:", error);
+      toast({
+        title: "Error",
+        description: "Failed to set default address. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case "delivered":
-        return "bg-green-100 text-green-800"
+        return "bg-green-100 text-green-800";
       case "processing":
-        return "bg-yellow-100 text-yellow-800"
+        return "bg-yellow-100 text-yellow-800";
       case "shipped":
-        return "bg-blue-100 text-blue-800"
+        return "bg-blue-100 text-blue-800";
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-gray-100 text-gray-800";
     }
-  }
+  };
 
   // Security feature handlers
   const handlePasswordChange = (field: string, value: string) => {
-    setPasswordForm(prev => ({ ...prev, [field]: value }))
-  }
+    setPasswordForm((prev) => ({ ...prev, [field]: value }));
+  };
 
   const handleChangePassword = () => {
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       toast({
         title: "Password mismatch",
         description: "New password and confirmation password do not match",
-        variant: "destructive"
-      })
-      return
+        variant: "destructive",
+      });
+      return;
     }
 
     if (passwordForm.newPassword.length < 8) {
       toast({
         title: "Password too short",
         description: "Password must be at least 8 characters long",
-        variant: "destructive"
-      })
-      return
+        variant: "destructive",
+      });
+      return;
     }
 
     // In a real app, you'd call an API to change the password
     toast({
       title: "Password changed",
       description: "Your password has been updated successfully",
-    })
+    });
 
-    setPasswordDialogOpen(false)
+    setPasswordDialogOpen(false);
     setPasswordForm({
       currentPassword: "",
       newPassword: "",
       confirmPassword: "",
-    })
-  }
+    });
+  };
 
   const handleToggleTwoFactor = () => {
-    const newTwoFactorState = !twoFactorEnabled
-    setTwoFactorEnabled(newTwoFactorState)
+    const newTwoFactorState = !twoFactorEnabled;
+    setTwoFactorEnabled(newTwoFactorState);
 
     // Save to localStorage
     try {
-      localStorage.setItem('userTwoFactorEnabled', JSON.stringify(newTwoFactorState))
+      localStorage.setItem(
+        "userTwoFactorEnabled",
+        JSON.stringify(newTwoFactorState),
+      );
     } catch (error) {
-      console.error("Error saving 2FA setting:", error)
+      console.error("Error saving 2FA setting:", error);
     }
 
     toast({
@@ -469,53 +568,61 @@ export default function ProfilePage() {
       description: newTwoFactorState
         ? "Two-factor authentication has been enabled. Check your email for setup instructions."
         : "Two-factor authentication has been disabled for your account.",
-    })
-    setTwoFactorDialogOpen(false)
-  }
+    });
+    setTwoFactorDialogOpen(false);
+  };
 
   const handleSetDefaultPaymentMethod = (id: number) => {
-    const updatedMethods = paymentMethods.map(method => ({ ...method, isDefault: method.id === id }))
-    setPaymentMethods(updatedMethods)
+    const updatedMethods = paymentMethods.map((method) => ({
+      ...method,
+      isDefault: method.id === id,
+    }));
+    setPaymentMethods(updatedMethods);
 
     // Save to localStorage
     try {
-      localStorage.setItem('userPaymentMethods', JSON.stringify(updatedMethods))
+      localStorage.setItem(
+        "userPaymentMethods",
+        JSON.stringify(updatedMethods),
+      );
     } catch (error) {
-      console.error("Error saving payment methods:", error)
+      console.error("Error saving payment methods:", error);
     }
 
     toast({
       title: "Default payment method updated",
       description: "Your default payment method has been changed",
-    })
-  }
+    });
+  };
 
   const handleDeletePaymentMethod = (id: number) => {
-    const methodToDelete = paymentMethods.find(m => m.id === id)
-    let updatedMethods = paymentMethods
+    const methodToDelete = paymentMethods.find((m) => m.id === id);
+    let updatedMethods = paymentMethods;
 
     if (methodToDelete?.isDefault && paymentMethods.length > 1) {
       // Set another method as default
       updatedMethods = paymentMethods.map((method, index) =>
-        method.id === id ? { ...method, isDefault: false } : { ...method, isDefault: index === 0 }
-      )
+        method.id === id
+          ? { ...method, isDefault: false }
+          : { ...method, isDefault: index === 0 },
+      );
     }
 
-    const finalMethods = updatedMethods.filter(method => method.id !== id)
-    setPaymentMethods(finalMethods)
+    const finalMethods = updatedMethods.filter((method) => method.id !== id);
+    setPaymentMethods(finalMethods);
 
     // Save to localStorage
     try {
-      localStorage.setItem('userPaymentMethods', JSON.stringify(finalMethods))
+      localStorage.setItem("userPaymentMethods", JSON.stringify(finalMethods));
     } catch (error) {
-      console.error("Error saving payment methods:", error)
+      console.error("Error saving payment methods:", error);
     }
 
     toast({
       title: "Payment method removed",
       description: "The payment method has been removed from your account",
-    })
-  }
+    });
+  };
 
   if (!user) {
     return (
@@ -523,14 +630,16 @@ export default function ProfilePage() {
         <div className="container mx-auto px-4">
           <div className="text-center py-16">
             <h1 className="text-3xl font-bold mb-4">Please log in</h1>
-            <p className="text-muted-foreground mb-8">You need to be logged in to view your profile.</p>
+            <p className="text-muted-foreground mb-8">
+              You need to be logged in to view your profile.
+            </p>
             <Button asChild>
               <a href="/login">Log In</a>
             </Button>
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -560,8 +669,12 @@ export default function ProfilePage() {
               </AvatarFallback>
             </Avatar>
             <div>
-              <h1 className="text-3xl font-bold">Welcome back, {user.displayName?.split(" ")[0]}!</h1>
-              <p className="text-muted-foreground">Manage your account and preferences</p>
+              <h1 className="text-3xl font-bold">
+                Welcome back, {user.displayName?.split(" ")[0]}!
+              </h1>
+              <p className="text-muted-foreground">
+                Manage your account and preferences
+              </p>
             </div>
           </div>
           <Button variant="outline" onClick={logout}>
@@ -587,7 +700,10 @@ export default function ProfilePage() {
               <MapPin className="h-4 w-4" />
               Addresses
             </TabsTrigger>
-            <TabsTrigger value="preferences" className="flex items-center gap-2">
+            <TabsTrigger
+              value="preferences"
+              className="flex items-center gap-2"
+            >
               <Settings className="h-4 w-4" />
               Preferences
             </TabsTrigger>
@@ -607,7 +723,11 @@ export default function ProfilePage() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Personal Information</CardTitle>
-                  <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditing(!isEditing)}
+                  >
                     <Edit className="h-4 w-4 mr-2" />
                     {isEditing ? "Cancel" : "Edit"}
                   </Button>
@@ -619,7 +739,12 @@ export default function ProfilePage() {
                       <Input
                         id="firstName"
                         value={profileData.firstName}
-                        onChange={(e) => setProfileData((prev) => ({ ...prev, firstName: e.target.value }))}
+                        onChange={(e) =>
+                          setProfileData((prev) => ({
+                            ...prev,
+                            firstName: e.target.value,
+                          }))
+                        }
                         disabled={!isEditing}
                       />
                     </div>
@@ -628,7 +753,12 @@ export default function ProfilePage() {
                       <Input
                         id="lastName"
                         value={profileData.lastName}
-                        onChange={(e) => setProfileData((prev) => ({ ...prev, lastName: e.target.value }))}
+                        onChange={(e) =>
+                          setProfileData((prev) => ({
+                            ...prev,
+                            lastName: e.target.value,
+                          }))
+                        }
                         disabled={!isEditing}
                       />
                     </div>
@@ -639,7 +769,12 @@ export default function ProfilePage() {
                       id="email"
                       type="email"
                       value={profileData.email}
-                      onChange={(e) => setProfileData((prev) => ({ ...prev, email: e.target.value }))}
+                      onChange={(e) =>
+                        setProfileData((prev) => ({
+                          ...prev,
+                          email: e.target.value,
+                        }))
+                      }
                       disabled={!isEditing}
                     />
                   </div>
@@ -648,7 +783,12 @@ export default function ProfilePage() {
                     <Input
                       id="phone"
                       value={profileData.phone}
-                      onChange={(e) => setProfileData((prev) => ({ ...prev, phone: e.target.value }))}
+                      onChange={(e) =>
+                        setProfileData((prev) => ({
+                          ...prev,
+                          phone: e.target.value,
+                        }))
+                      }
                       disabled={!isEditing}
                     />
                   </div>
@@ -659,7 +799,12 @@ export default function ProfilePage() {
                         id="dateOfBirth"
                         type="date"
                         value={profileData.dateOfBirth}
-                        onChange={(e) => setProfileData((prev) => ({ ...prev, dateOfBirth: e.target.value }))}
+                        onChange={(e) =>
+                          setProfileData((prev) => ({
+                            ...prev,
+                            dateOfBirth: e.target.value,
+                          }))
+                        }
                         disabled={!isEditing}
                       />
                     </div>
@@ -667,7 +812,9 @@ export default function ProfilePage() {
                       <Label htmlFor="gender">Gender</Label>
                       <Select
                         value={profileData.gender}
-                        onValueChange={(value) => setProfileData((prev) => ({ ...prev, gender: value }))}
+                        onValueChange={(value) =>
+                          setProfileData((prev) => ({ ...prev, gender: value }))
+                        }
                         disabled={!isEditing}
                       >
                         <SelectTrigger>
@@ -677,7 +824,9 @@ export default function ProfilePage() {
                           <SelectItem value="male">Male</SelectItem>
                           <SelectItem value="female">Female</SelectItem>
                           <SelectItem value="other">Other</SelectItem>
-                          <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
+                          <SelectItem value="prefer-not-to-say">
+                            Prefer not to say
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -700,10 +849,16 @@ export default function ProfilePage() {
                       <Shield className="h-5 w-5 text-green-600" />
                       <div>
                         <div className="font-medium">Password</div>
-                        <div className="text-sm text-muted-foreground">Last updated 3 months ago</div>
+                        <div className="text-sm text-muted-foreground">
+                          Last updated 3 months ago
+                        </div>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => setPasswordDialogOpen(true)}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPasswordDialogOpen(true)}
+                    >
                       Change
                     </Button>
                   </div>
@@ -711,13 +866,19 @@ export default function ProfilePage() {
                     <div className="flex items-center gap-3">
                       <Bell className="h-5 w-5 text-blue-600" />
                       <div>
-                        <div className="font-medium">Two-Factor Authentication</div>
+                        <div className="font-medium">
+                          Two-Factor Authentication
+                        </div>
                         <div className="text-sm text-muted-foreground">
                           {twoFactorEnabled ? "Enabled" : "Not enabled"}
                         </div>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => setTwoFactorDialogOpen(true)}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setTwoFactorDialogOpen(true)}
+                    >
                       {twoFactorEnabled ? "Disable" : "Enable"}
                     </Button>
                   </div>
@@ -726,10 +887,17 @@ export default function ProfilePage() {
                       <CreditCard className="h-5 w-5 text-purple-600" />
                       <div>
                         <div className="font-medium">Payment Methods</div>
-                        <div className="text-sm text-muted-foreground">{paymentMethods.length} card{paymentMethods.length !== 1 ? 's' : ''} on file</div>
+                        <div className="text-sm text-muted-foreground">
+                          {paymentMethods.length} card
+                          {paymentMethods.length !== 1 ? "s" : ""} on file
+                        </div>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => setPaymentMethodsDialogOpen(true)}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPaymentMethodsDialogOpen(true)}
+                    >
                       Manage
                     </Button>
                   </div>
@@ -748,7 +916,9 @@ export default function ProfilePage() {
                 {ordersLoading ? (
                   <div className="text-center py-8">
                     <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4 animate-pulse" />
-                    <h3 className="text-lg font-semibold mb-2">Loading your orders...</h3>
+                    <h3 className="text-lg font-semibold mb-2">
+                      Loading your orders...
+                    </h3>
                     <p className="text-muted-foreground">
                       Please wait while we fetch your order history.
                     </p>
@@ -756,9 +926,12 @@ export default function ProfilePage() {
                 ) : orderHistory.length === 0 ? (
                   <div className="text-center py-8">
                     <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No orders yet</h3>
+                    <h3 className="text-lg font-semibold mb-2">
+                      No orders yet
+                    </h3>
                     <p className="text-muted-foreground mb-4">
-                      When you place an order, it will appear here for you to track.
+                      When you place an order, it will appear here for you to
+                      track.
                     </p>
                     <Button asChild>
                       <a href="/shop">Start Shopping</a>
@@ -767,7 +940,10 @@ export default function ProfilePage() {
                 ) : (
                   <div className="space-y-4">
                     {orderHistory.map((order) => (
-                      <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div
+                        key={order.id}
+                        className="flex items-center justify-between p-4 border rounded-lg"
+                      >
                         <div className="flex items-center gap-4">
                           <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
                             <Package className="h-6 w-6" />
@@ -775,14 +951,17 @@ export default function ProfilePage() {
                           <div>
                             <div className="font-medium">{order.id}</div>
                             <div className="text-sm text-muted-foreground">
-                              {new Date(order.date).toLocaleDateString()} • {order.items} items
+                              {new Date(order.date).toLocaleDateString()} •{" "}
+                              {order.items} items
                             </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
-                          <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
+                          <Badge className={getStatusColor(order.status)}>
+                            {order.status}
+                          </Badge>
                           <Button variant="outline" size="sm" asChild>
-                            <Link to={`/order/${order.id}`}>
+                            <Link to={`/profile/orders/${order.id}`}>
                               View Details
                               <ExternalLink className="h-4 w-4 ml-2" />
                             </Link>
@@ -806,7 +985,9 @@ export default function ProfilePage() {
                 {wishlistItems.length === 0 ? (
                   <div className="text-center py-8">
                     <Heart className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">Your wishlist is empty</h3>
+                    <h3 className="text-lg font-semibold mb-2">
+                      Your wishlist is empty
+                    </h3>
                     <p className="text-muted-foreground mb-4">
                       Save items to your wishlist to easily find them later.
                     </p>
@@ -817,16 +998,19 @@ export default function ProfilePage() {
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {wishlistItems.map((item) => (
-                      <div key={item.id} className="border rounded-lg overflow-hidden">
+                      <div
+                        key={item.id}
+                        className="border rounded-lg overflow-hidden"
+                      >
                         <div className="relative">
-                          <img 
-                            src={item.image} 
-                            alt={item.name} 
+                          <img
+                            src={item.image}
+                            alt={item.name}
                             className="w-full h-48 object-cover"
                           />
-                          <Button 
-                            size="sm" 
-                            variant="destructive" 
+                          <Button
+                            size="sm"
+                            variant="destructive"
                             className="absolute top-2 right-2"
                             onClick={() => removeFromWishlist(item.id)}
                           >
@@ -835,8 +1019,10 @@ export default function ProfilePage() {
                         </div>
                         <div className="p-4">
                           <h3 className="font-medium mb-1">{item.name}</h3>
-                          <p className="text-lg font-bold text-primary">{formatPrice(item.price)}</p>
-                          <Button 
+                          <p className="text-lg font-bold text-primary">
+                            {formatPrice(item.price)}
+                          </p>
+                          <Button
                             className="w-full mt-2"
                             onClick={() => {
                               addToCart({
@@ -845,12 +1031,12 @@ export default function ProfilePage() {
                                 price: item.price,
                                 image: item.image,
                                 quantity: 1,
-                                options: {} // Add empty options object to satisfy CartItem interface
-                              })
+                                options: {}, // Add empty options object to satisfy CartItem interface
+                              });
                               toast({
                                 title: "Added to cart",
                                 description: `${item.name} has been added to your cart`,
-                              })
+                              });
                             }}
                           >
                             Add to Cart
@@ -878,7 +1064,9 @@ export default function ProfilePage() {
                 {addresses.length === 0 ? (
                   <div className="text-center py-8">
                     <MapPin className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No addresses saved</h3>
+                    <h3 className="text-lg font-semibold mb-2">
+                      No addresses saved
+                    </h3>
                     <p className="text-muted-foreground mb-4">
                       Add an address to make checkout faster.
                     </p>
@@ -894,7 +1082,15 @@ export default function ProfilePage() {
                         <div className="flex items-start justify-between">
                           <div>
                             <div className="flex items-center gap-2 mb-2">
-                              <Badge variant={address.type === "Home" ? "default" : address.type === "Work" ? "secondary" : "outline"}>
+                              <Badge
+                                variant={
+                                  address.type === "Home"
+                                    ? "default"
+                                    : address.type === "Work"
+                                      ? "secondary"
+                                      : "outline"
+                                }
+                              >
                                 {address.type}
                               </Badge>
                               {address.isDefault && (
@@ -903,21 +1099,30 @@ export default function ProfilePage() {
                             </div>
                             <h3 className="font-medium">{address.name}</h3>
                             <p className="text-sm text-muted-foreground">
-                              {address.address}, {address.city}, {address.postalCode}, {address.country}
+                              {address.address}, {address.city},{" "}
+                              {address.postalCode}, {address.country}
                             </p>
                           </div>
                           <div className="flex gap-2">
                             {!address.isDefault && (
-                              <Button variant="outline" size="sm" onClick={() => setStatusAsDefault(address.id)}>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setStatusAsDefault(address.id)}
+                              >
                                 Set as Default
                               </Button>
                             )}
-                            <Button variant="outline" size="sm" onClick={() => openEditAddressDialog(address)}>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openEditAddressDialog(address)}
+                            >
                               Edit
                             </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
+                            <Button
+                              variant="outline"
+                              size="sm"
                               onClick={() => handleDeleteAddress(address.id)}
                               disabled={address.isDefault}
                             >
@@ -933,17 +1138,24 @@ export default function ProfilePage() {
             </Card>
 
             {/* Address Dialog */}
-            <Dialog open={addressDialogOpen} onOpenChange={setAddressDialogOpen}>
+            <Dialog
+              open={addressDialogOpen}
+              onOpenChange={setAddressDialogOpen}
+            >
               <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                  <DialogTitle>{currentAddress ? "Edit Address" : "Add Address"}</DialogTitle>
+                  <DialogTitle>
+                    {currentAddress ? "Edit Address" : "Add Address"}
+                  </DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div>
                     <Label htmlFor="addressType">Address Type</Label>
-                    <RadioGroup 
-                      value={addressForm.type} 
-                      onValueChange={(value) => handleAddressChange("type", value)}
+                    <RadioGroup
+                      value={addressForm.type}
+                      onValueChange={(value) =>
+                        handleAddressChange("type", value)
+                      }
                       className="flex space-x-4 mt-2"
                     >
                       <div className="flex items-center space-x-2">
@@ -969,56 +1181,70 @@ export default function ProfilePage() {
                       </div>
                     </RadioGroup>
                   </div>
-                  
+
                   <div>
                     <Label htmlFor="name">Full Name</Label>
-                    <Input 
+                    <Input
                       id="name"
                       value={addressForm.name}
-                      onChange={(e) => handleAddressChange("name", e.target.value)}
+                      onChange={(e) =>
+                        handleAddressChange("name", e.target.value)
+                      }
                     />
                   </div>
-                  
+
                   <div>
                     <Label htmlFor="address">Street Address</Label>
-                    <Input 
+                    <Input
                       id="address"
                       value={addressForm.address}
-                      onChange={(e) => handleAddressChange("address", e.target.value)}
+                      onChange={(e) =>
+                        handleAddressChange("address", e.target.value)
+                      }
                     />
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="city">City</Label>
-                      <Input 
+                      <Input
                         id="city"
                         value={addressForm.city}
-                        onChange={(e) => handleAddressChange("city", e.target.value)}
+                        onChange={(e) =>
+                          handleAddressChange("city", e.target.value)
+                        }
                       />
                     </div>
                     <div>
                       <Label htmlFor="postalCode">Postal Code</Label>
-                      <Input 
+                      <Input
                         id="postalCode"
                         value={addressForm.postalCode}
-                        onChange={(e) => handleAddressChange("postalCode", e.target.value)}
+                        onChange={(e) =>
+                          handleAddressChange("postalCode", e.target.value)
+                        }
                       />
                     </div>
                   </div>
-                  
+
                   <div>
                     <Label htmlFor="country">Country</Label>
-                    <Select 
+                    <Select
                       value={addressForm.country}
-                      onValueChange={(value) => handleAddressChange("country", value)}
+                      onValueChange={(value) =>
+                        handleAddressChange("country", value)
+                      }
                     >
                       <SelectTrigger id="country">
                         <SelectValue placeholder="Select country" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="United Kingdom">United Kingdom</SelectItem>
-                        <SelectItem value="United States">United States</SelectItem>
+                        <SelectItem value="United Kingdom">
+                          United Kingdom
+                        </SelectItem>
+                        <SelectItem value="United States">
+                          United States
+                        </SelectItem>
                         <SelectItem value="Canada">Canada</SelectItem>
                         <SelectItem value="Australia">Australia</SelectItem>
                         <SelectItem value="Nigeria">Nigeria</SelectItem>
@@ -1026,19 +1252,24 @@ export default function ProfilePage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div className="flex items-center space-x-2">
-                    <Switch 
+                    <Switch
                       id="isDefault"
                       checked={addressForm.isDefault}
-                      onCheckedChange={(checked) => handleAddressChange("isDefault", checked)}
+                      onCheckedChange={(checked) =>
+                        handleAddressChange("isDefault", checked)
+                      }
                       disabled={currentAddress?.isDefault} // Can't uncheck if it's already the default
                     />
                     <Label htmlFor="isDefault">Set as default address</Label>
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setAddressDialogOpen(false)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => setAddressDialogOpen(false)}
+                  >
                     Cancel
                   </Button>
                   <Button onClick={handleSaveAddress}>
@@ -1049,7 +1280,10 @@ export default function ProfilePage() {
             </Dialog>
 
             {/* Password Change Dialog */}
-            <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
+            <Dialog
+              open={passwordDialogOpen}
+              onOpenChange={setPasswordDialogOpen}
+            >
               <DialogContent className="sm:max-w-[400px]">
                 <DialogHeader>
                   <DialogTitle>Change Password</DialogTitle>
@@ -1061,7 +1295,9 @@ export default function ProfilePage() {
                       id="currentPassword"
                       type="password"
                       value={passwordForm.currentPassword}
-                      onChange={(e) => handlePasswordChange("currentPassword", e.target.value)}
+                      onChange={(e) =>
+                        handlePasswordChange("currentPassword", e.target.value)
+                      }
                     />
                   </div>
                   <div>
@@ -1070,21 +1306,30 @@ export default function ProfilePage() {
                       id="newPassword"
                       type="password"
                       value={passwordForm.newPassword}
-                      onChange={(e) => handlePasswordChange("newPassword", e.target.value)}
+                      onChange={(e) =>
+                        handlePasswordChange("newPassword", e.target.value)
+                      }
                     />
                   </div>
                   <div>
-                    <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                    <Label htmlFor="confirmPassword">
+                      Confirm New Password
+                    </Label>
                     <Input
                       id="confirmPassword"
                       type="password"
                       value={passwordForm.confirmPassword}
-                      onChange={(e) => handlePasswordChange("confirmPassword", e.target.value)}
+                      onChange={(e) =>
+                        handlePasswordChange("confirmPassword", e.target.value)
+                      }
                     />
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setPasswordDialogOpen(false)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => setPasswordDialogOpen(false)}
+                  >
                     Cancel
                   </Button>
                   <Button onClick={handleChangePassword}>
@@ -1095,7 +1340,10 @@ export default function ProfilePage() {
             </Dialog>
 
             {/* Two-Factor Authentication Dialog */}
-            <Dialog open={twoFactorDialogOpen} onOpenChange={setTwoFactorDialogOpen}>
+            <Dialog
+              open={twoFactorDialogOpen}
+              onOpenChange={setTwoFactorDialogOpen}
+            >
               <DialogContent className="sm:max-w-[400px]">
                 <DialogHeader>
                   <DialogTitle>Two-Factor Authentication</DialogTitle>
@@ -1109,13 +1357,15 @@ export default function ProfilePage() {
                     <p className="text-sm text-muted-foreground">
                       {twoFactorEnabled
                         ? "Two-factor authentication will be disabled for your account."
-                        : "Add an extra layer of security to your account by enabling two-factor authentication."
-                      }
+                        : "Add an extra layer of security to your account by enabling two-factor authentication."}
                     </p>
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setTwoFactorDialogOpen(false)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => setTwoFactorDialogOpen(false)}
+                  >
                     Cancel
                   </Button>
                   <Button onClick={handleToggleTwoFactor}>
@@ -1126,7 +1376,10 @@ export default function ProfilePage() {
             </Dialog>
 
             {/* Payment Methods Dialog */}
-            <Dialog open={paymentMethodsDialogOpen} onOpenChange={setPaymentMethodsDialogOpen}>
+            <Dialog
+              open={paymentMethodsDialogOpen}
+              onOpenChange={setPaymentMethodsDialogOpen}
+            >
               <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
                   <DialogTitle>Payment Methods</DialogTitle>
@@ -1135,7 +1388,9 @@ export default function ProfilePage() {
                   {paymentMethods.length === 0 ? (
                     <div className="text-center py-8">
                       <CreditCard className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-semibold mb-2">No payment methods</h3>
+                      <h3 className="text-lg font-semibold mb-2">
+                        No payment methods
+                      </h3>
                       <p className="text-muted-foreground mb-4">
                         Add a payment method to make checkout faster.
                       </p>
@@ -1143,7 +1398,10 @@ export default function ProfilePage() {
                     </div>
                   ) : (
                     paymentMethods.map((method) => (
-                      <div key={method.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div
+                        key={method.id}
+                        className="flex items-center justify-between p-4 border rounded-lg"
+                      >
                         <div className="flex items-center gap-3">
                           <CreditCard className="h-5 w-5 text-muted-foreground" />
                           <div>
@@ -1161,7 +1419,9 @@ export default function ProfilePage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleSetDefaultPaymentMethod(method.id)}
+                              onClick={() =>
+                                handleSetDefaultPaymentMethod(method.id)
+                              }
                             >
                               Set Default
                             </Button>
@@ -1203,7 +1463,9 @@ export default function ProfilePage() {
               <CardContent>
                 <div className="text-center py-8">
                   <WalletIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Manage Your Wallet</h3>
+                  <h3 className="text-lg font-semibold mb-2">
+                    Manage Your Wallet
+                  </h3>
                   <p className="text-muted-foreground mb-4">
                     View your wallet balance, add funds, and track transactions.
                   </p>
@@ -1231,55 +1493,75 @@ export default function ProfilePage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">Email Notifications</div>
-                      <div className="text-sm text-muted-foreground">Receive notifications via email</div>
+                      <div className="text-sm text-muted-foreground">
+                        Receive notifications via email
+                      </div>
                     </div>
                     <Switch
                       checked={preferences.emailNotifications}
-                      onCheckedChange={(checked) => handlePreferenceChange("emailNotifications", checked)}
+                      onCheckedChange={(checked) =>
+                        handlePreferenceChange("emailNotifications", checked)
+                      }
                     />
                   </div>
                   <Separator />
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">SMS Notifications</div>
-                      <div className="text-sm text-muted-foreground">Receive notifications via SMS</div>
+                      <div className="text-sm text-muted-foreground">
+                        Receive notifications via SMS
+                      </div>
                     </div>
                     <Switch
                       checked={preferences.smsNotifications}
-                      onCheckedChange={(checked) => handlePreferenceChange("smsNotifications", checked)}
+                      onCheckedChange={(checked) =>
+                        handlePreferenceChange("smsNotifications", checked)
+                      }
                     />
                   </div>
                   <Separator />
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">Order Updates</div>
-                      <div className="text-sm text-muted-foreground">Get notified about order status changes</div>
+                      <div className="text-sm text-muted-foreground">
+                        Get notified about order status changes
+                      </div>
                     </div>
                     <Switch
                       checked={preferences.orderUpdates}
-                      onCheckedChange={(checked) => handlePreferenceChange("orderUpdates", checked)}
+                      onCheckedChange={(checked) =>
+                        handlePreferenceChange("orderUpdates", checked)
+                      }
                     />
                   </div>
                   <Separator />
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">Marketing Emails</div>
-                      <div className="text-sm text-muted-foreground">Receive promotional offers and updates</div>
+                      <div className="text-sm text-muted-foreground">
+                        Receive promotional offers and updates
+                      </div>
                     </div>
                     <Switch
                       checked={preferences.marketingEmails}
-                      onCheckedChange={(checked) => handlePreferenceChange("marketingEmails", checked)}
+                      onCheckedChange={(checked) =>
+                        handlePreferenceChange("marketingEmails", checked)
+                      }
                     />
                   </div>
                   <Separator />
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">Newsletter</div>
-                      <div className="text-sm text-muted-foreground">Subscribe to our weekly newsletter</div>
+                      <div className="text-sm text-muted-foreground">
+                        Subscribe to our weekly newsletter
+                      </div>
                     </div>
                     <Switch
                       checked={preferences.newsletter}
-                      onCheckedChange={(checked) => handlePreferenceChange("newsletter", checked)}
+                      onCheckedChange={(checked) =>
+                        handlePreferenceChange("newsletter", checked)
+                      }
                     />
                   </div>
                 </CardContent>
@@ -1294,7 +1576,9 @@ export default function ProfilePage() {
                     <Label htmlFor="language">Language</Label>
                     <Select
                       value={preferences.language}
-                      onValueChange={(value) => handlePreferenceChange("language", value)}
+                      onValueChange={(value) =>
+                        handlePreferenceChange("language", value)
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -1311,7 +1595,9 @@ export default function ProfilePage() {
                     <Label htmlFor="currency">Currency</Label>
                     <Select
                       value={preferences.currency}
-                      onValueChange={(value) => handlePreferenceChange("currency", value)}
+                      onValueChange={(value) =>
+                        handlePreferenceChange("currency", value)
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -1335,7 +1621,10 @@ export default function ProfilePage() {
                   <Button variant="outline" className="w-full justify-start">
                     Download My Data
                   </Button>
-                  <Button variant="outline" className="w-full justify-start text-destructive hover:text-destructive">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-destructive hover:text-destructive"
+                  >
                     Delete Account
                   </Button>
                 </CardContent>
@@ -1345,5 +1634,5 @@ export default function ProfilePage() {
         </Tabs>
       </div>
     </div>
-  )
+  );
 }
