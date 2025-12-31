@@ -10,7 +10,7 @@ import { updateVendorStore } from "@/lib/firebase-vendors"
 import { useToast } from "@/hooks/use-toast"
 import { Shield, CheckCircle, AlertCircle, Clock, UserCheck, ArrowRight, ArrowLeft } from "lucide-react"
 import { validateBankAccountData, createCustomer, resolveBankAccount, resolveBvn, resolveBankFromAccountNumber, CustomerData, BankAccountData, BvnData } from "@/lib/paystack-kyc"
-import { NIGERIAN_BANKS, getBankNameByCode, getBankCodeByName } from "@/lib/nigerian-banks"
+import { NIGERIAN_BANKS, getCurrentBanksInfo } from "@/lib/nigerian-banks"
 import {
   Select,
   SelectContent,
@@ -48,6 +48,18 @@ export default function VendorDashboardKyc() {
   // Ref to track if we've already resolved the bank for the current account number
   const resolvedAccountNumberRef = useRef<string>("")
 
+  const requestCurrentBanks = async()=>{
+
+    const getCurrentBankInfos = await getCurrentBanksInfo()
+    console.log("getCurrentBankInfos", getCurrentBankInfos)
+    setNigerianBank(getCurrentBankInfos)
+    
+  }
+
+  useEffect(()=>{
+      requestCurrentBanks()
+  }, [])
+
   // Initialize verificationStatus based on vendor's KYC status
   useEffect(() => {
     if (activeStore?.kycStatus) {
@@ -66,95 +78,81 @@ export default function VendorDashboardKyc() {
   }, [activeStore])
 
   // Auto-detect bank and account name when account number is entered
+  // Auto-resolve bank when account number is entered
   useEffect(() => {
-    const resolveBankAndAccount = async () => {
-      // Only resolve if we have a complete valid account number (10 digits) and it's different from the last resolved one
-      if (
-        kycData.accountNumber &&
-        kycData.accountNumber.length === 10 && // Only try when we have exactly 10 digits
-        /^\d+$/.test(kycData.accountNumber) &&
-        kycData.accountNumber !== resolvedAccountNumberRef.current
-      ) {
-        setIsResolvingAccount(true);
-        try {
-          // Add a user-facing delay message
-          toast({
-            title: "Detecting Bank",
-            description: "Please wait while we detect your bank information...",
-          });
-          
-          // Resolve bank and account name from account number
-          const result = await resolveBankFromAccountNumber(kycData.accountNumber);
-          
-          setKycData(prev => ({
-            ...prev,
-            bankCode: result.bank_code,
-            bankName: result.bank_name
-          }));
-          
-          // Also get the account name using the bank account resolution API
-          const bankAccountData: BankAccountData = {
-            bank_code: result.bank_code,
-            country_code: "NG",
-            account_number: kycData.accountNumber
-          };
-          
-          const accountResult = await resolveBankAccount(
-            bankAccountData,
-            `${kycData.firstName} ${kycData.lastName}`
-          );
-          
-          setKycData(prev => ({
-            ...prev,
-            accountName: accountResult.account_name
-          }));
-          
-          resolvedAccountNumberRef.current = kycData.accountNumber;
-          
-          toast({
-            title: "Bank Detected",
-            description: `Successfully detected ${result.bank_name}`,
-          });
-        } catch (error: any) {
-          console.error("Error resolving bank or account:", error);
-          // Clear bank info if resolution fails
-          setKycData(prev => ({
-            ...prev,
-            bankCode: "",
-            bankName: "",
-            accountName: ""
-          }));
-          
-          toast({
-            title: "Detection Failed",
-            description: error.message || "Could not automatically detect bank. Please select bank manually.",
-            variant: "destructive",
-          });
-        } finally {
-          setIsResolvingAccount(false);
+    
+    const resolveBankFromAccount = async () => {
+      
+      // Only attempt to resolve if we have a valid account number (10-12 digits) 
+      // and we haven't already resolved for this account number
+      if (kycData.accountNumber.length >= 10 && 
+          kycData.accountNumber.length <= 12 &&
+          /^\d+$/.test(kycData.accountNumber) && 
+          !isResolvingAccount && 
+          resolvedAccountNumberRef.current !== kycData.accountNumber) {
+        
+        // Update the ref to prevent multiple resolutions for the same account number
+        resolvedAccountNumberRef.current = kycData.accountNumber
+        setIsResolvingAccount(true)
+        if(kycData.accountNumber !== "" && kycData.bankCode !== ""){
+            try {
+              // Call the Paystack API to resolve the bank from account number
+              const bankResult = await resolveBankFromAccountNumber(kycData.accountNumber, kycData.bankCode)
+              console.log("bankResult", bankResult)
+              // Also try to resolve the account name
+              let accountName = ""
+              try {
+                const fullName = `${kycData.firstName} ${kycData.lastName}`.trim()
+                const bankAccountData: BankAccountData = {
+                  bank_code: bankResult.bank_code,
+                  country_code: "NG",
+                  account_number: bankResult?.account_number || kycData.accountNumber,
+                  account_name: bankResult?.account_name
+                }
+                const accountResult = await resolveBankAccount(bankAccountData, fullName)
+                // console.log(accountResult, "accountResult")
+                accountName = accountResult.account_name
+              } catch (accountError) {
+                console.error("Error resolving account name:", accountError)
+                // Use a default account name if we can't resolve it
+                accountName = `${kycData.firstName} ${kycData.lastName}`.trim() || "Account Holder"
+              } 
+              
+              setKycData(prev => ({
+                ...prev,
+                bankCode: bankResult.bank_code,
+                bankName: kycData.bankName,
+                accountName: accountName
+              }))
+              
+              toast({
+                title: "Bank Detected",
+                description: `Account resolved to ${bankResult.bank_name}`,
+              })
+          } catch (error) {
+              console.error("Error resolving bank:", error)
+              toast({
+                title: "Bank Detection Failed",
+                description: "Could not automatically detect bank. Please select manually.",
+                variant: "destructive",
+              })
+          } finally {
+              setIsResolvingAccount(false)
+          }
         }
-      } else if (kycData.accountNumber && (kycData.accountNumber.length < 10 || !/^\d+$/.test(kycData.accountNumber) || kycData.accountNumber.length > 10)) {
-        // Clear bank info if account number becomes invalid or is not exactly 10 digits
-        setKycData(prev => ({
-          ...prev,
-          bankCode: "",
-          bankName: "",
-          accountName: ""
-        }));
-        resolvedAccountNumberRef.current = "";
+        
       }
-    };
-
-    // Only try to resolve when we have exactly 10 digits to avoid too many API calls
-    if (kycData.accountNumber && kycData.accountNumber.length === 10) {
-      // Add a much longer delay to avoid too many API calls
-      const timeoutId = setTimeout(() => {
-        resolveBankAndAccount();
-      }, 5000); // Reduced delay to 5 seconds for better UX
-
-      return () => clearTimeout(timeoutId);
     }
-  }, [kycData.accountNumber, kycData.firstName, kycData.lastName]);
+    
+    // Add a small delay to avoid too many API calls while typing
+    const timer = setTimeout(() => {
+      if (kycData.accountNumber.length >= 10) {
+        resolveBankFromAccount()
+      }
+    }, 500)
+    
+    return () => clearTimeout(timer)
+  }, [kycData.accountNumber, kycData.bankCode])
 
   const handleInputChange = (field: string, value: string) => {
     setKycData(prev => ({ ...prev, [field]: value }))
@@ -166,7 +164,7 @@ export default function VendorDashboardKyc() {
         resolvedAccountNumberRef.current = ""
         setKycData(prev => ({ 
           ...prev, 
-          bankCode: "",
+          // bankCode: "",
           bankName: "",
           accountName: ""
         }))
@@ -197,6 +195,7 @@ export default function VendorDashboardKyc() {
       
       // Create customer with Paystack
       const result = await createCustomer(customerData);
+      console.log('result', result)
       setCustomerId(result.customer_code);
       
       toast({
@@ -241,7 +240,14 @@ export default function VendorDashboardKyc() {
         bankAccountData,
         `${kycData.firstName} ${kycData.lastName}`
       );
-      
+      // STORE TO FIRBBASE RHAPEH VICTORE !!!!!!
+      const getBankName = nigerianBank.filter( bank=>bank.code === kycData.bankCode  )
+      const storeUserAccountData = {
+        ...result,
+        bank_name: getBankName[0].name
+      }
+      // this is what u want to store @storeUserAccountData@
+
       if (result.verified) {
         toast({
           title: "Success",
@@ -278,7 +284,9 @@ export default function VendorDashboardKyc() {
       const bvnData: BvnData = {
         bvn: kycData.bvn,
         first_name: kycData.firstName,
-        last_name: kycData.lastName
+        last_name: kycData.lastName,
+        account_number: kycData.accountNumber, // Optional but recommended
+        bank_code: kycData.bankCode, 
       }
       
       // Resolve BVN with Paystack

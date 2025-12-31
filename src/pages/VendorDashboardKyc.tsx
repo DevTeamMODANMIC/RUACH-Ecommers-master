@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react"
+import { useNavigate } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,6 +12,9 @@ import { useToast } from "@/hooks/use-toast"
 import { Shield, CheckCircle, AlertCircle, Clock, UserCheck, ArrowRight, ArrowLeft } from "lucide-react"
 import { validateBankAccountData, createCustomer, resolveBankAccount, resolveBvn, resolveBankFromAccountNumber, CustomerData, BankAccountData, BvnData } from "@/lib/paystack-kyc"
 import { NIGERIAN_BANKS, getCurrentBanksInfo } from "@/lib/nigerian-banks"
+import { useAuth } from "@/components/auth-provider"
+import { updateUserProfile } from "@/lib/firebase-auth"
+import { saveKycProgress } from "@/lib/firebase-kyc"
 import {
   Select,
   SelectContent,
@@ -21,6 +25,8 @@ import {
 
 export default function VendorDashboardKyc() {
   const { vendor, activeStore, refreshStores } = useVendor()
+  const { user, profile, updateProfile } = useAuth()
+  const navigate = useNavigate()
   const { toast } = useToast()
   const [kycData, setKycData] = useState({
     firstName: "",
@@ -31,10 +37,13 @@ export default function VendorDashboardKyc() {
     bankCode: "",
     accountNumber: "",
     accountName: "",
-    bvn: ""
+    bvn: "",
+    dateOfBirth: ""
   })
 
   const [nigerianBank, setNigerianBank] = useState(NIGERIAN_BANKS)
+  const [kycId, setKycId] = useState(profile?.kycData?.kycId || "")
+  const [bankDetectionMode, setBankDetectionMode] = useState<"auto" | "manual">("auto")
   
   // Step-by-step KYC process
   const [currentStep, setCurrentStep] = useState(1) // 1: Customer Info, 2: Bank Account, 3: BVN
@@ -47,6 +56,7 @@ export default function VendorDashboardKyc() {
 
   // Ref to track if we've already resolved the bank for the current account number
   const resolvedAccountNumberRef = useRef<string>("")
+  const hasRedirectedRef = useRef(false)
 
   const requestCurrentBanks = async()=>{
 
@@ -59,7 +69,30 @@ export default function VendorDashboardKyc() {
       requestCurrentBanks()
   }, [])
 
+  useEffect(() => {
+    setKycId(profile?.kycData?.kycId || "")
+  }, [profile?.kycData?.kycId])
+
+  // MAKE SURE TO UNCOMMENT THIS CODE!!
+  // useEffect(() => {
+  //   if (hasRedirectedRef.current) return
+
+  //   const status = profile?.kycStatus || activeStore?.kycStatus
+  //   const identifier = profile?.kycData?.kycId || kycId || ""
+
+  //   if (status === "verified") {
+  //     const query = identifier ? `?kycId=${encodeURIComponent(identifier)}` : ""
+  //     navigate(`/kyc/success${query}`)
+  //     hasRedirectedRef.current = true
+  //   } else if (status === "pending") {
+  //     const query = identifier ? `?kycId=${encodeURIComponent(identifier)}` : ""
+  //     navigate(`/kyc/pending${query}`)
+  //     hasRedirectedRef.current = true
+  //   }
+  // }, [profile?.kycStatus, profile?.kycData?.kycId, activeStore?.kycStatus, kycId, navigate])
+
   // Initialize verificationStatus based on vendor's KYC status
+  
   useEffect(() => {
     if (activeStore?.kycStatus) {
       setVerificationStatus(activeStore.kycStatus)
@@ -79,6 +112,9 @@ export default function VendorDashboardKyc() {
   // Auto-detect bank and account name when account number is entered
   // Auto-resolve bank when account number is entered
   useEffect(() => {
+    if (bankDetectionMode !== "auto") {
+      return
+    }
     
     const resolveBankFromAccount = async () => {
       
@@ -97,31 +133,42 @@ export default function VendorDashboardKyc() {
             try {
               // Call the Paystack API to resolve the bank from account number
               const bankResult = await resolveBankFromAccountNumber(kycData.accountNumber, kycData.bankCode)
+              
               console.log("bankResult", bankResult)
               // Also try to resolve the account name
-              let accountName = ""
-              try {
-                const fullName = `${kycData.firstName} ${kycData.lastName}`.trim()
-                const bankAccountData: BankAccountData = {
-                  bank_code: bankResult.bank_code,
-                  country_code: "NG",
-                  account_number: bankResult?.account_number || kycData.accountNumber,
-                  account_name: bankResult?.account_name
-                }
-                const accountResult = await resolveBankAccount(bankAccountData, fullName)
-                // console.log(accountResult, "accountResult")
-                accountName = accountResult.account_name
-              } catch (accountError) {
-                console.error("Error resolving account name:", accountError)
-                // Use a default account name if we can't resolve it
-                accountName = `${kycData.firstName} ${kycData.lastName}`.trim() || "Account Holder"
-              } 
+              // let accountName = ""
+              const bankAccountData: BankAccountData = {
+                bank_code: bankResult.bank_code,
+                country_code: "NG",
+                account_number: bankResult?.account_number || kycData.accountNumber,
+                account_name: bankResult?.account_name
+              }
+
+              console.log("bankAccountData", bankAccountData)
+
+              // try {
+              //   const fullName = `${kycData.firstName} ${kycData.lastName}`.trim()
+              //   const bankAccountData: BankAccountData = {
+              //     bank_code: bankResult.bank_code,
+              //     country_code: "NG",
+              //     account_number: bankResult?.account_number || kycData.accountNumber,
+              //     account_name: bankResult?.account_name
+              //   }
+              //   // const accountResult = await resolveBankAccount(bankAccountData, fullName)
+              //   // console.log(accountResult, "accountResult")
+              //   accountName = accountResult.account_name
+              // } catch (accountError) {
+              //   console.error("Error resolving account name:", accountError)
+              //   // Use a default account name if we can't resolve it
+              //   accountName = `${kycData.firstName} ${kycData.lastName}`.trim() || "Account Holder"
+              // } 
               
               setKycData(prev => ({
                 ...prev,
+                // bankName: "",
                 bankCode: bankResult.bank_code,
-                bankName: kycData.bankName,
-                accountName: accountName
+                accountNumber: bankResult?.account_number,
+                accountName: bankResult?.account_name,
               }))
               
               toast({
@@ -151,7 +198,14 @@ export default function VendorDashboardKyc() {
     }, 500)
     
     return () => clearTimeout(timer)
-  }, [kycData.accountNumber, kycData.bankCode])
+  }, [kycData.accountNumber, kycData.bankCode, bankDetectionMode])
+
+  useEffect(() => {
+    if (bankDetectionMode === "manual") {
+      resolvedAccountNumberRef.current = ""
+      setIsResolvingAccount(false)
+    }
+  }, [bankDetectionMode])
 
   const handleInputChange = (field: string, value: string) => {
     setKycData(prev => ({ ...prev, [field]: value }))
@@ -189,7 +243,9 @@ export default function VendorDashboardKyc() {
         first_name: kycData.firstName,
         last_name: kycData.lastName,
         email: kycData.email,
-        phone: kycData.phone
+        phone: kycData.phone,
+        bvn: kycData.bvn,
+        dateOfBirth: kycData.dateOfBirth
       }
       
       // Create customer with Paystack
@@ -203,6 +259,50 @@ export default function VendorDashboardKyc() {
       });
       
       // Move to next step
+      if (result?.verified) {
+        
+        await updateVendorStore(activeStore.id, {
+          kycStatus: "verified"
+        })
+        await refreshStores()
+        setVerificationStatus("verified")
+        const ownerId = activeStore.ownerId ?? user?.uid ?? null;
+
+        if(ownerId){
+          try {
+            const identifier = await saveKycProgress(ownerId, {
+              status: "verified",
+              bvnData: {
+                bvn: kycData.bvn,
+                first_name: result.first_name,
+                last_name: result.last_name,
+                verified: result.verified,
+                phone: result.phone,
+                date_of_birth: result.dateOfBirth,
+              },
+              metadata: {
+                stage: "bvn",
+                vendorStoreId: activeStore.id,
+                customerId: result.customer_code,
+              },
+              completed: true,
+            });
+          } catch (error) {
+            
+          }
+        }
+
+        toast({
+          title: "Success",
+          description: "BVN verified successfully. Your KYC process is now complete!",
+        })
+      } else {
+        toast({
+          title: "Verification Failed",
+          description: "BVN verification was not successful. Please check the details and try again.",
+          variant: "destructive",
+        })
+      }
       setCurrentStep(2);
     } catch (error: any) {
       console.error("Error verifying customer:", error)
@@ -239,19 +339,76 @@ export default function VendorDashboardKyc() {
         bankAccountData,
         `${kycData.firstName} ${kycData.lastName}`
       );
-      // STORE TO FIRBBASE RHAPEH VICTORE !!!!!!
-      const getBankName = nigerianBank.filter( bank=>bank.code === kycData.bankCode  )
+      
+      const matchedBank = nigerianBank.find(bank => bank.code === kycData.bankCode);
+      const resolvedBankName = matchedBank?.name || result.bank_name || kycData.bankName || "Unknown Bank";
       const storeUserAccountData = {
         ...result,
-        bank_name: getBankName[0].name
-      }
-      // this is what u want to store @storeUserAccountData@
+        bank_name: resolvedBankName
+      };
 
       if (result.verified) {
         toast({
           title: "Success",
           description: "Bank account verified successfully.",
         });
+
+        setKycData(prev => ({
+          ...prev,
+          bankName: resolvedBankName,
+          accountName: result.account_name
+        }));
+
+        const ownerId = activeStore.ownerId ?? user?.uid ?? null;
+
+        if (ownerId) {
+          try {
+            const identifier = await saveKycProgress(ownerId, {
+              status: "pending",
+              bankData: {
+                bank_code: storeUserAccountData.bank_code,
+                bank_name: storeUserAccountData.bank_name,
+                account_number: storeUserAccountData.account_number,
+                account_name: storeUserAccountData.account_name,
+                verified: storeUserAccountData.verified,
+                match_status: storeUserAccountData.match_status,
+              },
+              metadata: {
+                stage: "bank",
+                vendorStoreId: activeStore.id,
+                customerId,
+              },
+            });
+
+            setKycId(identifier);
+
+            const existingKycData = profile?.kycData ?? {};
+            const updatedKycData = {
+              ...existingKycData,
+              kycId: identifier,
+              bankAccount: {
+                bank_code: storeUserAccountData.bank_code,
+                bank_name: storeUserAccountData.bank_name,
+                account_number: storeUserAccountData.account_number,
+                account_name: storeUserAccountData.account_name,
+              },
+            };
+
+            if (ownerId === user?.uid) {
+              await updateProfile({
+                kycStatus: "pending",
+                kycData: updatedKycData,
+              });
+            } else {
+              await updateUserProfile(ownerId, {
+                kycStatus: "pending",
+                kycData: updatedKycData,
+              });
+            }
+          } catch (syncError) {
+            console.error("Error persisting bank KYC data:", syncError);
+          }
+        }
         
         // Move to next step
         setCurrentStep(3);
@@ -285,31 +442,99 @@ export default function VendorDashboardKyc() {
         first_name: kycData.firstName,
         last_name: kycData.lastName,
         account_number: kycData.accountNumber, // Optional but recommended
-        bank_code: kycData.bankCode, 
+        bank_code: kycData.bankCode,
+        phoneNumber: kycData?.phone, 
+        email: kycData.email
       }
-      
+      console.log("kycData", kycData)
       // Resolve BVN with Paystack
       const result = await resolveBvn(bvnData, `${kycData.firstName} ${kycData.lastName}`)
-      
+      console.log("resulte 003", result)
       // Update vendor's KYC status if verification is successful
-      if (result.verified) {
-        await updateVendorStore(activeStore.id, {
-          kycStatus: "verified"
-        })
-        await refreshStores()
-        setVerificationStatus("verified")
+      // if (result.verified) {
+      //   const ownerId = activeStore.ownerId ?? user?.uid ?? null;
+
+      //   if (ownerId) {
+      //     try {
+      //       const identifier = await saveKycProgress(ownerId, {
+      //         status: "verified",
+      //         bvnData: {
+      //           bvn: kycData.bvn,
+      //           first_name: result.first_name,
+      //           last_name: result.last_name,
+      //           middle_name: result.middle_name,
+      //           verified: result.verified,
+      //           match_status: result.match_status,
+      //           phone: result.phone,
+      //           date_of_birth: result.date_of_birth,
+      //         },
+      //         metadata: {
+      //           stage: "bvn",
+      //           vendorStoreId: activeStore.id,
+      //           customerId,
+      //         },
+      //         completed: true,
+      //       });
+
+      //       setKycId(identifier);
+
+      //       const bankAccount =
+      //         profile?.kycData?.bankAccount ?? {
+      //           bank_code: kycData.bankCode,
+      //           bank_name: kycData.bankName,
+      //           account_number: kycData.accountNumber,
+      //           account_name: kycData.accountName,
+      //         };
+
+      //       const mergedKycData = {
+      //         ...(profile?.kycData ?? {}),
+      //         kycId: identifier,
+      //         bankAccount,
+      //         bvn: kycData.bvn,
+      //         verifiedAt: new Date(),
+      //       };
+
+      //       if (ownerId === user?.uid) {
+      //         await updateProfile({
+      //           kycStatus: "verified",
+      //           kycData: mergedKycData,
+      //         });
+      //         console.log("testing Two")
+      //       } else {
+      //         await updateUserProfile(ownerId, {
+      //           kycStatus: "verified",
+      //           kycData: mergedKycData,
+      //         });
+      //         console.log("testing one")
+      //       }
+      //       console.log("testing three")
+      //       return null
+      //     } catch (syncError) {
+      //       console.error("Error persisting BVN KYC data:", syncError);
+      //     }
+      //   }
+
+      //   await updateVendorStore(activeStore.id, {
+      //     kycStatus: "verified"
+      //   })
+      //   await refreshStores()
+      //   setVerificationStatus("verified")
         
-        toast({
-          title: "Success",
-          description: "BVN verified successfully. Your KYC process is now complete!",
-        })
-      } else {
-        toast({
-          title: "Verification Failed",
-          description: "BVN verification was not successful. Please check the details and try again.",
-          variant: "destructive",
-        })
-      }
+      //   const latestKycId = identifier || kycId || profile?.kycData?.kycId || mergedKycData.kycId;
+      //   const query = latestKycId ? `?kycId=${encodeURIComponent(latestKycId)}` : "";
+      //   navigate(`/kyc/success${query}`)
+        
+      //   toast({
+      //     title: "Success",
+      //     description: "BVN verified successfully. Your KYC process is now complete!",
+      //   })
+      // } else {
+      //   toast({
+      //     title: "Verification Failed",
+      //     description: "BVN verification was not successful. Please check the details and try again.",
+      //     variant: "destructive",
+      //   })
+      // }
     } catch (error: any) {
       console.error("Error verifying BVN:", error)
       toast({
@@ -406,6 +631,26 @@ export default function VendorDashboardKyc() {
                         )}
                       </Badge>
                     </div>
+
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="text-sm text-gray-600">KYC Reference</p>
+                        <p className="font-medium">{kycId || "Generated after bank verification"}</p>
+                      </div>
+                      <Badge variant="outline">
+                        {kycId ? (
+                          <span className="flex items-center gap-1 text-green-600">
+                            <CheckCircle className="h-3 w-3" />
+                            Active
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-blue-600">
+                            <Clock className="h-3 w-3" />
+                            Pending
+                          </span>
+                        )}
+                      </Badge>
+                    </div>
                     
                     <div className="space-y-2">
                       <Label>First Name</Label>
@@ -433,6 +678,17 @@ export default function VendorDashboardKyc() {
                         placeholder="Enter your email"
                       />
                     </div>
+
+                    <div className="space-y-2">
+                      <Label>Date Of Birth</Label>
+                      <Input 
+                        value={kycData?.dateOfBirth} 
+                        onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
+                        placeholder="Enter your email"
+                        type="date"
+                      />
+                      
+                    </div>
                     
                     <div className="space-y-2">
                       <Label>Phone</Label>
@@ -441,6 +697,20 @@ export default function VendorDashboardKyc() {
                         onChange={(e) => handleInputChange("phone", e.target.value)}
                         placeholder="Enter your phone number"
                       />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="bvn">BVN (11 digits)</Label>
+                      <Input 
+                        id="bvn"
+                        value={kycData.bvn} 
+                        onChange={(e) => handleInputChange("bvn", e.target.value)}
+                        placeholder="Enter your 11-digit BVN"
+                        maxLength={11}
+                      />
+                      {kycData.bvn.length > 0 && kycData.bvn.length !== 11 && (
+                        <p className="text-sm text-red-500">BVN must be exactly 11 digits</p>
+                      )}
                     </div>
                     
                     <div className="flex justify-between pt-4">
@@ -453,7 +723,7 @@ export default function VendorDashboardKyc() {
                       </Button>
                       <Button 
                         onClick={handleVerifyCustomer}
-                        disabled={isVerifyingCustomer || !kycData.firstName || !kycData.lastName || !kycData.email || !kycData.phone}
+                        disabled={isVerifyingCustomer || !kycData.firstName || !kycData.lastName || !kycData.email || !kycData.phone || !kycData.dateOfBirth || !kycData.bvn}
                       >
                         {isVerifyingCustomer ? "Verifying..." : "Verify Customer Information"}
                         <ArrowRight className="h-4 w-4 ml-2" />
@@ -490,6 +760,25 @@ export default function VendorDashboardKyc() {
                           </span>
                         )}
                       </Badge>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Bank Detection Mode</Label>
+                      <Select
+                        value={bankDetectionMode}
+                        onValueChange={(value) => setBankDetectionMode((value as "auto" | "manual") ?? "manual")}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose detection mode" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="auto">Automatic</SelectItem>
+                          <SelectItem value="manual">Manual</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Automatic mode tries to resolve your bank from the account number. Switch to manual if you prefer to pick the bank and enter the account name yourself.
+                      </p>
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -533,9 +822,18 @@ export default function VendorDashboardKyc() {
                       <Input 
                         value={kycData.accountName} 
                         onChange={(e) => handleInputChange("accountName", e.target.value)}
-                        placeholder="Account name will be auto-filled"
-                        readOnly
+                        placeholder={
+                          bankDetectionMode === "auto"
+                            ? "Account name will be auto-filled"
+                            : "Enter the account name as it appears on the account"
+                        }
+                        readOnly={bankDetectionMode === "auto"}
                       />
+                      <p className="text-xs text-muted-foreground">
+                        {bankDetectionMode === "auto"
+                          ? "We’ll pull the registered account name automatically after detection."
+                          : "Enter the exact account name registered with the bank to avoid delays."}
+                      </p>
                     </div>
                     
                     <div className="flex justify-between pt-4">

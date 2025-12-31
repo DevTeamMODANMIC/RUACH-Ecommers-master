@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -8,18 +8,77 @@ import { VendorLayout } from "@/components/vendor-layout"
 import { updateVendorStore } from "@/lib/firebase-vendors"
 import { DollarSign, Wallet, Shield, AlertCircle, CheckCircle, Lock } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/components/auth-provider"
+
 
 export default function VendorDashboardWallet() {
+
+  const { user, profile, updateProfile } = useAuth()
+  console.log(profile?.kycData, "sending information")
+  const [accData, setAccData] = useState(undefined)
   const { activeStore, refreshStores } = useVendor()
   const { toast } = useToast()
   const [isWithdrawing, setIsWithdrawing] = useState(false)
   const [withdrawalAmount, setWithdrawalAmount] = useState("")
+  const [storeTransferReciptID, setStoreTransferReciptID] = useState(undefined)
+  // console.log(accData, "accData information")
 
   // Check if KYC is verified
   const isKycVerified = activeStore?.kycStatus === "verified"
   
   // Wallet balance (default to 0 if not set)
   const walletBalance = activeStore?.walletBalance || 0
+
+ 
+
+  async function createTransferRecipient() {
+    try {
+      const recipiantObj = {
+        type: "nuban", // For Nigerian bank accounts
+        name: accData?.bankAccount?.account_name, // Account holder name
+        account_number: accData?.bankAccount?.account_number, // Valid 10-digit bank account number
+        bank_code: accData?.bankAccount?.bank_code, // Example: GTBank = 058, Access Bank = 044
+        currency: "NGN"
+      }
+      const response = await fetch("https://api.paystack.co/transferrecipient", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${import.meta.env.VITE_PAYSTACK_SECRET_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(recipiantObj)
+      });
+
+      const data = await response.json();
+
+      if (data.status) {
+        console.log("✅ Transfer recipient created successfully!");
+        // console.log("Recipient Code:", data.data.recipient_code);
+        // console.log("Full Response:", data.data);
+        setStoreTransferReciptID(data.data?.recipient_code) //storeTransferReciptID
+        return data.data
+      } else {
+        console.error("❌ Error creating recipient:", data.message);
+      }
+    } catch (error) {
+      console.error("⚠️ Request failed:", error);
+    }
+  } 
+
+  useEffect( ()=>{
+    if(profile?.kycData){
+      setAccData(profile?.kycData)
+    }
+  }, [profile?.kycData])
+  
+  useEffect(()=>{
+    if(accData){
+      console.log(accData)
+      createTransferRecipient()//.then(data=>console.log(data, 'getTransferRec'))
+      // console.log(getTransferRec, "getTransferRec")
+    }
+
+  }, [accData])
 
   const handleWithdraw = async () => {
     if (!activeStore) return
@@ -52,26 +111,52 @@ export default function VendorDashboardWallet() {
       })
       return
     }
+    // MORE CHANGESS
     
-    if (!activeStore.payoutSettings) {
-      toast({
-        title: "Payout Settings Required",
-        description: "Please configure your payout settings before withdrawing.",
-        variant: "destructive",
-      })
-      return
-    }
+    // if (!activeStore.payoutSettings) {
+    //   toast({
+    //     title: "Payout Settings Required",
+    //     description: "Please configure your payout settings before withdrawing.",
+    //     variant: "destructive",
+    //   })
+    //   return
+    // }
 
     setIsWithdrawing(true)
     try {
       // In a real implementation, this would initiate a withdrawal request
       // For now, we'll just show a success message
+      // async function initiateTransfer(recipientCode) {
+        const body = {
+          source: "balance",
+          amount: withdrawalAmount, // amount in kobo
+          recipient: storeTransferReciptID,
+          reason: 'Vendore Payout',
+        };
+
+        const res = await fetch("https://api.paystack.co/transfer", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${import.meta.env.VITE_PAYSTACK_SECRET_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
+        });
+
+        const data = await res.json();
+        if (!data.status) throw new Error(data.message);
+
+        console.log("✅ Transfer initiated successfully!");
+        console.log("Transfer Reference:", data.data.reference);
+        console.log("Status:", data.data.status);
+        // return data.data;
       
+
       toast({
         title: "Withdrawal Request Submitted",
         description: `Your withdrawal request for ${formatCurrency(amount)} has been submitted successfully.`,
       })
-      
+      // inset code from here
       // Reset form
       setWithdrawalAmount("")
     } catch (error) {
@@ -194,14 +279,14 @@ export default function VendorDashboardWallet() {
                   Payout Method
                 </label>
                 <div className="p-3 bg-gray-50 rounded-md">
-                  {activeStore?.payoutSettings ? (
+                  {profile?.kycData ? (
                     <div>
-                      <p className="font-medium">{activeStore.payoutSettings.bankName}</p>
+                      <p className="font-medium">{accData?.bankAccount?.bank_name}</p>
                       <p className="text-sm text-gray-600">
-                        {activeStore.payoutSettings.accountName}
+                        {accData?.bankAccount?.account_name}
                       </p>
                       <p className="text-xs text-gray-500">
-                        ****{activeStore.payoutSettings.accountNumber.slice(-4)}
+                        ****{accData?.bankAccount?.account_number.slice(-4)}
                       </p>
                     </div>
                   ) : (

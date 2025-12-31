@@ -1,0 +1,26 @@
+const result = await createCustomer(customerData);
+      setCustomerId(result.customer_code);
+      console.log(`CUSTOMER ID ${result.id} CUSTOMER CODE ${result.customer_code}`)
+      // Update vendor's KYC status
+      await updateVendorStore(activeStore.id, {
+        kycStatus: "Pending"
+      })
+      
+      await refreshStores()
+      setVerificationStatus("Pending")
+      
+      toast({
+        title: "Customer Created",
+        description: `Customer ID: ${result.id}`
+      });
+      setKycData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        bankName: "",
+        bankCode: "",
+        accountNumber: "",
+        accountName: "",
+        bvn: ""
+      })

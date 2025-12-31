@@ -68,31 +68,8 @@ export const createCustomer = async (customerData: CustomerData): Promise<Custom
       throw new Error("Missing required customer fields");
     }
     
-    // Check if we're in test mode by looking at the secret key
-    const secretKey = import.meta.env.VITE_PAYSTACK_SECRET_KEY;
-    const isTestMode = secretKey && (secretKey.startsWith('sk_test_') || !secretKey.startsWith('sk_live_'));
+    // In a production environment, you would use the actual Paystack API:
     
-    // If in test mode, return mock data to avoid hitting limits
-    if (isTestMode) {
-      // Generate a mock customer ID in CUS_xxx format
-      const customerId = `CUS_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      // Return mock response
-      return {
-        id: customerId,
-        customer_code: customerId,
-        first_name: customerData.first_name,
-        last_name: customerData.last_name,
-        email: customerData.email,
-        phone: customerData.phone,
-        metadata: {},
-        domain: "test",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-    }
-    
-    // Use the actual Paystack API for customer creation:
     const response = await fetch('https://api.paystack.co/customer', {
       method: 'POST',
       headers: {
@@ -108,45 +85,34 @@ export const createCustomer = async (customerData: CustomerData): Promise<Custom
     });
     
     if (!response.ok) {
-      const errorText = await response.text();
-      let errorMessage = `Paystack API error: ${response.statusText}`;
-      
-      try {
-        const errorData = JSON.parse(errorText);
-        errorMessage = `Paystack API error: ${errorData.message || response.statusText}`;
-      } catch (parseError) {
-        // If we can't parse the error as JSON, use the raw text
-        if (errorText) {
-          errorMessage = `Paystack API error: ${errorText}`;
-        }
-      }
-      
-      throw new Error(errorMessage);
+      throw new Error(`Paystack API error: ${response.statusText}`);
     }
     
     const result = await response.json();
+    console.log("customerData", customerData, result)
+    return result.data;
     
-    // Check if the response has the expected structure
-    if (!result.status || !result.data) {
-      throw new Error("Invalid response from Paystack API");
-    }
     
-    // For customer creation, we might need to handle different response formats
-    const customerDataResponse = result.data.data || result.data;
+    // For demonstration purposes, we'll simulate the response
+    // Generate a mock customer ID in CUS_xxx format
+    // const customerId = `CUS_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    return {
-      id: customerDataResponse.id,
-      customer_code: customerDataResponse.customer_code,
-      first_name: customerDataResponse.first_name,
-      last_name: customerDataResponse.last_name,
-      email: customerDataResponse.email,
-      phone: customerDataResponse.phone,
-      metadata: customerDataResponse.metadata || {},
-      domain: customerDataResponse.domain,
-      createdAt: customerDataResponse.createdAt,
-      updatedAt: customerDataResponse.updatedAt
-    };
+    // Simulate API delay
+    // await new Promise(resolve => setTimeout(resolve, 500));
     
+    // // Return mock response
+    // return {
+    //   id: customerId,
+    //   customer_code: customerId,
+    //   first_name: customerData.first_name,
+    //   last_name: customerData.last_name,
+    //   email: customerData.email,
+    //   phone: customerData.phone,
+    //   metadata: {},
+    //   domain: "test",
+    //   createdAt: new Date().toISOString(),
+    //   updatedAt: new Date().toISOString()
+    // };
   } catch (error) {
     console.error("Error creating customer:", error);
     throw error;
@@ -160,7 +126,8 @@ export const createCustomer = async (customerData: CustomerData): Promise<Custom
  * @returns Promise<BankResolutionResult> - The resolved bank information
  */
 export const resolveBankFromAccountNumber = async (
-  accountNumber: string
+  accountNumber: string,
+  bankCode: string
 ): Promise<BankResolutionResult> => {
   try {
     // Validate account number
@@ -168,19 +135,9 @@ export const resolveBankFromAccountNumber = async (
       throw new Error("Invalid account number. Must be 10-12 digits.");
     }
     
-    // Check if we're in test mode by looking at the secret key
-    const secretKey = import.meta.env.VITE_PAYSTACK_SECRET_KEY;
-    const isTestMode = secretKey && (secretKey.startsWith('sk_test_') || !secretKey.startsWith('sk_live_'));
+    // In a production environment, you would use the actual Paystack API:
     
-    // If in test mode, use prefix-based approach to avoid hitting limits
-    if (isTestMode) {
-      console.log("Using prefix-based approach for test mode");
-      return resolveBankFromPrefix(accountNumber);
-    }
-    
-    // Try the Paystack name enquiry endpoint which should work with just account number
-    // This is the correct approach according to the memory knowledge
-    const response = await fetch(`https://api.paystack.co/bank/resolve?account_number=${accountNumber}`, {
+    const response = await fetch(`https://api.paystack.co/bank/resolve?account_number=${accountNumber}&bank_code=${bankCode}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${import.meta.env.VITE_PAYSTACK_SECRET_KEY}`,
@@ -188,40 +145,52 @@ export const resolveBankFromAccountNumber = async (
       }
     });
     
-    if (response.ok) {
-      const result = await response.json();
-      if (result.status && result.data) {
-        return {
-          bank_code: result.data.bank_code,
-          bank_name: result.data.bank_name
-        };
-      }
-    } else {
-      const errorText = await response.text();
-      console.log("API error response:", errorText);
-      
-      // Check if we're hitting test mode limits
-      if (errorText.includes("Test mode daily limit") || errorText.includes("test bank codes")) {
-        console.log("Using test mode approach");
-        return resolveBankFromPrefix(accountNumber);
-      }
-      
-      // Try our prefix-based approach as a fallback
-      console.log("API error, using prefix-based approach");
-      return resolveBankFromPrefix(accountNumber);
+    if (!response.ok) {
+      throw new Error(`Paystack API error: ${response.statusText}`);
     }
     
-    // If all else fails, throw an error
-    throw new Error("Could not resolve bank from account number. Please select bank manually.");
+    const result = await response.json();
+    console.log("result", result)
+    return {
+      bank_code: bankCode,
+      bank_name: undefined,
+      account_name: result.data.account_name,
+      account_number: result.data.account_number
+    };
     
+    
+    // For demonstration purposes, we'll simulate the response
+    // Simulate API delay
+    // await new Promise(resolve => setTimeout(resolve, 800));
+    
+    // // Return mock response with a bank based on the account number
+    // // In a real implementation, this would come from the Paystack API
+    // const bankMapping: Record<string, { bank_code: string; bank_name: string }> = {
+    //   "044": { bank_code: "044", bank_name: "Access Bank" },
+    //   "011": { bank_code: "011", bank_name: "First Bank of Nigeria" },
+    //   "057": { bank_code: "057", bank_name: "Zenith Bank" },
+    //   "058": { bank_code: "058", bank_name: "Guaranty Trust Bank" },
+    //   "214": { bank_code: "214", bank_name: "First City Monument Bank" },
+    //   "033": { bank_code: "033", bank_name: "United Bank for Africa" },
+    //   "032": { bank_code: "032", bank_name: "Union Bank of Nigeria" },
+    //   "035": { bank_code: "035", bank_name: "Wema Bank" },
+    //   "070": { bank_code: "070", bank_name: "Fidelity Bank" },
+    //   "215": { bank_code: "215", bank_name: "Unity Bank" },
+    //   "063": { bank_code: "063", bank_name: "Access Bank (Diamond)" },
+    //   "023": { bank_code: "023", bank_name: "Citibank Nigeria" },
+    //   "101": { bank_code: "101", bank_name: "Providus Bank" },
+    //   "100": { bank_code: "100", bank_name: "Suntrust Bank" },
+    //   "221": { bank_code: "221", bank_name: "Stanbic IBTC Bank" }
+    // };
+    
+    // // Use the first 3 digits of the account number to determine the bank
+    // const bankPrefix = accountNumber.substring(0, 3);
+    // const bankInfo = bankMapping[bankPrefix] || { bank_code: "000", bank_name: "Unknown Bank" };
+    
+    // return bankInfo;
   } catch (error) {
     console.error("Error resolving bank from account number:", error);
-    // Try our prefix-based approach as a fallback
-    try {
-      return resolveBankFromPrefix(accountNumber);
-    } catch (fallbackError) {
-      throw error;
-    }
+    throw error;
   }
 };
 
@@ -298,7 +267,7 @@ export const resolveBankAccount = async (
     }
     
     const result = await response.json();
-    
+    console.log("result", result)
     // Check if the response has the expected structure
     if (!result.status || !result.data) {
       throw new Error("Invalid response from Paystack API");
@@ -424,7 +393,7 @@ const resolveBankFromPrefix = (accountNumber: string): BankResolutionResult => {
   };
 };
 
-/**
+ /*
  * Compare customer name with account name
  * @param customerName - Customer's full name
  * @param accountName - Account holder's name
@@ -523,6 +492,8 @@ export interface BvnData {
   first_name?: string;
   last_name?: string;
   middle_name?: string;
+  account_number?: any;
+  bank_code?: string;
   date_of_birth?: string; // YYYY-MM-DD format
 }
 
@@ -578,6 +549,9 @@ export const resolveBvn = async (
   bvnData: BvnData,
   customerName?: string
 ): Promise<BvnResolutionResponse> => {
+
+  // console.log("BVN", bvnData)
+
   try {
     // Validate required fields
     if (!validateBvnData(bvnData)) {
@@ -625,7 +599,9 @@ export const resolveBvn = async (
         bvn: bvnData.bvn,
         first_name: bvnData.first_name,
         last_name: bvnData.last_name,
-        middle_name: bvnData.middle_name || ""
+        middle_name: bvnData.middle_name || "",
+        account_number: bvnData.account_number, // Optional but recommended
+        bank_code: bvnData.bank_code,
       })
     });
     
@@ -652,7 +628,7 @@ export const resolveBvn = async (
     if (!result.status || !result.data) {
       throw new Error("Invalid response from Paystack API");
     }
-    
+    console.log("result 002", result)
     // Return the BVN information with verification status
     return {
       bvn: bvnData.bvn,

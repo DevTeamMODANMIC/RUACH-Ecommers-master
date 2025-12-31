@@ -1,0 +1,284 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 160 84% 39%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 160 84% 39%;
+    --radius: 0.75rem;
+    --chart-1: 160 84% 39%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+  }
+
+  body {
+    @apply bg-gradient-to-br from-slate-50 via-white to-slate-50 text-gray-900;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', 'SF Pro Display', system-ui, sans-serif;
+    line-height: 1.65;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-gray-900;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'SF Pro Display', system-ui, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+  }
+
+  h1 {
+    @apply text-4xl md:text-5xl lg:text-6xl;
+    font-weight: 800;
+  }
+
+  h2 {
+    @apply text-3xl md:text-4xl lg:text-5xl;
+    font-weight: 700;
+  }
+
+  h3 {
+    @apply text-2xl md:text-3xl;
+    font-weight: 600;
+  }
+
+  p {
+    line-height: 1.75;
+    color: rgb(71, 85, 105);
+  }
+
+  /* Remove underlines from all links */
+  a {
+    text-decoration: none;
+  }
+
+  /* Custom focus styles */
+  :focus-visible {
+    @apply ring-2 ring-primary/70 outline-none;
+  }
+  
+  /* Custom text selection styles for better visibility */
+  ::selection {
+    background-color: rgba(22, 101, 52, 0.3); /* Green with opacity */
+    color: #000;
+  }
+  
+  /* Admin-specific styles */
+  .admin-layout ::selection {
+    background-color: rgba(37, 99, 235, 0.3); /* Blue with opacity */
+    color: #000;
+  }
+}
+
+@layer utilities {
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .text-heading {
+    @apply font-poppins font-semibold;
+  }
+}
+
+@layer components {
+  .hero-gradient {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.95) 0%, rgba(5, 150, 105, 0.9) 50%, rgba(4, 120, 87, 0.95) 100%);
+  }
+
+  .product-card {
+    @apply bg-white rounded-2xl overflow-hidden border border-gray-100 transition-all duration-500 hover:shadow-2xl hover:shadow-emerald-500/10 hover:-translate-y-2;
+    backdrop-filter: blur(10px);
+  }
+
+  .product-card .product-image {
+    @apply aspect-square object-cover w-full;
+  }
+
+  .product-card .product-info {
+    @apply p-5;
+  }
+
+  .product-card .product-title {
+    @apply text-gray-900 font-semibold line-clamp-2 text-base leading-snug;
+  }
+
+  .product-card .product-category {
+    @apply text-xs text-gray-500 mb-2 font-medium uppercase tracking-wider;
+  }
+
+  .product-card .product-price {
+    @apply text-lg font-bold text-emerald-600 mt-3;
+  }
+
+  .product-card .original-price {
+    @apply line-through text-sm text-gray-400 ml-2;
+  }
+
+  .product-card .product-actions {
+    @apply flex items-center justify-between mt-4 gap-2;
+  }
+
+  .btn-primary {
+    @apply bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-semibold shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 rounded-xl transition-all duration-300;
+  }
+
+  .section-heading {
+    @apply text-3xl sm:text-4xl font-bold text-gray-900 mb-10;
+    letter-spacing: -0.02em;
+  }
+
+  .section-padding {
+    @apply py-16 sm:py-20 md:py-24;
+  }
+}
+
+/* Animation Keyframes */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Custom Animations */
+.animate-fade-in {
+  animation: fadeIn 0.8s ease-in-out;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.6s ease-out;
+}
+
+.animate-pulse-slow {
+  animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.container {
+  @apply mx-auto px-4 md:px-6;
+}
+
+/* Scrollbar Hide */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Admin Dashboard Styles */
+.admin-dashboard-link {
+  @apply bg-slate-800 text-white hover:bg-slate-700 transition-colors p-2 rounded;
+}
+
+/* Admin sidebar links - ensure good contrast */
+.admin-layout a {
+  @apply text-slate-900 dark:text-white;
+}
+
+.admin-layout a:hover {
+  @apply text-slate-700 dark:text-slate-300;
+}
+
+/* Admin page highlight fix */
+[class*="admin"] ::selection {
+  background-color: rgba(59, 130, 246, 0.3); /* Blue with opacity */
+  color: #000;
+}
+
+/* Improve visibility for admin sidebar */
+.admin-layout .bg-slate-900 a {
+  @apply text-white hover:text-slate-200;
+}
+
+.admin-layout .bg-slate-900 a.active,
+.admin-layout .bg-slate-900 a[aria-current="page"] {
+  @apply bg-slate-800 text-white;
+}
+
+.admin-layout .bg-slate-900 a:hover:not(.active):not([aria-current="page"]) {
+  @apply bg-slate-800/70;
+}
