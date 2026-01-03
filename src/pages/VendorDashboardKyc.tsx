@@ -74,22 +74,22 @@ export default function VendorDashboardKyc() {
   }, [profile?.kycData?.kycId])
 
   // MAKE SURE TO UNCOMMENT THIS CODE!!
-  // useEffect(() => {
-  //   if (hasRedirectedRef.current) return
+  useEffect(() => {
+    if (hasRedirectedRef.current) return
 
-  //   const status = profile?.kycStatus || activeStore?.kycStatus
-  //   const identifier = profile?.kycData?.kycId || kycId || ""
+    const status = profile?.kycStatus || activeStore?.kycStatus
+    const identifier = profile?.kycData?.kycId || kycId || ""
 
-  //   if (status === "verified") {
-  //     const query = identifier ? `?kycId=${encodeURIComponent(identifier)}` : ""
-  //     navigate(`/kyc/success${query}`)
-  //     hasRedirectedRef.current = true
-  //   } else if (status === "pending") {
-  //     const query = identifier ? `?kycId=${encodeURIComponent(identifier)}` : ""
-  //     navigate(`/kyc/pending${query}`)
-  //     hasRedirectedRef.current = true
-  //   }
-  // }, [profile?.kycStatus, profile?.kycData?.kycId, activeStore?.kycStatus, kycId, navigate])
+    if (status === "verified") {
+      const query = identifier ? `?kycId=${encodeURIComponent(identifier)}` : ""
+      navigate(`/kyc/success${query}`)
+      hasRedirectedRef.current = true
+    } else if (status === "pending") {
+      const query = identifier ? `?kycId=${encodeURIComponent(identifier)}` : ""
+      navigate(`/kyc/pending${query}`)
+      hasRedirectedRef.current = true
+    }
+  }, [profile?.kycStatus, profile?.kycData?.kycId, activeStore?.kycStatus, kycId, navigate])
 
   // Initialize verificationStatus based on vendor's KYC status
   
@@ -261,14 +261,11 @@ export default function VendorDashboardKyc() {
       // Move to next step
       if (result?.verified) {
         
-        await updateVendorStore(activeStore.id, {
-          kycStatus: "verified"
-        })
-        await refreshStores()
-        setVerificationStatus("verified")
+        
         const ownerId = activeStore.ownerId ?? user?.uid ?? null;
 
         if(ownerId){
+
           try {
             const identifier = await saveKycProgress(ownerId, {
               status: "verified",
@@ -287,15 +284,68 @@ export default function VendorDashboardKyc() {
               },
               completed: true,
             });
-          } catch (error) {
-            
+
+            setKycId(identifier);
+
+            const bankAccount = profile?.kycData?.bankAccount ?? {
+                bank_code: kycData.bankCode,
+                bank_name: kycData.bankName,
+                account_number: kycData.accountNumber,
+                account_name: kycData.accountName,
+            };
+
+            const mergedKycData = {
+              ...(profile?.kycData ?? {}),
+               kycId: identifier,
+              bankAccount,
+              bvn: kycData.bvn,
+              verifiedAt: new Date(),
+            }
+
+            // const mergedKycData = {
+            //   ...(profile?.kycData ?? {}),
+            //   kycId: identifier,
+            // `  bankAccount,
+            //   bvn: kycData.bvn,
+            //   verifiedAt: new Date(),
+            // };
+
+            if (ownerId === user?.uid) {
+              await updateProfile({
+                kycStatus: "verified",
+                kycData: mergedKycData,
+              });
+              console.log("testing Two")
+            } else {
+              await updateUserProfile(ownerId, {
+                kycStatus: "verified",
+                kycData: mergedKycData,
+              });
+              console.log("testing one")
+            }
+            console.log("testing three")
+            // return null
+            await updateVendorStore(activeStore.id, {
+              kycStatus: "verified"
+            })
+            await refreshStores()
+            setVerificationStatus("verified")
+
+            const latestKycId = identifier || kycId || profile?.kycData?.kycId || mergedKycData.kycId;
+            const query = latestKycId ? `?kycId=${encodeURIComponent(latestKycId)}` : "";
+            // navigate(`/kyc/success${query}`)
+
+            toast({
+              title: "Success",
+              description: "BVN verified successfully. Your KYC process is now complete!",
+            })
+            setCurrentStep(2);
+
+          }catch (syncError) {
+            console.error("Error persisting BVN KYC data:", syncError);
           }
         }
-
-        toast({
-          title: "Success",
-          description: "BVN verified successfully. Your KYC process is now complete!",
-        })
+        
       } else {
         toast({
           title: "Verification Failed",
@@ -303,7 +353,7 @@ export default function VendorDashboardKyc() {
           variant: "destructive",
         })
       }
-      setCurrentStep(2);
+      
     } catch (error: any) {
       console.error("Error verifying customer:", error)
       toast({
@@ -411,7 +461,11 @@ export default function VendorDashboardKyc() {
         }
         
         // Move to next step
-        setCurrentStep(3);
+        // setCurrentStep(3);
+        const latestKycId = kycId || profile?.kycData?.kycId;
+        const query = latestKycId ? `?kycId=${encodeURIComponent(latestKycId)}` : "";
+        navigate(`/kyc/success${query}`)
+
       } else {
         toast({
           title: "Verification Failed",
@@ -577,7 +631,7 @@ export default function VendorDashboardKyc() {
             <div className="space-y-6">
               {/* Progress indicator */}
               <div className="flex items-center justify-between mb-8">
-                {[1, 2, 3].map((step) => (
+                {[1, 2].map((step) => (
                   <div key={step} className="flex items-center">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                       currentStep === step 
@@ -857,7 +911,7 @@ export default function VendorDashboardKyc() {
               )}
               
               {/* Step 3: BVN Verification */}
-              {currentStep === 3 && (
+              {/*currentStep === 3 && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
@@ -928,7 +982,7 @@ export default function VendorDashboardKyc() {
                     </div>
                   </CardContent>
                 </Card>
-              )}
+              ) **/}
               
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                 <h3 className="font-medium text-yellow-800 mb-2">Next Steps</h3>
