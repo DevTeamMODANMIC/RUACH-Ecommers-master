@@ -99,6 +99,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { signInWithGoogle } = await import("../lib/firebase-auth"); // Correct relative path
     const getUserInfo = await signInWithGoogle();
 
+    // Send welcome email in background (non-blocking)
+    // This prevents the slow Render.com cold start from blocking login
     const configBody = {
       email: getUserInfo?.email,
       password: "",
@@ -116,8 +118,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const handeLocalhostLocation = "https://custome-backend.onrender.com/api/";
     const url = `${handeLocalhostLocation}SMTP`;
 
-    const response = await fetch(url, config);
-    const data = await response.json();
+    // Fire and forget - don't await the SMTP call
+    fetch(url, config).catch((err) => console.log("SMTP notification failed:", err));
+
     console.log("getUserInfo", getUserInfo);
 
     return getUserInfo;
