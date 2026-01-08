@@ -6,7 +6,17 @@ import { formatCurrency } from "@/lib/utils"
 import { useVendor } from "@/hooks/use-vendor"
 import { VendorLayout } from "@/components/vendor-layout"
 import { updateVendorStore } from "@/lib/firebase-vendors"
-import { DollarSign, Wallet, Shield, AlertCircle, CheckCircle, Lock } from "lucide-react"
+import { DollarSign, Wallet, Shield, AlertCircle, CheckCircle, Lock, ArrowDownToLine, ArrowUpFromLine } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/components/auth-provider"
 
@@ -21,13 +31,20 @@ export default function VendorDashboardWallet() {
   const [isWithdrawing, setIsWithdrawing] = useState(false)
   const [withdrawalAmount, setWithdrawalAmount] = useState("")
   const [storeTransferReciptID, setStoreTransferReciptID] = useState(undefined)
+  const [showTransferModal, setShowTransferModal] = useState(false)
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false)
+  const [transferAmount, setTransferAmount] = useState("")
+  const [isTransferring, setIsTransferring] = useState(false)
   // console.log(accData, "accData information")
 
   // Check if KYC is verified
   const isKycVerified = activeStore?.kycStatus === "verified"
   
-  // Wallet balance (default to 0 if not set)
+  // Wallet balances (default to 0 if not set)
   const walletBalance = activeStore?.walletBalance || 0
+  const paidOutBalance = activeStore?.paidOutBalance || 0
+  const pendingBalance = activeStore?.pendingBalance || 0 // Earnings not yet transferred to wallet
+  const totalEarnings = walletBalance + paidOutBalance + pendingBalance
 
  
 
@@ -79,6 +96,58 @@ export default function VendorDashboardWallet() {
     }
 
   }, [accData])
+
+  // Handle transfer from pending balance to wallet
+  const handleTransferToWallet = async () => {
+    if (!activeStore) return
+
+    const amount = parseFloat(transferAmount)
+    if (isNaN(amount) || amount <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid amount to transfer.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (amount > pendingBalance) {
+      toast({
+        title: "Insufficient Balance",
+        description: "You cannot transfer more than your pending balance.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsTransferring(true)
+    try {
+      // Update the store balances
+      await updateVendorStore(activeStore.id, {
+        pendingBalance: pendingBalance - amount,
+        walletBalance: walletBalance + amount,
+      })
+
+      await refreshStores()
+
+      toast({
+        title: "Transfer Successful",
+        description: `${formatCurrency(amount)} has been transferred to your wallet.`,
+      })
+
+      setTransferAmount("")
+      setShowTransferModal(false)
+    } catch (error) {
+      console.error("Error transferring to wallet:", error)
+      toast({
+        title: "Error",
+        description: "Failed to transfer funds. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsTransferring(false)
+    }
+  }
 
   const handleWithdraw = async () => {
     if (!activeStore) return
@@ -201,23 +270,83 @@ export default function VendorDashboardWallet() {
           </CardContent>
         </Card>
 
-        {/* Wallet Balance */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Wallet className="h-5 w-5" />
-              Wallet Balance
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-green-600">
-              {formatCurrency(walletBalance)}
-            </div>
-            <p className="text-sm text-gray-500 mt-1">
-              Available balance
-            </p>
-          </CardContent>
-        </Card>
+        {/* Balance Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Total Earnings */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-sm font-medium text-gray-600">
+                <DollarSign className="h-4 w-4" />
+                Total Earnings
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">
+                {formatCurrency(totalEarnings)}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Pending: {formatCurrency(pendingBalance)}
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Wallet Balance */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-sm font-medium text-gray-600">
+                <Wallet className="h-4 w-4" />
+                Wallet Balance
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                {formatCurrency(walletBalance)}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Available for withdrawal
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Paid Out Balance */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-sm font-medium text-gray-600">
+                <CheckCircle className="h-4 w-4" />
+                Paid Out
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-purple-600">
+                {formatCurrency(paidOutBalance)}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Total withdrawn
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Button
+            onClick={() => setShowTransferModal(true)}
+            disabled={pendingBalance === 0}
+            className="flex-1 bg-blue-600 hover:bg-blue-700"
+          >
+            <ArrowDownToLine className="h-4 w-4 mr-2" />
+            Transfer to Wallet
+          </Button>
+          <Button
+            onClick={() => setShowWithdrawModal(true)}
+            disabled={walletBalance === 0 || !isKycVerified}
+            variant="outline"
+            className="flex-1 border-green-600 text-green-600 hover:bg-green-50"
+          >
+            <ArrowUpFromLine className="h-4 w-4 mr-2" />
+            Withdraw to Bank
+          </Button>
+        </div>
 
         {/* Withdrawal Section */}
         <Card>
@@ -395,6 +524,126 @@ export default function VendorDashboardWallet() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Transfer to Wallet Modal */}
+      <Dialog open={showTransferModal} onOpenChange={setShowTransferModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Transfer to Wallet</DialogTitle>
+            <DialogDescription>
+              Transfer funds from your pending earnings to your wallet balance.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500">Available to transfer:</span>
+              <span className="font-medium">{formatCurrency(pendingBalance)}</span>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="transferAmount">Amount to Transfer</Label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">
+                  ₦
+                </span>
+                <Input
+                  id="transferAmount"
+                  type="number"
+                  value={transferAmount}
+                  onChange={(e) => setTransferAmount(e.target.value)}
+                  placeholder="0.00"
+                  className="pl-8"
+                />
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setTransferAmount(pendingBalance.toString())}
+              className="text-xs"
+            >
+              Transfer All
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTransferModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleTransferToWallet} disabled={isTransferring}>
+              {isTransferring ? "Transferring..." : "Transfer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Withdraw to Bank Modal */}
+      <Dialog open={showWithdrawModal} onOpenChange={setShowWithdrawModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Withdraw to Bank</DialogTitle>
+            <DialogDescription>
+              Withdraw funds from your wallet to your bank account.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {!isKycVerified && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <div className="flex items-center gap-2 text-yellow-800 text-sm">
+                  <Lock className="h-4 w-4" />
+                  <span>Complete KYC verification to enable withdrawals.</span>
+                </div>
+              </div>
+            )}
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500">Available to withdraw:</span>
+              <span className="font-medium">{formatCurrency(walletBalance)}</span>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="withdrawAmount">Amount to Withdraw</Label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">
+                  ₦
+                </span>
+                <Input
+                  id="withdrawAmount"
+                  type="number"
+                  value={withdrawalAmount}
+                  onChange={(e) => setWithdrawalAmount(e.target.value)}
+                  placeholder="0.00"
+                  className="pl-8"
+                  disabled={!isKycVerified}
+                />
+              </div>
+              <p className="text-xs text-gray-500">
+                Minimum withdrawal: {formatCurrency(5000)}
+              </p>
+            </div>
+            {profile?.kycData && (
+              <div className="space-y-2">
+                <Label>Payout Account</Label>
+                <div className="p-3 bg-gray-50 rounded-md text-sm">
+                  <p className="font-medium">{accData?.bankAccount?.bank_name}</p>
+                  <p className="text-gray-600">{accData?.bankAccount?.account_name}</p>
+                  <p className="text-gray-500">****{accData?.bankAccount?.account_number?.slice(-4)}</p>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowWithdrawModal(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                handleWithdraw()
+                setShowWithdrawModal(false)
+              }} 
+              disabled={isWithdrawing || !isKycVerified}
+            >
+              {isWithdrawing ? "Processing..." : "Withdraw"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </VendorLayout>
   )
 }

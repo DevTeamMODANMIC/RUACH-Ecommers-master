@@ -30,6 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu"
 import { listenToVendorOrders, updateOrderStatus, type Order } from "../lib/firebase-orders"
+import { getVendorProducts } from "../lib/firebase-vendors"
 import { useToast } from "../hooks/use-toast"
 
 export default function VendorOrdersPage() {
@@ -42,6 +43,27 @@ export default function VendorOrdersPage() {
   const [activeTab, setActiveTab] = useState("all")
   const [loading, setLoading] = useState(true)
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null)
+  const [vendorProductIds, setVendorProductIds] = useState<string[]>([])
+
+  // Load vendor's product IDs
+  useEffect(() => {
+    const loadVendorProducts = async () => {
+      if (!vendor?.id) {
+        setVendorProductIds([])
+        return
+      }
+      
+      try {
+        const products = await getVendorProducts(vendor.id)
+        setVendorProductIds(products.map(p => p.id))
+      } catch (error) {
+        console.error("Error loading vendor products:", error)
+        setVendorProductIds([])
+      }
+    }
+    
+    loadVendorProducts()
+  }, [vendor?.id])
 
   // Load orders for vendor
   useEffect(() => {
@@ -323,17 +345,39 @@ export default function VendorOrdersPage() {
 
                       {/* Order Items */}
                       <div className="flex-1 max-w-md">
-                        <h4 className="font-medium mb-2">Items ({order.items.filter(item => item.vendorId === vendor?.id).length})</h4>
-                        <div className="space-y-2">
-                          {order.items
-                            .filter(item => item.vendorId === vendor?.id)
-                            .map((item) => (
-                              <div key={`${order.id}-${item.productId}`} className="flex justify-between text-sm">
-                                <span className="truncate">{item.name}</span>
-                                <span>×{item.quantity}</span>
+                        {(() => {
+                          const vendorItems = order.items.filter(item => vendorProductIds.includes(item.productId))
+                          return (
+                            <>
+                              <h4 className="font-medium mb-2">Items ({vendorItems.length})</h4>
+                              <div className="space-y-2">
+                                {vendorItems.length > 0 ? (
+                                  vendorItems.map((item) => (
+                                    <div key={`${order.id}-${item.productId}`} className="flex items-center gap-3 text-sm">
+                                      <div className="h-10 w-10 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
+                                        {item.image ? (
+                                          <img 
+                                            src={item.image} 
+                                            alt={item.name}
+                                            className="h-full w-full object-cover"
+                                          />
+                                        ) : (
+                                          <div className="h-full w-full flex items-center justify-center">
+                                            <Package className="h-5 w-5 text-gray-400" />
+                                          </div>
+                                        )}
+                                      </div>
+                                      <span className="truncate flex-1">{item.name}</span>
+                                      <span className="text-gray-600">×{item.quantity}</span>
+                                    </div>
+                                  ))
+                                ) : (
+                                  <p className="text-sm text-gray-500">Loading items...</p>
+                                )}
                               </div>
-                            ))}
-                        </div>
+                            </>
+                          )
+                        })()}
                       </div>
 
                       {/* Actions */}

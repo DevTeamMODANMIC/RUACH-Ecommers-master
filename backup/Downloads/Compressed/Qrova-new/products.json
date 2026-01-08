@@ -1,0 +1,94 @@
+{
+  "metadata": {
+    "scraped_at": "2025-06-20T18:33:18.961475",
+    "source_url": "https://ayotayo.co.uk/shop/",
+    "total_products": 12,
+    "scraper_version": "2.0.0"
+  },
+  "products": [
+    {
+      "name": "Unnamed Product",
+      "price": "£17.00\n£12.00",
+      "image_url": "https://ayotayo.co.uk/wp-content/uploads/2025/01/Aani-Basmatic-rice-10kg-4-250x250.jpg",
+      "image_path": "product_images\\Unnamed Product_c4e3aaee.jpg",
+      "scraped_at": "2025-06-20T18:32:15.933829"
+    },
+    {
+      "name": "Unnamed Product",
+      "price": "£19.99\n£17.99",
+      "image_url": "https://ayotayo.co.uk/wp-content/uploads/2025/01/aani-10kg-250x250.png",
+      "image_path": "product_images\\Unnamed Product_4dc20d04.png",
+      "scraped_at": "2025-06-20T18:32:21.178434"
+    },
+    {
+      "name": "Unnamed Product",
+      "price": "£4.30\n£3.80",
+      "image_url": "https://ayotayo.co.uk/wp-content/uploads/2025/01/Abacha-250x250.jpg",
+      "image_path": "product_images\\Unnamed Product_1d1b7510.jpg",
+      "scraped_at": "2025-06-20T18:32:26.296142"
+    },
+    {
+      "name": "Unnamed Product",
+      "price": "",
+      "image_url": "https://ayotayo.co.uk/wp-content/uploads/2025/01/aboniki3-250x250.jpg",
+      "image_path": "product_images\\Unnamed Product_d2a59c43.jpg",
+      "scraped_at": "2025-06-20T18:32:31.555017"
+    },
+    {
+      "name": "Unnamed Product",
+      "price": "",
+      "image_url": "https://ayotayo.co.uk/wp-content/uploads/2025/02/images-removebg-preview-2-1-250x250.png",
+      "image_path": "product_images\\Unnamed Product_00f8c84d.png",
+      "scraped_at": "2025-06-20T18:32:38.711437"
+    },
+    {
+      "name": "Unnamed Product",
+      "price": "",
+      "image_url": "https://ayotayo.co.uk/wp-content/uploads/2025/01/garri-217x250.png",
+      "image_path": "product_images\\Unnamed Product_16c166b0.png",
+      "scraped_at": "2025-06-20T18:32:43.979840"
+    },
+    {
+      "name": "Unnamed Product",
+      "price": "",
+      "image_url": "https://ayotayo.co.uk/wp-content/uploads/2025/01/yam-flour-4kg-250x250.png",
+      "image_path": "product_images\\Unnamed Product_5fce0726.png",
+      "scraped_at": "2025-06-20T18:32:49.105792"
+    },
+    {
+      "name": "Unnamed Product",
+      "price": "",
+      "image_url": "https://ayotayo.co.uk/wp-content/uploads/2025/01/Agbalumo-250x250.jpg",
+      "image_path": "product_images\\Unnamed Product_4b728af9.jpg",
+      "scraped_at": "2025-06-20T18:32:54.216519"
+    },
+    {
+      "name": "Unnamed Product",
+      "price": "",
+      "image_url": "https://ayotayo.co.uk/wp-content/uploads/2021/08/Amstel-malta-250x250.jpg",
+      "image_path": "product_images\\Unnamed Product_c7e3f676.jpg",
+      "scraped_at": "2025-06-20T18:32:59.324518"
+    },
+    {
+      "name": "Unnamed Product",
+      "price": "",
+      "image_url": "https://ayotayo.co.uk/wp-content/uploads/2025/01/Asiko-salted-plantain-chips-1-250x250.jpg",
+      "image_path": "product_images\\Unnamed Product_9fcb89f4.jpg",
+      "scraped_at": "2025-06-20T18:33:04.422928"
+    },
+    {
+      "name": "Unnamed Product",
+      "price": "",
+      "image_url": "https://ayotayo.co.uk/wp-content/uploads/2025/01/Ayoola-Plantain-flour-250x250.jpg",
+      "image_path": "product_images\\Unnamed Product_dc861668.jpg",
+      "scraped_at": "2025-06-20T18:33:09.664983"
+    },
+    {
+      "name": "Unnamed Product",
+      "price": "",
+      "image_url": "https://ayotayo.co.uk/wp-content/uploads/2025/01/Ayoola-pounded-yam-250x250.jpg",
+      "image_path": "product_images\\Unnamed Product_0d768790.jpg",
+      "scraped_at": "2025-06-20T18:33:14.773487"
+    }
+  ]
+}

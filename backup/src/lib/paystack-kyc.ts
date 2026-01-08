@@ -5,7 +5,11 @@
  * 2. Resolve bank account /bank/resolve → confirm account name matches
  */
 
+import { getMonnifyApiBaseUrl } from "@/scripts/moniffyConfig";
+import { getMonnifyToken } from "@/scripts/monnifyAuth";
 import { NIGERIAN_BANKS } from "@/lib/nigerian-banks";
+// import { timeStamp } from "console";
+
 
 // Define the customer data structure
 export interface CustomerData {
@@ -13,6 +17,9 @@ export interface CustomerData {
   first_name: string;
   last_name: string;
   phone: string;
+  bvn: string;
+  dateOfBirth: string;
+  
 }
 
 // Define the bank account data structure
@@ -38,6 +45,9 @@ export interface CustomerResponse {
   domain: string;
   createdAt: string;
   updatedAt: string;
+  verified: boolean;
+  bvn: string;
+  dateOfBirth: string;
 }
 
 // Define the response structure for bank resolution
@@ -52,6 +62,8 @@ export interface BankResolutionResponse {
 
 // Define the bank resolution result structure
 export interface BankResolutionResult {
+  account_number: string;
+  account_name: string;
   bank_code: string;
   bank_name: string;
 }
@@ -61,6 +73,10 @@ export interface BankResolutionResult {
  * @param customerData - Customer information
  * @returns Promise<CustomerResponse> - Customer details with CUS_xxx identifier
  */
+
+
+const timestamp = Math.floor(Date.now()/1000)
+
 export const createCustomer = async (customerData: CustomerData): Promise<CustomerResponse> => {
   try {
     // Validate required fields
@@ -69,28 +85,60 @@ export const createCustomer = async (customerData: CustomerData): Promise<Custom
     }
     
     // In a production environment, you would use the actual Paystack API:
+    // const timestamp = Math.floor(Date.now()/1000)
+    const token = await getMonnifyToken()
     
-    const response = await fetch('https://api.paystack.co/customer', {
+    // console.log('getMonnifyApiBaseUrl', getMonnifyApiBaseUrl())
+    const newBodyData = {
+      // email: customerData.email,
+      // first_name: customerData.first_name,
+      // last_name: customerData.last_name,
+      // phone: customerData.phone
+
+      accountReference: `USER_${timestamp}`,
+      accountName: `${customerData.first_name} ${customerData.last_name}`,
+      currencyCode: "NGN",
+      contractCode: import.meta.env.VITE_MONNIFY_CONTRACT_CODE,
+      customerEmail: customerData.email,
+      customerName: `${customerData.first_name} ${customerData.last_name}`,
+      getAllAvailableBanks: false,
+      preferredBanks: ["035"],
+      bvn: customerData?.bvn,
+      dateOfBirth: customerData.dateOfBirth
+
+    }
+
+    console.log('newBodyData', newBodyData)
+    const response = await fetch(`${getMonnifyApiBaseUrl()}/api/v2/bank-transfer/reserved-accounts`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${import.meta.env.VITE_PAYSTACK_SECRET_KEY}`,
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        email: customerData.email,
-        first_name: customerData.first_name,
-        last_name: customerData.last_name,
-        phone: customerData.phone
-      })
+      body: JSON.stringify(newBodyData)
     });
+
+    // console.log('response', response)
+
     
     if (!response.ok) {
-      throw new Error(`Paystack API error: ${response.statusText}`);
+      const errorText = await response.text();
+      const errorJson = JSON.parse(errorText)
+      console.log("errorText", errorJson?.responseMessage)
+      const targetMessage = 'You cannot reserve more than 1 account(s) for a customer. Please contact support for assistance'
+      const correctionMessage = 'PLEASE KINDLY FILL IN INFORMATION LINK WITH YOUR BVN!'
+      // console.log(errorJson?.responseMessage.slice(0, 7) === targetMessage.slice(0, 7), errorJson?.responseMessage, targetMessage)
+      if(errorJson?.responseMessage.slice(0, 7) === targetMessage.slice(0, 7)){
+        throw new Error(`${correctionMessage}`);
+      }
+      throw new Error(`Error: ${errorJson?.responseMessage}`);
+
     }
     
     const result = await response.json();
     console.log("customerData", customerData, result)
-    return result.data;
+
+    // return result.data;
     
     
     // For demonstration purposes, we'll simulate the response
@@ -100,6 +148,24 @@ export const createCustomer = async (customerData: CustomerData): Promise<Custom
     // Simulate API delay
     // await new Promise(resolve => setTimeout(resolve, 500));
     
+    const reposenData = {
+      id: result.responseBody?.accountReference,
+      customer_code: result.responseBody?.accountReference,
+      first_name: customerData.first_name,
+      last_name: customerData.last_name,
+      email: customerData.email,
+      phone: customerData.phone,
+      metadata: result.responseBody.accounts[0],
+      domain: import.meta.env.VITE_MONNIFY_IS_LIVE !== 'true'? 'Test': 'Live',
+      createdAt: result.responseBody.createdOn,
+      updatedAt: new Date().toISOString(),
+      verified: true,
+      bvn: customerData?.bvn,
+      dateOfBirth: customerData.dateOfBirth
+    }
+
+    return reposenData
+
     // // Return mock response
     // return {
     //   id: customerId,
@@ -136,27 +202,40 @@ export const resolveBankFromAccountNumber = async (
     }
     
     // In a production environment, you would use the actual Paystack API:
-    
-    const response = await fetch(`https://api.paystack.co/bank/resolve?account_number=${accountNumber}&bank_code=${bankCode}`, {
+    const token = await getMonnifyToken()
+    // getMonnifyApiBaseUrl()
+    const monipointURL = `${getMonnifyApiBaseUrl()}/api/v1/disbursements/account/validate?accountNumber=${accountNumber}&bankCode=${bankCode}` 
+
+    const response = await fetch(monipointURL, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${import.meta.env.VITE_PAYSTACK_SECRET_KEY}`,
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       }
     });
+    
+    // console.log('response', response)
     
     if (!response.ok) {
       throw new Error(`Paystack API error: ${response.statusText}`);
     }
     
     const result = await response.json();
-    console.log("result", result)
+    // console.log("result", result?.responseBody)
+    // console.log("sample result",
+    //   {
+    //     bank_code: result?.responseBody.bankCode,
+    //     bank_name: undefined,
+    //     account_name: result?.responseBody.accountName,
+    //     account_number: result?.responseBody.accountNumber
+    //   }
+    // )
     return {
-      bank_code: bankCode,
-      bank_name: undefined,
-      account_name: result.data.account_name,
-      account_number: result.data.account_number
-    };
+        bank_code: result?.responseBody.bankCode,
+        bank_name: undefined,
+        account_name: result?.responseBody.accountName,
+        account_number: result?.responseBody.accountNumber
+      };
     
     
     // For demonstration purposes, we'll simulate the response
@@ -494,6 +573,8 @@ export interface BvnData {
   middle_name?: string;
   account_number?: any;
   bank_code?: string;
+  email: string;
+  phoneNumber: string;
   date_of_birth?: string; // YYYY-MM-DD format
 }
 
@@ -550,60 +631,79 @@ export const resolveBvn = async (
   customerName?: string
 ): Promise<BvnResolutionResponse> => {
 
-  // console.log("BVN", bvnData)
+  console.log("BVN", bvnData)
 
   try {
     // Validate required fields
     if (!validateBvnData(bvnData)) {
       throw new Error("Invalid BVN data provided");
     }
+
     
+
     // Check if we're in test mode by looking at the secret key
     const secretKey = import.meta.env.VITE_PAYSTACK_SECRET_KEY;
-    const isTestMode = secretKey && (secretKey.startsWith('sk_test_') || !secretKey.startsWith('sk_live_'));
+    // const isTestMode = secretKey && (secretKey.startsWith('sk_test_') || !secretKey.startsWith('sk_live_'));
     
-    // If in test mode, return mock data to avoid hitting limits
-    if (isTestMode) {
-      return {
-        bvn: bvnData.bvn,
-        first_name: "Test",
-        last_name: "User",
-        middle_name: "Mock",
-        date_of_birth: "1990-01-01",
-        phone: "+2348012345678",
-        registration_date: new Date().toISOString(),
-        image_base64: "",
-        gender: "Male",
-        email: "test@example.com",
-        nationality: "Nigerian",
-        residential_address: "123 Test Street, Lagos",
-        state_of_origin: "Lagos",
-        lga_of_origin: "Lagos Mainland",
-        lga_of_residence: "Lagos Mainland",
-        marital_status: "Single",
-        nin: "12345678901",
-        verified: true,
-        match_status: "match"
-      };
-    }
+    // // If in test mode, return mock data to avoid hitting limits
+    // if (isTestMode) {
+    //   return {
+    //     bvn: bvnData.bvn,
+    //     first_name: "Test",
+    //     last_name: "User",
+    //     middle_name: "Mock",
+    //     date_of_birth: "1990-01-01",
+    //     phone: "+2348012345678",
+    //     registration_date: new Date().toISOString(),
+    //     image_base64: "",
+    //     gender: "Male",
+    //     email: "test@example.com",
+    //     nationality: "Nigerian",
+    //     residential_address: "123 Test Street, Lagos",
+    //     state_of_origin: "Lagos",
+    //     lga_of_origin: "Lagos Mainland",
+    //     lga_of_residence: "Lagos Mainland",
+    //     marital_status: "Single",
+    //     nin: "12345678901",
+    //     verified: true,
+    //     match_status: "match"
+    //   };
+    // }
     
+    const token = await getMonnifyToken()
+    // getMonnifyApiBaseUrl()
     // Use the correct Paystack BVN verification endpoint
     // The /bvn/match endpoint is used for BVN verification with name matching
-    const response = await fetch('https://api.paystack.co/bvn/match', {
+    const monipointBvnUrl  = `${getMonnifyApiBaseUrl()}/api/v1/vas/bvn-details-match` // `${getMonnifyApiBaseUrl()}/api/v2/bank-transfer/reserved-accounts`
+    // console.log("bvnData.bvn", bvnData.bvn)
+    // const timestamp = Math.floor(Date.now()/1000)
+
+    const newResData = {
+        // accountReference: `USER_${timestamp}`,
+        // accountName: `${bvnData?.first_name} ${bvnData?.last_name}`,
+        // currencyCode: "NGN",
+        // contractCode: import.meta.env.VITE_MONNIFY_CONTRACT_CODE,
+        // customerEmail: bvnData.email,
+        // customerName: `${bvnData?.first_name} ${bvnData?.last_name}`,
+        bvn: bvnData.bvn,
+        dateOfBirth: bvnData.date_of_birth || "26-Jun-1999",
+        mobileNo: "08188174983" || bvnData.phoneNumber,
+        "name": `${bvnData?.first_name} ${bvnData?.last_name}`
+    }
+
+    // console.log("newResData", newResData)
+
+    const response = await fetch(monipointBvnUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${import.meta.env.VITE_PAYSTACK_SECRET_KEY}`,
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        bvn: bvnData.bvn,
-        first_name: bvnData.first_name,
-        last_name: bvnData.last_name,
-        middle_name: bvnData.middle_name || "",
-        account_number: bvnData.account_number, // Optional but recommended
-        bank_code: bvnData.bank_code,
-      })
+      body: JSON.stringify(newResData)
+
     });
+
+    // console.log("response01", response)
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -612,6 +712,7 @@ export const resolveBvn = async (
       try {
         const errorData = JSON.parse(errorText);
         errorMessage = `Paystack API error: ${errorData.message || response.statusText}`;
+        console.log("errorData", errorData)
       } catch (parseError) {
         // If we can't parse the error as JSON, use the raw text
         if (errorText) {
@@ -623,34 +724,34 @@ export const resolveBvn = async (
     }
     
     const result = await response.json();
-    
+    console.log("result040", result)
     // Check if the response has the expected structure
-    if (!result.status || !result.data) {
-      throw new Error("Invalid response from Paystack API");
-    }
-    console.log("result 002", result)
-    // Return the BVN information with verification status
-    return {
-      bvn: bvnData.bvn,
-      first_name: result.data.first_name,
-      last_name: result.data.last_name,
-      middle_name: result.data.middle_name || "",
-      date_of_birth: result.data.date_of_birth || "",
-      phone: result.data.mobile || "",
-      registration_date: result.data.registration_date || "",
-      image_base64: result.data.image_base64 || "",
-      gender: result.data.gender || "",
-      email: result.data.email || "",
-      nationality: result.data.nationality || "",
-      residential_address: result.data.residential_address || "",
-      state_of_origin: result.data.state_of_origin || "",
-      lga_of_origin: result.data.lga_of_origin || "",
-      lga_of_residence: result.data.lga_of_residence || "",
-      marital_status: result.data.marital_status || "",
-      nin: result.data.nin || "",
-      verified: result.status === true || result.status === "success",
-      match_status: result.data.match_status || (customerName ? compareNames(customerName, `${result.data.first_name} ${result.data.middle_name} ${result.data.last_name}`) : 'match')
-    };
+    // if (!result.status || !result.data) {
+    //   throw new Error("Invalid response from Paystack API");
+    // }
+    // console.log("result 002", result)
+    // // Return the BVN information with verification status
+    // return {
+    //   bvn: bvnData.bvn,
+    //   first_name: result.data.first_name,
+    //   last_name: result.data.last_name,
+    //   middle_name: result.data.middle_name || "",
+    //   date_of_birth: result.data.date_of_birth || "",
+    //   phone: result.data.mobile || "",
+    //   registration_date: result.data.registration_date || "",
+    //   image_base64: result.data.image_base64 || "",
+    //   gender: result.data.gender || "",
+    //   email: result.data.email || "",
+    //   nationality: result.data.nationality || "",
+    //   residential_address: result.data.residential_address || "",
+    //   state_of_origin: result.data.state_of_origin || "",
+    //   lga_of_origin: result.data.lga_of_origin || "",
+    //   lga_of_residence: result.data.lga_of_residence || "",
+    //   marital_status: result.data.marital_status || "",
+    //   nin: result.data.nin || "",
+    //   verified: result.status === true || result.status === "success",
+    //   match_status: result.data.match_status || (customerName ? compareNames(customerName, `${result.data.first_name} ${result.data.middle_name} ${result.data.last_name}`) : 'match')
+    // };
   } catch (error: any) {
     console.error("Error resolving BVN:", error);
     throw new Error(error.message || "Failed to verify BVN. Please try again.");

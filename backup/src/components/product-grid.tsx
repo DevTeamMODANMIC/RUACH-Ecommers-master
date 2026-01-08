@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback, memo } from "react"
 import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Star, Eye, ShoppingCart, Heart, X, Store, User, Images } from "lucide-react"
+import { Star, Eye, ShoppingCart, Heart, Store, Images } from "lucide-react"
 import { useCart } from "@/components/cart-provider"
 import { formatCurrency } from "@/lib/utils"
 import { useWishlist, type WishlistItem } from "@/hooks/use-wishlist"
@@ -35,6 +35,32 @@ interface ProductGridProps {
   isLoading?: boolean
 }
 
+// Memoized star rating component
+const StarRating = memo(({ rating, reviewCount }: { rating: number; reviewCount?: number }) => (
+  <div className="flex items-center mt-2">
+    <div className="flex">
+      {[0, 1, 2, 3, 4].map((i) => (
+        <Star 
+          key={i} 
+          className={`h-4 w-4 ${
+            i < Math.floor(rating) 
+              ? "text-amber-400 fill-amber-400" 
+              : i < rating 
+                ? "text-amber-400 fill-amber-400" 
+                : "text-gray-300"
+          }`}
+        />
+      ))}
+    </div>
+    {reviewCount && (
+      <span className="text-sm text-gray-600 ml-2">
+        ({reviewCount})
+      </span>
+    )}
+  </div>
+))
+StarRating.displayName = 'StarRating'
+
 export default function ProductGrid({ products, isLoading = false }: ProductGridProps) {
   const [hoveredProductId, setHoveredProductId] = useState<string | null>(null);
   const [vendors, setVendors] = useState<Record<string, Vendor>>({});
@@ -42,11 +68,22 @@ export default function ProductGrid({ products, isLoading = false }: ProductGrid
   const { toggleWishlist, isInWishlist } = useWishlist();
   const navigate = useNavigate();
 
-  // Fetch vendor information for products
+  // Memoize vendor IDs to prevent unnecessary fetches
+  const vendorIds = useMemo(() => 
+    [...new Set(products.filter(p => p.vendorId).map(p => p.vendorId!))],
+    [products]
+  );
+
+  // Fetch vendor information for products - optimized
   useEffect(() => {
+    if (vendorIds.length === 0) return;
+    
     const fetchVendors = async () => {
-      const vendorIds = [...new Set(products.filter(p => p.vendorId).map(p => p.vendorId!))]
-      const vendorPromises = vendorIds.map(async (vendorId) => {
+      // Only fetch vendors we don't already have
+      const missingVendorIds = vendorIds.filter(id => !vendors[id]);
+      if (missingVendorIds.length === 0) return;
+      
+      const vendorPromises = missingVendorIds.map(async (vendorId) => {
         try {
           const vendor = await getVendor(vendorId)
           return { vendorId, vendor }
@@ -57,31 +94,30 @@ export default function ProductGrid({ products, isLoading = false }: ProductGrid
       })
       
       const vendorResults = await Promise.all(vendorPromises)
-      const vendorMap: Record<string, Vendor> = {}
+      const newVendors: Record<string, Vendor> = {}
       
       vendorResults.forEach(({ vendorId, vendor }) => {
         if (vendor) {
-          vendorMap[vendorId] = vendor
+          newVendors[vendorId] = vendor
         }
       })
       
-      setVendors(vendorMap)
+      if (Object.keys(newVendors).length > 0) {
+        setVendors(prev => ({ ...prev, ...newVendors }))
+      }
     }
 
-    if (products.length > 0) {
-      fetchVendors()
-    }
-  }, [products])
+    fetchVendors()
+  }, [vendorIds]) // Only re-run when vendorIds change
 
-  // Function to extract size from product tags
-  const extractSizeFromTags = (tags: string[] | undefined): string => {
+  // Memoized function to extract size from product tags
+  const extractSizeFromTags = useCallback((tags: string[] | undefined): string => {
     if (!tags || !Array.isArray(tags)) return "";
-    
     const sizeTag = tags.find((tag: string) => tag.startsWith("size:"));
     return sizeTag ? sizeTag.replace("size:", "") : "";
-  };
+  }, []);
 
-  const handleAddToCart = (product: Product, e?: React.MouseEvent) => {
+  const handleAddToCart = useCallback((product: Product, e?: React.MouseEvent) => {
     if (e) e.preventDefault();
     e?.stopPropagation();
     addToCart({
@@ -94,16 +130,15 @@ export default function ProductGrid({ products, isLoading = false }: ProductGrid
       quantity: 1,
       options: {}
     });
-  };
+  }, [addToCart]);
 
-  const handleProductClick = (product: Product, e?: React.MouseEvent) => {
+  const handleProductClick = useCallback((product: Product, e?: React.MouseEvent) => {
     if (e) e.preventDefault();
     e?.stopPropagation();
-    // Navigate to product detail page instead of opening modal
     navigate(`/products/${product.id}`);
-  };
+  }, [navigate]);
 
-  const handleToggleWishlist = (product: Product, e?: React.MouseEvent) => {
+  const handleToggleWishlist = useCallback((product: Product, e?: React.MouseEvent) => {
     if (e) e.preventDefault();
     e?.stopPropagation();
     
@@ -114,11 +149,11 @@ export default function ProductGrid({ products, isLoading = false }: ProductGrid
       originalPrice: product.discount ? product.price : undefined,
       image: product.images?.[0] || "/placeholder.jpg",
       category: product.category || product.displayCategory,
-      inStock: product.inStock !== false && !product.outOfStock // Default to true if not specified
+      inStock: product.inStock !== false && !product.outOfStock
     };
     
     toggleWishlist(wishlistItem);
-  };
+  }, [toggleWishlist]);
 
   if (isLoading) {
     return (
@@ -220,6 +255,8 @@ export default function ProductGrid({ products, isLoading = false }: ProductGrid
                   <img
                     src={product.images?.[0] || "/placeholder.jpg"}
                     alt={product.name}
+                    loading="lazy"
+                    decoding="async"
                     className="absolute inset-0 w-full h-full object-contain p-4 transition-transform duration-300 group-hover:scale-105"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
@@ -277,6 +314,7 @@ export default function ProductGrid({ products, isLoading = false }: ProductGrid
                         <img
                           src={vendors[product.vendorId].logoUrl}
                           alt={vendors[product.vendorId].shopName}
+                          loading="lazy"
                           className="w-4 h-4 rounded-full object-cover"
                         />
                       ) : (
@@ -297,27 +335,7 @@ export default function ProductGrid({ products, isLoading = false }: ProductGrid
                 )}
                 
                 {product.rating && (
-                  <div className="flex items-center mt-2">
-                    <div className="flex">
-                      {[...Array(5)].map((_, i) => (
-                        <Star 
-                          key={i} 
-                          className={`h-4 w-4 ${
-                            i < Math.floor(product.rating!) 
-                              ? "text-amber-400 fill-amber-400" 
-                              : i < product.rating! 
-                                ? "text-amber-400 fill-amber-400" 
-                                : "text-gray-300"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    {product.reviewCount && (
-                      <span className="text-sm text-gray-600 ml-2">
-                        ({product.reviewCount})
-                      </span>
-                    )}
-                  </div>
+                  <StarRating rating={product.rating} reviewCount={product.reviewCount} />
                 )}
               </CardContent>
               

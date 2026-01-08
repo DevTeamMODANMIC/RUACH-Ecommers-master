@@ -1,0 +1,185 @@
+import { Product } from "@/types";
+
+// This is temporary mock data until we implement Firebase
+export const products: Product[] = [
+  {
+    id: "beverage-1",
+    name: "Coca-Cola 50cl (Pack of 12)",
+    description: "Refreshing Coca-Cola in 50cl bottles, pack of 12",
+    price: 12.99,
+    images: ["/product_images/beverages/coke_50cl_(PAck).png", "/product_images/coke-50cl-250x250.jpg"],
+    category: "drinks",
+    origin: "International",
+    inStock: true,
+    discount: 10,
+    weight: 600
+  },
+  {
+    id: "beverage-2",
+    name: "Fanta 50cl (Pack of 12)",
+    description: "Refreshing orange Fanta in 50cl bottles, pack of 12",
+    price: 11.99,
+    images: ["/product_images/beverages/Fanta-50cl-pack-150x150.png", "/product_images/beverages/Fanta-50cl-pack-250x250.png"],
+    category: "drinks",
+    origin: "International",
+    inStock: true,
+    discount: 0,
+    weight: 600
+  },
+  {
+    id: "beverage-3",
+    name: "Sprite 50cl (Pack of 12)",
+    description: "Refreshing lemon-lime Sprite in 50cl bottles, pack of 12",
+    price: 11.99,
+    images: ["/product_images/beverages/sprite_pack.png", "/product_images/Sprite-50cl-1-250x250.jpg"],
+    category: "drinks",
+    origin: "International",
+    inStock: true,
+    discount: 5,
+    weight: 600
+  },
+  {
+    id: "beverage-4",
+    name: "Maltina Can (Pack of 24)",
+    description: "Non-alcoholic malt drink, rich in vitamins and minerals",
+    price: 19.99,
+    images: ["/product_images/beverages/Maltina-can-150x150.jpg", "/product_images/maltina_can-500x500-removebg-preview-250x250.png"],
+    category: "drinks",
+    origin: "Nigeria",
+    inStock: true,
+    discount: 0,
+    weight: 840
+  },
+  {
+    id: "beverage-5",
+    name: "Malta Guinness Can (Pack of 24)",
+    description: "Non-alcoholic malt drink from Guinness, rich flavor",
+    price: 21.99,
+    images: ["/product_images/beverages/malta_guinness_can_(pack_of_24).png"],
+    category: "drinks",
+    origin: "Nigeria",
+    inStock: true,
+    discount: 0,
+    weight: 840
+  },
+  {
+    id: "beverage-6",
+    name: "Schweppes Can (Pack of 24)",
+    description: "Refreshing Schweppes tonic water in cans",
+    price: 18.99,
+    images: ["/product_images/beverages/Schweppes-can-250x250.jpg", "/product_images/beverages/Schweppes-can-150x150.jpg"],
+    category: "drinks",
+    origin: "International",
+    inStock: true,
+    discount: 0,
+    weight: 840
+  },
+  {
+    id: "food-1",
+    name: "Abacha (African Salad)",
+    description: "Traditional Nigerian cassava dish",
+    price: 8.99,
+    images: ["/product_images/food/Abacha-250x250.jpg"],
+    category: "food",
+    origin: "Nigeria",
+    inStock: true,
+    discount: 0,
+    weight: 500
+  },
+  {
+    id: "food-2",
+    name: "Butter Mint Sweets",
+    description: "Refreshing butter mint candies",
+    price: 3.99,
+    images: ["/product_images/food/Butter-mint-sweets-1-250x250.jpg"],
+    category: "food",
+    origin: "International",
+    inStock: true,
+    discount: 0,
+    weight: 200
+  },
+  {
+    id: "flour-1",
+    name: "Ayoola Plantain Flour",
+    description: "High-quality plantain flour for traditional dishes",
+    price: 7.99,
+    images: ["/product_images/flour/Ayoola-Plantain-flour-250x250.jpg"],
+    category: "flour",
+    origin: "Nigeria",
+    inStock: true,
+    discount: 0,
+    weight: 500
+  },
+  {
+    id: "flour-2",
+    name: "Ayoola Pounded Yam",
+    description: "Premium quality pounded yam flour",
+    price: 9.99,
+    images: ["/product_images/flour/Ayoola-pounded-yam-250x250.jpg"],
+    category: "flour",
+    origin: "Nigeria",
+    inStock: true,
+    discount: 5,
+    weight: 900
+  },
+  {
+    id: "rice-1",
+    name: "Aani Basmati Rice 10kg",
+    description: "Premium quality basmati rice",
+    price: 24.99,
+    images: ["/product_images/rice/aani-10kg-250x250.png", "/product_images/rice/Aani-Basmatic-rice-10kg-4-250x250.jpg"],
+    category: "rice",
+    origin: "International",
+    inStock: true,
+    discount: 0,
+    weight: 10000
+  },
+  {
+    id: "meat-1",
+    name: "Catfish (Dried)",
+    description: "Premium quality dried catfish",
+    price: 14.99,
+    images: ["/product_images/meat/Cat-fish-250x250.jpg", "/product_images/meat/catfish-250x228.png"],
+    category: "meat",
+    origin: "Nigeria",
+    inStock: true,
+    discount: 0,
+    weight: 500
+  },
+  {
+    id: "meat-2",
+    name: "Chicken Drumsticks 20kg",
+    description: "Fresh chicken drumsticks",
+    price: 39.99,
+    images: ["/product_images/meat/Chicken-drumsticks-20kg-250x250.jpg"],
+    category: "meat",
+    origin: "UK",
+    inStock: true,
+    discount: 10,
+    weight: 20000
+  },
+  {
+    id: "spice-1",
+    name: "Bawa Pepper",
+    description: "Traditional African pepper spice",
+    price: 5.99,
+    images: ["/product_images/spices/Bawa-pepper-250x250.jpg"],
+    category: "spices",
+    origin: "Nigeria",
+    inStock: true,
+    discount: 0,
+    weight: 100
+  },
+  {
+    id: "vegetable-1",
+    name: "Agbalumo (African Star Apple)",
+    description: "Fresh African star apple",
+    price: 6.99,
+    images: ["/product_images/vegetables/Agbalumo-250x250.jpg"],
+    category: "vegetables",
+    origin: "Nigeria",
+    inStock: true,
+    discount: 0,
+    weight: 500
+  }
+]; 

@@ -10,13 +10,13 @@ export default function VendorPayoutDashboard() {
   
   // Mock data for demonstration
   const upcomingPayout = {
-    amount: 15000,
+    amount: 0,
     date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     period: "Sep 1-15, 2025"
   }
   
-  const lifetimeEarnings = 125000
-  const pendingBalance = 15000
+  const lifetimeEarnings = 0
+  const pendingBalance = 0
   const walletBalance = activeStore?.walletBalance || 0
 
   return (

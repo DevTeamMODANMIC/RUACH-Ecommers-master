@@ -1,21 +1,19 @@
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback, useRef, memo, lazy, Suspense } from "react"
 import { useSearchParams, useNavigate } from "react-router-dom"
-import { Link } from "react-router-dom";
 import ProductGrid from "../components/product-grid"
 import { Product } from "../types"
-import { Loader2, Filter, ChevronDown, Search as SearchIcon, X, SlidersHorizontal, Check } from "lucide-react"
+import { Loader2, Filter, ChevronDown, Search as SearchIcon, X, SlidersHorizontal } from "lucide-react"
 import { Input } from "../components/ui/input"
 import { Button } from "../components/ui/button"
 import { products } from "../lib/product-data"
 import { getProducts, ProductFilters } from "../lib/firebase-products"
-import { getAllOrdersNoMax } from "@/lib/firebase-orders";
-import { recommendTrendingProducts } from "@/components/ML-AllProducts-modeul";
-import ShopAIChatbot from "../components/shop-ai-chatbot";
+
+// Lazy load the chatbot since it's not critical for initial render
+const ShopAIChatbot = lazy(() => import("../components/shop-ai-chatbot"));
 
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
   DropdownMenuLabel,
@@ -53,6 +51,18 @@ const sortOptions = [
   { id: "newest", name: "Newest" }
 ];
 
+// Custom debounce hook for search optimization
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value)
+  
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedValue(value), delay)
+    return () => clearTimeout(handler)
+  }, [value, delay])
+  
+  return debouncedValue
+}
+
 export default function ShopPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -68,9 +78,6 @@ export default function ShopPage() {
   const [searchTerm, setSearchTerm] = useState(searchParam)
   const [isLoading, setIsLoading] = useState(false)
   const [filteredProducts, setFilteredProducts] = useState<Product[]>(products)
-  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false)
-  const [activeFiltersCount, setActiveFiltersCount] = useState(0)
-  const [resultsCount, setResultsCount] = useState(products.length)
   const [expandedSections, setExpandedSections] = useState({
     categories: true,
     priceRange: true,
@@ -81,47 +88,51 @@ export default function ShopPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const productsPerPage = 12
   
-  // Calculate active filters count
-  useEffect(() => {
+  // Debounce search term to prevent excessive API calls
+  const debouncedSearchTerm = useDebounce(searchTerm, 300)
+  
+  // Cache for products to avoid refetching
+  const productsCache = useRef<Map<string, Product[]>>(new Map())
+  
+  // Memoize active filters count
+  const activeFiltersCount = useMemo(() => {
     let count = 0
     if (selectedCategory !== "all") count++
     if (selectedPriceRange !== "all") count++
-    if (searchTerm) count++
-    setActiveFiltersCount(count)
-  }, [selectedCategory, selectedPriceRange, searchTerm])
+    if (debouncedSearchTerm) count++
+    return count
+  }, [selectedCategory, selectedPriceRange, debouncedSearchTerm])
   
   // Memoize filtered products for better performance
   const filteredAndSortedProducts = useMemo(() => {
-    let result = [...filteredProducts]
+    const result = [...filteredProducts]
     
     // Apply sorting
-    if (selectedSort === "price-asc") {
-      result.sort((a, b) => {
-        const aPrice = a.discount ? a.price * (1 - a.discount / 100) : a.price
-        const bPrice = b.discount ? b.price * (1 - b.discount / 100) : b.price
-        return aPrice - bPrice
-      })
-    } else if (selectedSort === "price-desc") {
-      result.sort((a, b) => {
-        const aPrice = a.discount ? a.price * (1 - a.discount / 100) : a.price
-        const bPrice = b.discount ? b.price * (1 - b.discount / 100) : b.price
-        return bPrice - aPrice
-      })
-    } else if (selectedSort === "newest") {
-      result.sort((a, b) => {
-        // Safe type checking for Date objects
-        const aDate = typeof a.createdAt === 'string' ? new Date(a.createdAt).getTime() : 0
-        const bDate = typeof b.createdAt === 'string' ? new Date(b.createdAt).getTime() : 0
-        return bDate - aDate
-      })
-    } else {
-      // Sort by popularity (default) or rating
-      result.sort((a, b) => {
-        // Safe access to reviews or rating
-        const aRating = a.rating || 0
-        const bRating = b.rating || 0
-        return bRating - aRating
-      })
+    switch (selectedSort) {
+      case "price-asc":
+        result.sort((a, b) => {
+          const aPrice = a.discount ? a.price * (1 - a.discount / 100) : a.price
+          const bPrice = b.discount ? b.price * (1 - b.discount / 100) : b.price
+          return aPrice - bPrice
+        })
+        break
+      case "price-desc":
+        result.sort((a, b) => {
+          const aPrice = a.discount ? a.price * (1 - a.discount / 100) : a.price
+          const bPrice = b.discount ? b.price * (1 - b.discount / 100) : b.price
+          return bPrice - aPrice
+        })
+        break
+      case "newest":
+        result.sort((a, b) => {
+          const aDate = typeof a.createdAt === 'string' ? new Date(a.createdAt).getTime() : 0
+          const bDate = typeof b.createdAt === 'string' ? new Date(b.createdAt).getTime() : 0
+          return bDate - aDate
+        })
+        break
+      default:
+        // Sort by popularity (rating)
+        result.sort((a, b) => (b.rating || 0) - (a.rating || 0))
     }
     
     return result
@@ -134,242 +145,208 @@ export default function ShopPage() {
     return filteredAndSortedProducts.slice(indexOfFirstProduct, indexOfLastProduct)
   }, [filteredAndSortedProducts, currentPage])
   
-  // Calculate total pages
+  // Calculate total pages and results count
   const totalPages = Math.ceil(filteredAndSortedProducts.length / productsPerPage)
+  const resultsCount = filteredAndSortedProducts.length
   
-  // Filter products based on selected filters
+  // Filter products based on selected filters - optimized with caching
   useEffect(() => {
+    const cacheKey = `${selectedCategory}-${selectedPriceRange}-${debouncedSearchTerm}`
+    
+    // Check cache first
+    if (productsCache.current.has(cacheKey)) {
+      setFilteredProducts(productsCache.current.get(cacheKey)!)
+      setCurrentPage(1)
+      return
+    }
+    
     setIsLoading(true)
-    setCurrentPage(1) // Reset to first page when filters change
+    setCurrentPage(1)
+    
+    const controller = new AbortController()
     
     async function loadProducts() {
       try {
-        // Prepare Firebase filters
         const firebaseFilters: ProductFilters = {}
-        
-        // We'll apply category filter client-side to avoid the composite index requirement
         const categoryFilter = selectedCategory !== "all" ? selectedCategory : null
         
-        try {
-          console.log("Fetching products with filters:", firebaseFilters)
-          // getAllOrdersNoMax
-          const allOrders = await getAllOrdersNoMax();
-          const allProducts = await getProducts(firebaseFilters, 500);
-
-          const { products: firebaseProducts } = await getProducts(firebaseFilters)
-          console.log("Firebase products count:", firebaseProducts.length);
-          console.log("Sample firebase products:", firebaseProducts.slice(0, 3));
-          
-          // FALLBACK: If Firebase returns no products (e.g. running locally without data) use mock data
-          const baseProducts = firebaseProducts.length > 0 ? firebaseProducts : products
-          console.log("Using base products count:", baseProducts.length);
-
-          // Apply category filter client-side
-          let filteredFirebaseProducts = [...baseProducts]
-          if (categoryFilter) {
-            console.log("Applying category filter client-side:", categoryFilter)
-            
-            filteredFirebaseProducts = filteredFirebaseProducts.filter((product) => {
-              // Use the bucketProductToMainCategory function for consistent categorization
-              const productCategoryBucket = bucketProductToMainCategory(product as any);
-              
-              // Special handling for 'others' category
-              if (categoryFilter === 'others') {
-                return productCategoryBucket === 'others';
-              }
-              
-              // For all other categories, check for direct match
-              return productCategoryBucket === categoryFilter;
-            })
-            console.log(`After category filter: ${filteredFirebaseProducts.length} products`)
-          }
-
-          // Apply price range filter client-side
-          if (selectedPriceRange !== "all") {
-            const range = priceRanges.find(range => range.id === selectedPriceRange)
-            if (range && range.min !== undefined && range.max !== undefined) {
-              filteredFirebaseProducts = filteredFirebaseProducts.filter(product => {
-                // Apply discount if available
-                const finalPrice = product.discount && product.discount > 0
-                  ? product.price * (1 - product.discount / 100)
-                  : product.price
-                return finalPrice >= range.min && finalPrice < range.max
-              })
-            }
-          }
-
-          // Apply search filter client-side
-          if (searchTerm) {
-            const term = searchTerm.toLowerCase()
-            filteredFirebaseProducts = filteredFirebaseProducts.filter(product => 
-              product.name.toLowerCase().includes(term) || 
-              (product.description && product.description.toLowerCase().includes(term))
-            )
-          }
-
-          setResultsCount(filteredFirebaseProducts.length)
-          // Cast because Firebase Product type differs slightly from app Product type
-          setFilteredProducts(filteredFirebaseProducts as unknown as Product[])
-        } catch (error: any) {
-          console.error("Error loading products:", error)
-          
-          // Check if this is a missing index error
-          if (error.message && error.message.includes("requires an index")) {
-            console.log("Missing index error detected. Using client-side filtering with local data.")
-            // Fall back to static data and apply all filters client-side
-            let localProducts = [...products]
-            
-            // Apply category filter
-            if (selectedCategory !== "all") {
-              const mappedCategory = selectedCategory
-              localProducts = localProducts.filter((product) => {
-                // Use the bucketProductToMainCategory function for consistent categorization
-                const productCategoryBucket = bucketProductToMainCategory(product as any);
-                
-                // Special handling for 'others' category
-                if (mappedCategory === 'others') {
-                  return productCategoryBucket === 'others';
-                }
-                
-                // For all other categories, check for direct match
-                return productCategoryBucket === mappedCategory;
-              })
-            }
-            
-            // Apply price range filter
-            if (selectedPriceRange !== "all") {
-              const range = priceRanges.find((range) => range.id === selectedPriceRange)
-              if (range && range.min !== undefined && range.max !== undefined) {
-                localProducts = localProducts.filter((product) => {
-                  const finalPrice = product.discount && product.discount > 0
-                    ? product.price * (1 - product.discount / 100)
-                    : product.price
-                  return finalPrice >= range.min && finalPrice < range.max
-                })
-              }
-            }
-            
-            // Apply search filter
-            if (searchTerm) {
-              const term = searchTerm.toLowerCase()
-              localProducts = localProducts.filter((product) =>
-                product.name.toLowerCase().includes(term) ||
-                (product.description && product.description.toLowerCase().includes(term)) ||
-                (product.category && product.category.toLowerCase().includes(term))
-              )
-            }
-            
-            setResultsCount(localProducts.length)
-            setFilteredProducts(localProducts)
-          } else {
-            // For other errors, just use the static data without filtering
-            setFilteredProducts(products)
-            setResultsCount(products.length)
-          }
-        } finally {
-          setIsLoading(false)
+        console.log("Fetching products with filters:", firebaseFilters)
+        const { products: firebaseProducts } = await getProducts(firebaseFilters, 500)
+        console.log("Firebase products count:", firebaseProducts.length)
+        
+        // Use Firebase products or fallback to mock data
+        let result = firebaseProducts.length > 0 ? [...firebaseProducts] : [...products]
+        
+        // Apply category filter client-side
+        if (categoryFilter) {
+          result = result.filter((product) => {
+            const productCategoryBucket = bucketProductToMainCategory(product as any)
+            return categoryFilter === 'others' 
+              ? productCategoryBucket === 'others'
+              : productCategoryBucket === categoryFilter
+          })
         }
-      } catch (error) {
-        console.error("Outer error handler:", error)
-        setFilteredProducts(products)
-        setResultsCount(products.length)
+
+        // Apply price range filter
+        if (selectedPriceRange !== "all") {
+          const range = priceRanges.find(r => r.id === selectedPriceRange)
+          if (range?.min !== undefined && range?.max !== undefined) {
+            result = result.filter(product => {
+              const finalPrice = product.discount && product.discount > 0
+                ? product.price * (1 - product.discount / 100)
+                : product.price
+              return finalPrice >= range.min && finalPrice < range.max
+            })
+          }
+        }
+
+        // Apply search filter
+        if (debouncedSearchTerm) {
+          const term = debouncedSearchTerm.toLowerCase()
+          result = result.filter(product => 
+            product.name.toLowerCase().includes(term) || 
+            (product.description && product.description.toLowerCase().includes(term))
+          )
+        }
+
+        // Cache the results
+        productsCache.current.set(cacheKey, result as unknown as Product[])
+        
+        // Limit cache size to prevent memory issues
+        if (productsCache.current.size > 20) {
+          const firstKey = productsCache.current.keys().next().value
+          productsCache.current.delete(firstKey)
+        }
+        
+        setFilteredProducts(result as unknown as Product[])
+      } catch (error: any) {
+        console.error("Error loading products:", error)
+        
+        // Fallback to local data with client-side filtering
+        let localProducts = [...products]
+        
+        if (selectedCategory !== "all") {
+          localProducts = localProducts.filter((product) => {
+            const productCategoryBucket = bucketProductToMainCategory(product as any)
+            return selectedCategory === 'others'
+              ? productCategoryBucket === 'others'
+              : productCategoryBucket === selectedCategory
+          })
+        }
+        
+        if (selectedPriceRange !== "all") {
+          const range = priceRanges.find(r => r.id === selectedPriceRange)
+          if (range?.min !== undefined && range?.max !== undefined) {
+            localProducts = localProducts.filter((product) => {
+              const finalPrice = product.discount && product.discount > 0
+                ? product.price * (1 - product.discount / 100)
+                : product.price
+              return finalPrice >= range.min && finalPrice < range.max
+            })
+          }
+        }
+        
+        if (debouncedSearchTerm) {
+          const term = debouncedSearchTerm.toLowerCase()
+          localProducts = localProducts.filter((product) =>
+            product.name.toLowerCase().includes(term) ||
+            (product.description && product.description.toLowerCase().includes(term)) ||
+            (product.category && product.category.toLowerCase().includes(term))
+          )
+        }
+        
+        setFilteredProducts(localProducts)
+      } finally {
         setIsLoading(false)
       }
     }
     
     loadProducts()
-  }, [selectedCategory, selectedPriceRange, searchTerm])
+    
+    return () => controller.abort()
+  }, [selectedCategory, selectedPriceRange, debouncedSearchTerm])
   
-  // Update URL when filters change
+  // Update URL when filters change - debounced
   useEffect(() => {
-    // Convert readonly search params to a regular URLSearchParams by creating 
-    // a new URLSearchParams object and passing in the entries
-    const params = new URLSearchParams();
+    const params = new URLSearchParams()
     
-    // Copy existing parameters
-    searchParams.forEach((value, key) => {
-      params.set(key, value);
-    });
-    
-    if (selectedCategory === "all") {
-      params.delete("category")
-    } else {
+    if (selectedCategory !== "all") {
       params.set("category", selectedCategory)
     }
     
-    if (searchTerm) {
-      params.set("search", searchTerm)
-    } else {
-      params.delete("search")
+    if (debouncedSearchTerm) {
+      params.set("search", debouncedSearchTerm)
     }
     
-    navigate(`/shop?${params.toString()}`, { replace: true })
-  }, [selectedCategory, searchTerm, navigate, searchParams])
+    const newUrl = params.toString() ? `/shop?${params.toString()}` : '/shop'
+    navigate(newUrl, { replace: true })
+  }, [selectedCategory, debouncedSearchTerm, navigate])
   
-  // Handle category change
-  const handleCategoryChange = (categoryId: MainCategoryId) => {
+  // Memoized event handlers
+  const handleCategoryChange = useCallback((categoryId: MainCategoryId) => {
     setSelectedCategory(categoryId)
-  }
+  }, [])
   
-  // Handle price range change
-  const handlePriceRangeChange = (rangeId: string) => {
+  const handlePriceRangeChange = useCallback((rangeId: string) => {
     setSelectedPriceRange(rangeId)
-  }
+  }, [])
   
-  // Handle sort change
-  const handleSortChange = (sortId: string) => {
+  const handleSortChange = useCallback((sortId: string) => {
     setSelectedSort(sortId)
-  }
+  }, [])
   
-  // Handle search
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = useCallback((e: React.FormEvent) => {
     e.preventDefault()
-    // The searchTerm state is already updated via the input onChange handler
-    // The URL will be updated via the useEffect that watches searchTerm
-  }
+  }, [])
 
-  // Clear all filters
-  const clearAllFilters = () => {
+  const clearAllFilters = useCallback(() => {
     setSelectedCategory("all")
     setSelectedPriceRange("all")
     setSearchTerm("")
-  }
+    productsCache.current.clear()
+  }, [])
 
-  // Get the name of the selected category
-  const getSelectedCategoryName = () => {
+  // Memoized helper functions
+  const getSelectedCategoryName = useMemo(() => {
     const category = categories.find(cat => cat.id === selectedCategory)
     return category ? category.name : "All Products"
-  }
+  }, [selectedCategory])
 
-  // Get the name of the selected price range
-  const getSelectedPriceRangeName = () => {
+  const getSelectedPriceRangeName = useMemo(() => {
     const range = priceRanges.find(range => range.id === selectedPriceRange)
     return range ? range.name : "All Prices"
-  }
+  }, [selectedPriceRange])
   
-  // Get the name of the selected sort option
-  const getSelectedSortName = () => {
+  const getSelectedSortName = useMemo(() => {
     const sort = sortOptions.find(sort => sort.id === selectedSort)
     return sort ? sort.name : "Popular"
-  }
+  }, [selectedSort])
   
-  // Toggle section visibility
-  const toggleSection = (section: keyof typeof expandedSections) => {
-    setExpandedSections({
-      ...expandedSections,
-      [section]: !expandedSections[section]
-    })
-  }
+  const toggleSection = useCallback((section: keyof typeof expandedSections) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }))
+  }, [])
   
-  // Handle page change
-  const handlePageChange = (page: number) => {
+  const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page)
-    // Scroll to top of product grid
     window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
+  }, [])
   
-  // Filter component - reusable for both desktop and mobile
-  const FiltersComponent = ({ isMobile = false, onApply = () => {} }) => (
+  // Memoized pagination numbers to avoid recalculation on every render
+  const paginationNumbers = useMemo(() => {
+    return Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+      if (totalPages <= 5) return i + 1
+      if (currentPage <= 3) return i + 1
+      if (currentPage >= totalPages - 2) return totalPages - 4 + i
+      return currentPage - 2 + i
+    })
+  }, [totalPages, currentPage])
+  
+  // Memoized Filter component to prevent unnecessary re-renders
+  const FiltersComponent = useMemo(() => {
+    const Component = ({ isMobile = false, onApply = () => {} }: { isMobile?: boolean; onApply?: () => void }) => (
     <div className={`${isMobile ? 'p-0' : 'bg-white rounded-lg border border-gray-200 p-4 shadow-sm sticky top-28'}`}>
       {!isMobile && (
         <div className="flex items-center mb-4 pb-2 border-b border-gray-200">
@@ -521,13 +498,13 @@ export default function ShopPage() {
           <div className="flex flex-wrap gap-1">
             {selectedCategory !== "all" && (
               <Badge variant="outline" className="text-xs bg-gray-50 border-gray-200 gap-1 py-1">
-                {getSelectedCategoryName()}
+                {getSelectedCategoryName}
                 <X className="h-3 w-3 ml-1 cursor-pointer" onClick={() => setSelectedCategory("all")} />
               </Badge>
             )}
             {selectedPriceRange !== "all" && (
               <Badge variant="outline" className="text-xs bg-gray-50 border-gray-200 gap-1 py-1">
-                {getSelectedPriceRangeName()}
+                {getSelectedPriceRangeName}
                 <X className="h-3 w-3 ml-1 cursor-pointer" onClick={() => setSelectedPriceRange("all")} />
               </Badge>
             )}
@@ -558,7 +535,9 @@ export default function ShopPage() {
         </Button>
       )}
     </div>
-  );
+  )
+    return Component
+  }, [selectedCategory, selectedPriceRange, searchTerm, expandedSections, toggleSection, handleCategoryChange, handlePriceRangeChange, handleSortChange, clearAllFilters, getSelectedCategoryName, getSelectedPriceRangeName, selectedSort])
   
   return (
     <div className="min-h-screen py-8 bg-gray-50">
@@ -590,7 +569,7 @@ export default function ShopPage() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="w-full md:w-auto justify-between whitespace-nowrap">
-                  <span className="mr-1">Sort:</span> {getSelectedSortName()}
+                  <span className="mr-1">Sort:</span> {getSelectedSortName}
                   <ChevronDown className="h-4 w-4 ml-2 opacity-70" />
                 </Button>
               </DropdownMenuTrigger>
@@ -694,30 +673,17 @@ export default function ShopPage() {
                         Previous
                       </Button>
                       
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        let pageNum;
-                        if (totalPages <= 5) {
-                          pageNum = i + 1;
-                        } else if (currentPage <= 3) {
-                          pageNum = i + 1;
-                        } else if (currentPage >= totalPages - 2) {
-                          pageNum = totalPages - 4 + i;
-                        } else {
-                          pageNum = currentPage - 2 + i;
-                        }
-                        
-                        return (
-                          <Button
-                            key={pageNum}
-                            variant={currentPage === pageNum ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => handlePageChange(pageNum)}
-                            className="h-9 w-9 p-0"
-                          >
-                            {pageNum}
-                          </Button>
-                        );
-                      })}
+                      {paginationNumbers.map((pageNum) => (
+                        <Button
+                          key={pageNum}
+                          variant={currentPage === pageNum ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => handlePageChange(pageNum)}
+                          className="h-9 w-9 p-0"
+                        >
+                          {pageNum}
+                        </Button>
+                      ))}
                       
                       <Button
                         variant="outline"
@@ -748,8 +714,10 @@ export default function ShopPage() {
           </div>
         </div>
       </div>
-      {/* Add the chatbot at the end */}
-      <ShopAIChatbot />
+      {/* Lazy loaded chatbot */}
+      <Suspense fallback={null}>
+        <ShopAIChatbot />
+      </Suspense>
     </div>
   );
 }

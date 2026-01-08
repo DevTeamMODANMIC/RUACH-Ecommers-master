@@ -1,791 +1,402 @@
 import { useState, useEffect } from "react"
-
-import { Link } from "react-router-dom";
-import { Button } from "../components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
-import { Input } from "../components/ui/input"
-import { Label } from "../components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
-import { Badge } from "../components/ui/badge"
-import { Separator } from "../components/ui/separator"
-import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
-import { Switch } from "../components/ui/switch"
-import { User, Package, Heart, Settings, Bell, Shield, CreditCard, MapPin, Edit, Plus, Home, Building, Briefcase, ShoppingCart, Trash2, ExternalLink, Wallet as WalletIcon } from "lucide-react"
-import { useAuth } from "../components/auth-provider"
-import { useCurrency } from "../components/currency-provider"
-import { useToast } from "../hooks/use-toast"
-import { useLocalStorage } from "../hooks/use-local-storage"
-import { useWishlist } from "../hooks/use-wishlist"
-import { useCart } from "../components/cart-provider"
-import { getUserOrders, listenToUserOrders } from "../lib/firebase-orders"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "../components/ui/breadcrumb"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog"
-import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group"
-import AIChatbot from "../components/ai-chatbot"
+import { Link, useNavigate } from "react-router-dom"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
+import { Progress } from "@/components/ui/progress"
+import { 
+  User, Package, Heart, Settings, Bell, Shield, CreditCard, MapPin, 
+  Edit, Plus, Home, Building, Briefcase, ShoppingCart, Trash2, 
+  ExternalLink, Wallet as WalletIcon, LogOut, CheckCircle, Clock,
+  ChevronRight, Eye, EyeOff, AlertCircle, Sparkles, Camera, Mail
+} from "lucide-react"
+import { useAuth } from "@/components/auth-provider"
+import { useCurrency } from "@/components/currency-provider"
+import { useToast } from "@/hooks/use-toast"
+import { useWishlist } from "@/hooks/use-wishlist"
+import { useCart } from "@/components/cart-provider"
+import { getUserOrders } from "@/lib/firebase-orders"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { cn } from "@/lib/utils"
 
 export default function ProfilePage() {
+  const navigate = useNavigate()
   const { user, logout } = useAuth()
   const { formatPrice } = useCurrency()
   const { toast } = useToast()
   const [isEditing, setIsEditing] = useState(false)
+  const [activeTab, setActiveTab] = useState("profile")
+  
   const [profileData, setProfileData] = useState({
-    firstName: user?.displayName?.split(" ")[0] || "",
-    lastName: user?.displayName?.split(" ")[1] || "",
-    email: user?.email || "",
-    phone: "",
-    dateOfBirth: "",
-    gender: "",
+    firstName: "", lastName: "", email: "", phone: "", dateOfBirth: "", gender: "",
   })
-  const [addresses, setAddresses] = useState([
-    {
-      id: 1,
-      type: "Home",
-      name: "John Doe",
-      address: "123 Main Street",
-      city: "London",
-      postalCode: "SW1A 1AA",
-      country: "United Kingdom",
-      isDefault: true,
-    },
-  ])
-
-  // Address dialog state
+  const [addresses, setAddresses] = useState<any[]>([])
   const [addressDialogOpen, setAddressDialogOpen] = useState(false)
   const [currentAddress, setCurrentAddress] = useState<any>(null)
   const [addressForm, setAddressForm] = useState({
-    id: 0,
-    type: "Home",
-    name: "",
-    address: "",
-    city: "",
-    postalCode: "",
-    country: "",
-    isDefault: false,
+    id: 0, type: "Home", name: "", address: "", city: "", state: "", 
+    postalCode: "", country: "Nigeria", phone: "", isDefault: false,
   })
 
-  // Use localStorage for wishlist to maintain consistency with the main wishlist page
   const { wishlistItems, removeFromWishlist } = useWishlist()
-
+  const { addToCart } = useCart()
   const [preferences, setPreferences] = useState({
-    emailNotifications: true,
-    smsNotifications: false,
-    marketingEmails: true,
-    orderUpdates: true,
-    newsletter: true,
-    language: "en",
-    currency: "GBP",
+    emailNotifications: true, smsNotifications: false, marketingEmails: true,
+    orderUpdates: true, newsletter: true, language: "en", currency: "NGN",
   })
-
-  // Orders state
   const [orders, setOrders] = useState<any[]>([])
   const [ordersLoading, setOrdersLoading] = useState(false)
-
-  // Security features state
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
   const [twoFactorDialogOpen, setTwoFactorDialogOpen] = useState(false)
-  const [paymentMethodsDialogOpen, setPaymentMethodsDialogOpen] = useState(false)
-  const [passwordForm, setPasswordForm] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  })
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" })
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false)
-  const [paymentMethods, setPaymentMethods] = useState([
-    {
-      id: 1,
-      type: "card",
-      last4: "4242",
-      brand: "Visa",
-      expiryMonth: 12,
-      expiryYear: 2025,
-      isDefault: true,
-    },
-  ])
 
-  // Load orders and profile data on component mount
   useEffect(() => {
-    const loadOrders = async () => {
-      if (!user) return
+    if (user) {
+      const names = user.displayName?.split(" ") || ["", ""]
+      setProfileData(prev => ({
+        ...prev, firstName: names[0] || "", lastName: names.slice(1).join(" ") || "", email: user.email || "",
+      }))
+    }
+  }, [user])
 
+  useEffect(() => {
+    const loadData = async () => {
+      if (!user) return
       setOrdersLoading(true)
       try {
         const userOrders = await getUserOrders(user.uid)
         setOrders(userOrders)
-      } catch (error) {
-        console.error("Error loading orders:", error)
-        toast({
-          title: "Error loading orders",
-          description: "There was a problem loading your order history",
-          variant: "destructive"
-        })
-      } finally {
-        setOrdersLoading(false)
-      }
-    }
+      } catch (error) { console.error("Error loading orders:", error) }
+      finally { setOrdersLoading(false) }
 
-    // Load saved profile data from localStorage
-    const loadProfileData = () => {
       try {
         const savedProfile = localStorage.getItem('userProfile')
-        if (savedProfile) {
-          const parsedProfile = JSON.parse(savedProfile)
-          setProfileData(prev => ({ ...prev, ...parsedProfile }))
-        }
-
-        // Load saved addresses
+        if (savedProfile) setProfileData(prev => ({ ...prev, ...JSON.parse(savedProfile) }))
         const savedAddresses = localStorage.getItem('userAddresses')
-        if (savedAddresses) {
-          setAddresses(JSON.parse(savedAddresses))
-        }
-
-        // Load saved preferences
+        if (savedAddresses) setAddresses(JSON.parse(savedAddresses))
         const savedPreferences = localStorage.getItem('userPreferences')
-        if (savedPreferences) {
-          setPreferences(JSON.parse(savedPreferences))
-        }
-
-        // Load saved payment methods
-        const savedPaymentMethods = localStorage.getItem('userPaymentMethods')
-        if (savedPaymentMethods) {
-          setPaymentMethods(JSON.parse(savedPaymentMethods))
-        }
-
-        // Load 2FA setting
+        if (savedPreferences) setPreferences(JSON.parse(savedPreferences))
         const savedTwoFactor = localStorage.getItem('userTwoFactorEnabled')
-        if (savedTwoFactor) {
-          setTwoFactorEnabled(JSON.parse(savedTwoFactor))
-        }
-      } catch (error) {
-        console.error("Error loading saved data:", error)
-      }
+        if (savedTwoFactor) setTwoFactorEnabled(JSON.parse(savedTwoFactor))
+      } catch (error) { console.error("Error loading saved data:", error) }
     }
+    loadData()
+  }, [user])
 
-    loadOrders()
-    loadProfileData()
-  }, [user, toast])
-
-  // Order history - now using real data from Firebase
-  const orderHistory = orders.map(order => ({
-    id: order.id,
-    date: order.createdAt,
-    status: order.status,
-    total: order.total,
-    items: order.items.length,
-  }))
-
-  const { addToCart } = useCart()
+  const getProfileCompletion = () => {
+    const fields = [profileData.firstName, profileData.lastName, profileData.email, profileData.phone, profileData.dateOfBirth, profileData.gender]
+    return Math.round((fields.filter(f => f?.trim()).length / fields.length) * 100)
+  }
 
   const handleSaveProfile = () => {
-    const errors = []
-
-    // Validate first name
-    if (!profileData.firstName.trim()) {
-      errors.push("First name is required")
-    } else if (profileData.firstName.trim().length < 2) {
-      errors.push("First name must be at least 2 characters long")
-    } else if (!/^[a-zA-Z\s'-]+$/.test(profileData.firstName.trim())) {
-      errors.push("First name can only contain letters, spaces, hyphens, and apostrophes")
-    }
-
-    // Validate last name
-    if (!profileData.lastName.trim()) {
-      errors.push("Last name is required")
-    } else if (profileData.lastName.trim().length < 2) {
-      errors.push("Last name must be at least 2 characters long")
-    } else if (!/^[a-zA-Z\s'-]+$/.test(profileData.lastName.trim())) {
-      errors.push("Last name can only contain letters, spaces, hyphens, and apostrophes")
-    }
-
-    // Validate email
-    if (!profileData.email.trim()) {
-      errors.push("Email is required")
-    } else {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (!emailRegex.test(profileData.email.trim())) {
-        errors.push("Please enter a valid email address")
-      }
-    }
-
-    // Validate phone number if provided
-    if (profileData.phone.trim()) {
-      const phoneRegex = /^[\+]?[0-9\s\-\(\)]{10,15}$/
-      if (!phoneRegex.test(profileData.phone.trim())) {
-        errors.push("Please enter a valid phone number")
-      }
-    }
-
-    // Validate date of birth if provided
-    if (profileData.dateOfBirth) {
-      const birthDate = new Date(profileData.dateOfBirth)
-      const today = new Date()
-      const age = today.getFullYear() - birthDate.getFullYear()
-
-      if (birthDate > today) {
-        errors.push("Date of birth cannot be in the future")
-      } else if (age < 13) {
-        errors.push("You must be at least 13 years old")
-      } else if (age > 150) {
-        errors.push("Please enter a valid date of birth")
-      }
-    }
-
-    // Validate gender if provided
-    if (profileData.gender && !['male', 'female', 'other', 'prefer-not-to-say'].includes(profileData.gender)) {
-      errors.push("Please select a valid gender option")
-    }
-
-    // If there are validation errors, show them
-    if (errors.length > 0) {
-      toast({
-        title: "Validation Error",
-        description: errors[0], // Show first error
-        variant: "destructive"
-      })
+    if (!profileData.firstName.trim() || !profileData.lastName.trim()) {
+      toast({ title: "Validation Error", description: "Name is required", variant: "destructive" })
       return
     }
-
     try {
-      // Save to localStorage for persistence
-      const profileToSave = {
-        ...profileData,
-        updatedAt: new Date().toISOString()
-      }
-      localStorage.setItem('userProfile', JSON.stringify(profileToSave))
-
-      // Update the user display name if it changed
-      if (user && `${profileData.firstName} ${profileData.lastName}` !== user.displayName) {
-        // In a real app, you'd update this in your backend/Firebase
-        console.log('Would update user display name:', `${profileData.firstName} ${profileData.lastName}`)
-      }
-
-      toast({
-        title: "Profile updated",
-        description: "Your profile information has been saved successfully.",
-      })
+      localStorage.setItem('userProfile', JSON.stringify({ ...profileData, updatedAt: new Date().toISOString() }))
+      toast({ title: "Profile updated", description: "Your profile has been saved." })
       setIsEditing(false)
-    } catch (error) {
-      toast({
-        title: "Save failed",
-        description: "There was an error saving your profile. Please try again.",
-        variant: "destructive"
-      })
-    }
+    } catch { toast({ title: "Save failed", variant: "destructive" }) }
   }
 
   const handlePreferenceChange = (key: string, value: boolean | string) => {
-    const updatedPreferences = { ...preferences, [key]: value }
-    setPreferences(updatedPreferences)
-
-    // Save to localStorage
-    try {
-      localStorage.setItem('userPreferences', JSON.stringify(updatedPreferences))
-    } catch (error) {
-      console.error("Error saving preferences:", error)
-    }
-
-    toast({
-      title: "Preference updated",
-      description: "Your preference has been saved.",
-    })
-  }
-
-  const handleAddressChange = (key: string, value: any) => {
-    setAddressForm((prev) => ({ ...prev, [key]: value }))
+    const updated = { ...preferences, [key]: value }
+    setPreferences(updated)
+    localStorage.setItem('userPreferences', JSON.stringify(updated))
+    toast({ title: "Preference saved" })
   }
 
   const openAddAddressDialog = () => {
     setCurrentAddress(null)
     setAddressForm({
-      id: Date.now(), // Generate a temporary ID
-      type: "Home",
-      name: `${profileData.firstName} ${profileData.lastName}`.trim() || "John Doe",
-      address: "",
-      city: "",
-      postalCode: "",
-      country: "United Kingdom",
-      isDefault: addresses.length === 0, // Make default if it's the first address
+      id: Date.now(), type: "Home", name: `${profileData.firstName} ${profileData.lastName}`.trim(),
+      address: "", city: "", state: "", postalCode: "", country: "Nigeria", phone: profileData.phone || "", isDefault: addresses.length === 0,
     })
     setAddressDialogOpen(true)
-  }
-
-  const openEditAddressDialog = (address: any) => {
-    setCurrentAddress(address)
-    setAddressForm({
-      ...address
-    })
-    setAddressDialogOpen(true)
-  }
-
-  const handleDeleteAddress = (id: number) => {
-    const updatedAddresses = addresses.filter(address => address.id !== id)
-    
-    // If we deleted the default address and have other addresses, make another one default
-    if (addresses.find(a => a.id === id)?.isDefault && updatedAddresses.length > 0) {
-      updatedAddresses[0].isDefault = true
-    }
-    
-    setAddresses(updatedAddresses)
-
-    // Save to localStorage
-    try {
-      localStorage.setItem('userAddresses', JSON.stringify(updatedAddresses))
-    } catch (error) {
-      console.error("Error saving addresses:", error)
-    }
-
-    toast({
-      title: "Address deleted",
-      description: "The address has been removed from your account.",
-    })
   }
 
   const handleSaveAddress = () => {
-    // Validate form data
-    if (!addressForm.name || !addressForm.address || !addressForm.city || !addressForm.postalCode || !addressForm.country) {
-      toast({
-        title: "Missing information",
-        description: "Please in all required fields.",
-        variant: "destructive"
-      })
+    if (!addressForm.name || !addressForm.address || !addressForm.city) {
+      toast({ title: "Missing information", description: "Please fill required fields.", variant: "destructive" })
       return
     }
-
-    // If this is an update
-    if (currentAddress) {
-      setAddresses(addresses.map(address => 
-        address.id === currentAddress.id ? addressForm : address
-      ))
-      toast({
-        title: "Address updated",
-        description: "Your address has been updated successfully."
-      })
-    } else {
-      // If setting as default, update other addresses
-      let newAddresses = [...addresses]
-      if (addressForm.isDefault) {
-        newAddresses = newAddresses.map(addr => ({ ...addr, isDefault: false }))
-      }
-      newAddresses.push(addressForm)
-      setAddresses(newAddresses)
-    }
-
-    // Save to localStorage
-    try {
-      localStorage.setItem('userAddresses', JSON.stringify(addresses))
-    } catch (error) {
-      console.error("Error saving addresses:", error)
-    }
-
+    let newAddresses = [...addresses]
+    if (addressForm.isDefault) newAddresses = newAddresses.map(a => ({ ...a, isDefault: false }))
+    if (currentAddress) newAddresses = newAddresses.map(a => a.id === currentAddress.id ? addressForm : a)
+    else newAddresses.push(addressForm)
+    setAddresses(newAddresses)
+    localStorage.setItem('userAddresses', JSON.stringify(newAddresses))
     setAddressDialogOpen(false)
-    toast({
-      title: "Address saved",
-      description: "Your address has been saved successfully.",
-    })
+    toast({ title: "Address saved" })
   }
 
-  const setStatusAsDefault = (id: number) => {
-    setAddresses(addresses.map(address => ({
-      ...address,
-      isDefault: address.id === id
-    })))
-    toast({
-      title: "Default address updated",
-      description: "Your default address has been changed."
-    })
+  const handleDeleteAddress = (id: number) => {
+    const updated = addresses.filter(a => a.id !== id)
+    if (addresses.find(a => a.id === id)?.isDefault && updated.length > 0) updated[0].isDefault = true
+    setAddresses(updated)
+    localStorage.setItem('userAddresses', JSON.stringify(updated))
+    toast({ title: "Address deleted" })
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "delivered":
-        return "bg-green-100 text-green-800"
-      case "processing":
-        return "bg-yellow-100 text-yellow-800"
-      case "shipped":
-        return "bg-blue-100 text-blue-800"
-      default:
-        return "bg-gray-100 text-gray-800"
-    }
-  }
-
-  // Security feature handlers
-  const handlePasswordChange = (field: string, value: string) => {
-    setPasswordForm(prev => ({ ...prev, [field]: value }))
+  const setDefaultAddress = (id: number) => {
+    const updated = addresses.map(a => ({ ...a, isDefault: a.id === id }))
+    setAddresses(updated)
+    localStorage.setItem('userAddresses', JSON.stringify(updated))
+    toast({ title: "Default address updated" })
   }
 
   const handleChangePassword = () => {
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast({
-        title: "Password mismatch",
-        description: "New password and confirmation password do not match",
-        variant: "destructive"
-      })
+      toast({ title: "Passwords don't match", variant: "destructive" })
       return
     }
-
     if (passwordForm.newPassword.length < 8) {
-      toast({
-        title: "Password too short",
-        description: "Password must be at least 8 characters long",
-        variant: "destructive"
-      })
+      toast({ title: "Password too short", description: "Minimum 8 characters", variant: "destructive" })
       return
     }
-
-    // In a real app, you'd call an API to change the password
-    toast({
-      title: "Password changed",
-      description: "Your password has been updated successfully",
-    })
-
+    toast({ title: "Password changed" })
     setPasswordDialogOpen(false)
-    setPasswordForm({
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    })
+    setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" })
   }
 
   const handleToggleTwoFactor = () => {
-    const newTwoFactorState = !twoFactorEnabled
-    setTwoFactorEnabled(newTwoFactorState)
-
-    // Save to localStorage
-    try {
-      localStorage.setItem('userTwoFactorEnabled', JSON.stringify(newTwoFactorState))
-    } catch (error) {
-      console.error("Error saving 2FA setting:", error)
-    }
-
-    toast({
-      title: newTwoFactorState ? "2FA enabled" : "2FA disabled",
-      description: newTwoFactorState
-        ? "Two-factor authentication has been enabled. Check your email for setup instructions."
-        : "Two-factor authentication has been disabled for your account.",
-    })
+    const newState = !twoFactorEnabled
+    setTwoFactorEnabled(newState)
+    localStorage.setItem('userTwoFactorEnabled', JSON.stringify(newState))
+    toast({ title: newState ? "2FA enabled" : "2FA disabled" })
     setTwoFactorDialogOpen(false)
   }
 
-  const handleSetDefaultPaymentMethod = (id: number) => {
-    const updatedMethods = paymentMethods.map(method => ({ ...method, isDefault: method.id === id }))
-    setPaymentMethods(updatedMethods)
-
-    // Save to localStorage
-    try {
-      localStorage.setItem('userPaymentMethods', JSON.stringify(updatedMethods))
-    } catch (error) {
-      console.error("Error saving payment methods:", error)
+  const getStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      delivered: "bg-green-100 text-green-700", processing: "bg-yellow-100 text-yellow-700",
+      shipped: "bg-blue-100 text-blue-700", pending: "bg-orange-100 text-orange-700", cancelled: "bg-red-100 text-red-700",
     }
-
-    toast({
-      title: "Default payment method updated",
-      description: "Your default payment method has been changed",
-    })
+    return colors[status.toLowerCase()] || "bg-gray-100 text-gray-700"
   }
 
-  const handleDeletePaymentMethod = (id: number) => {
-    const methodToDelete = paymentMethods.find(m => m.id === id)
-    let updatedMethods = paymentMethods
-
-    if (methodToDelete?.isDefault && paymentMethods.length > 1) {
-      // Set another method as default
-      updatedMethods = paymentMethods.map((method, index) =>
-        method.id === id ? { ...method, isDefault: false } : { ...method, isDefault: index === 0 }
-      )
-    }
-
-    const finalMethods = updatedMethods.filter(method => method.id !== id)
-    setPaymentMethods(finalMethods)
-
-    // Save to localStorage
-    try {
-      localStorage.setItem('userPaymentMethods', JSON.stringify(finalMethods))
-    } catch (error) {
-      console.error("Error saving payment methods:", error)
-    }
-
-    toast({
-      title: "Payment method removed",
-      description: "The payment method has been removed from your account",
-    })
+  const handleLogout = async () => {
+    try { await logout(); navigate('/login') }
+    catch { toast({ title: "Logout failed", variant: "destructive" }) }
   }
 
   if (!user) {
     return (
-      <div className="min-h-screen py-8">
-        <div className="container mx-auto px-4">
-          <div className="text-center py-16">
-            <h1 className="text-3xl font-bold mb-4">Please log in</h1>
-            <p className="text-muted-foreground mb-8">You need to be logged in to view your profile.</p>
-            <Button asChild>
-              <a href="/login">Log In</a>
-            </Button>
-          </div>
-        </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Card className="max-w-md w-full text-center">
+          <CardContent className="pt-8 pb-8">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <User className="h-8 w-8 text-gray-400" />
+            </div>
+            <h1 className="text-2xl font-bold mb-2">Please Log In</h1>
+            <p className="text-gray-500 mb-6">You need to be logged in to view your profile.</p>
+            <Button asChild className="w-full"><Link to="/login">Log In</Link></Button>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
+  const profileCompletion = getProfileCompletion()
+
   return (
-    <div className="min-h-screen py-8">
-      <div className="container mx-auto px-4">
-        <Breadcrumb className="mb-6">
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/">Home</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>My Account</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16">
-              <AvatarImage src="/placeholder.svg" />
-              <AvatarFallback className="text-lg">
-                {user.displayName
-                  ?.split(" ")
-                  .map((n) => n[0])
-                  .join("") || "U"}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <h1 className="text-3xl font-bold">Welcome back, {user.displayName?.split(" ")[0]}!</h1>
-              <p className="text-muted-foreground">Manage your account and preferences</p>
+    <div className="min-h-screen bg-gray-50">
+      {/* Hero Header */}
+      <div className="bg-gradient-to-r from-green-600 via-green-500 to-emerald-500 text-white">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="flex items-center gap-5">
+              <div className="relative">
+                <Avatar className="h-20 w-20 border-4 border-white/30 shadow-xl">
+                  <AvatarImage src={user.photoURL || undefined} />
+                  <AvatarFallback className="bg-white/20 text-white text-2xl font-bold">
+                    {user.displayName?.split(" ").map(n => n[0]).join("") || "U"}
+                  </AvatarFallback>
+                </Avatar>
+                <button className="absolute bottom-0 right-0 bg-white text-green-600 rounded-full p-1.5 shadow-lg hover:bg-gray-100">
+                  <Camera className="h-4 w-4" />
+                </button>
+              </div>
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold">
+                  Welcome, {profileData.firstName || user.displayName?.split(" ")[0] || "User"}!
+                </h1>
+                <p className="text-green-100 mt-1 flex items-center gap-2">
+                  <Mail className="h-4 w-4" />{user.email}
+                </p>
+                <div className="flex items-center gap-2 mt-2 bg-white/20 rounded-full px-3 py-1 text-sm w-fit">
+                  <Sparkles className="h-4 w-4" />
+                  <span>Member since {new Date(user.metadata?.creationTime || Date.now()).getFullYear()}</span>
+                </div>
+              </div>
             </div>
+            <Button variant="outline" onClick={handleLogout} className="bg-white/10 border-white/30 text-white hover:bg-white/20">
+              <LogOut className="h-4 w-4 mr-2" />Sign Out
+            </Button>
           </div>
-          <Button variant="outline" onClick={logout}>
-            Sign Out
-          </Button>
+          {profileCompletion < 100 && (
+            <div className="mt-6 bg-white/10 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">Profile Completion</span>
+                <span className="text-sm font-bold">{profileCompletion}%</span>
+              </div>
+              <Progress value={profileCompletion} className="h-2 bg-white/20" />
+              <p className="text-xs text-green-100 mt-2">Complete your profile to unlock all features</p>
+            </div>
+          )}
         </div>
+      </div>
 
-        <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="profile" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Profile
-            </TabsTrigger>
-            <TabsTrigger value="orders" className="flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              Orders
-            </TabsTrigger>
-            <TabsTrigger value="wishlist" className="flex items-center gap-2">
-              <Heart className="h-4 w-4" />
-              Wishlist
-            </TabsTrigger>
-            <TabsTrigger value="addresses" className="flex items-center gap-2">
-              <MapPin className="h-4 w-4" />
-              Addresses
-            </TabsTrigger>
-            <TabsTrigger value="preferences" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              Preferences
-            </TabsTrigger>
-            <TabsTrigger value="security" className="flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              Security
-            </TabsTrigger>
-            <TabsTrigger value="wallet" className="flex items-center gap-2">
-              <WalletIcon className="h-4 w-4" />
-              Wallet
-            </TabsTrigger>
+      {/* Main Content */}
+      <div className="container mx-auto px-4 py-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="bg-white shadow-sm border p-1 rounded-xl flex-wrap h-auto gap-1">
+            {[
+              { value: "profile", icon: User, label: "Profile" },
+              { value: "orders", icon: Package, label: "Orders", count: orders.length },
+              { value: "wishlist", icon: Heart, label: "Wishlist", count: wishlistItems.length },
+              { value: "addresses", icon: MapPin, label: "Addresses" },
+              { value: "security", icon: Shield, label: "Security" },
+              { value: "preferences", icon: Settings, label: "Preferences" },
+              { value: "wallet", icon: WalletIcon, label: "Wallet" },
+            ].map(tab => (
+              <TabsTrigger key={tab.value} value={tab.value}
+                className="flex items-center gap-2 data-[state=active]:bg-green-50 data-[state=active]:text-green-700 rounded-lg px-4 py-2">
+                <tab.icon className="h-4 w-4" />
+                <span className="hidden sm:inline">{tab.label}</span>
+                {tab.count !== undefined && tab.count > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">{tab.count}</Badge>
+                )}
+              </TabsTrigger>
+            ))}
           </TabsList>
 
           {/* Profile Tab */}
           <TabsContent value="profile">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <Card className="lg:col-span-2">
                 <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>Personal Information</CardTitle>
-                  <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    {isEditing ? "Cancel" : "Edit"}
+                  <CardTitle className="flex items-center gap-2"><User className="h-5 w-5" />Personal Information</CardTitle>
+                  <Button variant={isEditing ? "ghost" : "outline"} size="sm" onClick={() => setIsEditing(!isEditing)}>
+                    <Edit className="h-4 w-4 mr-2" />{isEditing ? "Cancel" : "Edit"}
                   </Button>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="firstName">First Name</Label>
-                      <Input
-                        id="firstName"
-                        value={profileData.firstName}
-                        onChange={(e) => setProfileData((prev) => ({ ...prev, firstName: e.target.value }))}
-                        disabled={!isEditing}
-                      />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div><Label>First Name</Label>
+                      <Input value={profileData.firstName} onChange={e => setProfileData(p => ({ ...p, firstName: e.target.value }))} disabled={!isEditing} />
                     </div>
-                    <div>
-                      <Label htmlFor="lastName">Last Name</Label>
-                      <Input
-                        id="lastName"
-                        value={profileData.lastName}
-                        onChange={(e) => setProfileData((prev) => ({ ...prev, lastName: e.target.value }))}
-                        disabled={!isEditing}
-                      />
+                    <div><Label>Last Name</Label>
+                      <Input value={profileData.lastName} onChange={e => setProfileData(p => ({ ...p, lastName: e.target.value }))} disabled={!isEditing} />
                     </div>
                   </div>
-                  <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={profileData.email}
-                      onChange={(e) => setProfileData((prev) => ({ ...prev, email: e.target.value }))}
-                      disabled={!isEditing}
-                    />
+                  <div><Label>Email</Label><Input type="email" value={profileData.email} disabled className="bg-gray-50" /></div>
+                  <div><Label>Phone</Label>
+                    <Input value={profileData.phone} onChange={e => setProfileData(p => ({ ...p, phone: e.target.value }))} disabled={!isEditing} placeholder="+234..." />
                   </div>
-                  <div>
-                    <Label htmlFor="phone">Phone</Label>
-                    <Input
-                      id="phone"
-                      value={profileData.phone}
-                      onChange={(e) => setProfileData((prev) => ({ ...prev, phone: e.target.value }))}
-                      disabled={!isEditing}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="dateOfBirth">Date of Birth</Label>
-                      <Input
-                        id="dateOfBirth"
-                        type="date"
-                        value={profileData.dateOfBirth}
-                        onChange={(e) => setProfileData((prev) => ({ ...prev, dateOfBirth: e.target.value }))}
-                        disabled={!isEditing}
-                      />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div><Label>Date of Birth</Label>
+                      <Input type="date" value={profileData.dateOfBirth} onChange={e => setProfileData(p => ({ ...p, dateOfBirth: e.target.value }))} disabled={!isEditing} />
                     </div>
-                    <div>
-                      <Label htmlFor="gender">Gender</Label>
-                      <Select
-                        value={profileData.gender}
-                        onValueChange={(value) => setProfileData((prev) => ({ ...prev, gender: value }))}
-                        disabled={!isEditing}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select gender" />
-                        </SelectTrigger>
+                    <div><Label>Gender</Label>
+                      <Select value={profileData.gender} onValueChange={v => setProfileData(p => ({ ...p, gender: v }))} disabled={!isEditing}>
+                        <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="male">Male</SelectItem>
                           <SelectItem value="female">Female</SelectItem>
                           <SelectItem value="other">Other</SelectItem>
-                          <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
-                  {isEditing && (
-                    <Button onClick={handleSaveProfile} className="w-full">
-                      Save Changes
-                    </Button>
-                  )}
+                  {isEditing && <Button onClick={handleSaveProfile} className="w-full bg-green-600 hover:bg-green-700">Save Changes</Button>}
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Account Security</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
+              {/* Quick Stats */}
+              <div className="space-y-4">
+                <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-100">
+                  <CardContent className="pt-6">
                     <div className="flex items-center gap-3">
-                      <Shield className="h-5 w-5 text-green-600" />
+                      <div className="p-3 bg-green-100 rounded-xl"><Package className="h-6 w-6 text-green-600" /></div>
                       <div>
-                        <div className="font-medium">Password</div>
-                        <div className="text-sm text-muted-foreground">Last updated 3 months ago</div>
+                        <p className="text-2xl font-bold text-green-700">{orders.length}</p>
+                        <p className="text-sm text-green-600">Total Orders</p>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => setPasswordDialogOpen(true)}>
-                      Change
-                    </Button>
-                  </div>
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                  </CardContent>
+                </Card>
+                <Card className="bg-gradient-to-br from-rose-50 to-pink-50 border-rose-100">
+                  <CardContent className="pt-6">
                     <div className="flex items-center gap-3">
-                      <Bell className="h-5 w-5 text-blue-600" />
+                      <div className="p-3 bg-rose-100 rounded-xl"><Heart className="h-6 w-6 text-rose-600" /></div>
                       <div>
-                        <div className="font-medium">Two-Factor Authentication</div>
-                        <div className="text-sm text-muted-foreground">
-                          {twoFactorEnabled ? "Enabled" : "Not enabled"}
-                        </div>
+                        <p className="text-2xl font-bold text-rose-700">{wishlistItems.length}</p>
+                        <p className="text-sm text-rose-600">Wishlist Items</p>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => setTwoFactorDialogOpen(true)}>
-                      {twoFactorEnabled ? "Disable" : "Enable"}
-                    </Button>
-                  </div>
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                  </CardContent>
+                </Card>
+                <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100">
+                  <CardContent className="pt-6">
                     <div className="flex items-center gap-3">
-                      <CreditCard className="h-5 w-5 text-purple-600" />
+                      <div className="p-3 bg-blue-100 rounded-xl"><MapPin className="h-6 w-6 text-blue-600" /></div>
                       <div>
-                        <div className="font-medium">Payment Methods</div>
-                        <div className="text-sm text-muted-foreground">{paymentMethods.length} card{paymentMethods.length !== 1 ? 's' : ''} on file</div>
+                        <p className="text-2xl font-bold text-blue-700">{addresses.length}</p>
+                        <p className="text-sm text-blue-600">Saved Addresses</p>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => setPaymentMethodsDialogOpen(true)}>
-                      Manage
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </TabsContent>
 
           {/* Orders Tab */}
           <TabsContent value="orders">
             <Card>
-              <CardHeader>
-                <CardTitle>Order History</CardTitle>
-              </CardHeader>
+              <CardHeader><CardTitle className="flex items-center gap-2"><Package className="h-5 w-5" />Order History</CardTitle></CardHeader>
               <CardContent>
                 {ordersLoading ? (
-                  <div className="text-center py-8">
-                    <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4 animate-pulse" />
-                    <h3 className="text-lg font-semibold mb-2">Loading your orders...</h3>
-                    <p className="text-muted-foreground">
-                      Please wait while we fetch your order history.
-                    </p>
+                  <div className="text-center py-12">
+                    <div className="animate-spin h-8 w-8 border-4 border-green-600 border-t-transparent rounded-full mx-auto mb-4" />
+                    <p className="text-gray-500">Loading orders...</p>
                   </div>
-                ) : orderHistory.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                ) : orders.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Package className="h-16 w-16 mx-auto text-gray-300 mb-4" />
                     <h3 className="text-lg font-semibold mb-2">No orders yet</h3>
-                    <p className="text-muted-foreground mb-4">
-                      When you place an order, it will appear here for you to track.
-                    </p>
-                    <Button asChild>
-                      <a href="/shop">Start Shopping</a>
-                    </Button>
+                    <p className="text-gray-500 mb-4">Start shopping to see your orders here</p>
+                    <Button asChild><Link to="/shop">Browse Products</Link></Button>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {orderHistory.map((order) => (
-                      <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="space-y-3">
+                    {orders.slice(0, 10).map(order => (
+                      <div key={order.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
-                            <Package className="h-6 w-6" />
+                          <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                            <Package className="h-6 w-6 text-gray-400" />
                           </div>
                           <div>
-                            <div className="font-medium">{order.id}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {new Date(order.date).toLocaleDateString()} • {order.items} items
-                            </div>
+                            <p className="font-medium">Order #{order.id.slice(-8)}</p>
+                            <p className="text-sm text-gray-500">{new Date(order.createdAt).toLocaleDateString()} • {order.items?.length || 0} items</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3">
                           <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
-                          <Button variant="outline" size="sm" asChild>
-                            <Link to={`/order/${order.id}`}>
-                              View Details
-                              <ExternalLink className="h-4 w-4 ml-2" />
-                            </Link>
+                          <span className="font-semibold">{formatPrice(order.total)}</span>
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link to={`/profile/orders/${order.id}`}><ChevronRight className="h-4 w-4" /></Link>
                           </Button>
                         </div>
                       </div>
@@ -799,62 +410,35 @@ export default function ProfilePage() {
           {/* Wishlist Tab */}
           <TabsContent value="wishlist">
             <Card>
-              <CardHeader>
-                <CardTitle>Wishlist</CardTitle>
-              </CardHeader>
+              <CardHeader><CardTitle className="flex items-center gap-2"><Heart className="h-5 w-5" />My Wishlist</CardTitle></CardHeader>
               <CardContent>
                 {wishlistItems.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Heart className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <div className="text-center py-12">
+                    <Heart className="h-16 w-16 mx-auto text-gray-300 mb-4" />
                     <h3 className="text-lg font-semibold mb-2">Your wishlist is empty</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Save items to your wishlist to easily find them later.
-                    </p>
-                    <Button asChild>
-                      <a href="/shop">Start Shopping</a>
-                    </Button>
+                    <p className="text-gray-500 mb-4">Save items you love for later</p>
+                    <Button asChild><Link to="/shop">Explore Products</Link></Button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {wishlistItems.map((item) => (
-                      <div key={item.id} className="border rounded-lg overflow-hidden">
-                        <div className="relative">
-                          <img 
-                            src={item.image} 
-                            alt={item.name} 
-                            className="w-full h-48 object-cover"
-                          />
-                          <Button 
-                            size="sm" 
-                            variant="destructive" 
-                            className="absolute top-2 right-2"
-                            onClick={() => removeFromWishlist(item.id)}
-                          >
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {wishlistItems.map(item => (
+                      <div key={item.id} className="group border rounded-xl overflow-hidden hover:shadow-lg transition-all">
+                        <div className="relative aspect-square bg-gray-100">
+                          <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                          <Button size="icon" variant="destructive" className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => removeFromWishlist(item.id)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                         <div className="p-4">
-                          <h3 className="font-medium mb-1">{item.name}</h3>
-                          <p className="text-lg font-bold text-primary">{formatPrice(item.price)}</p>
-                          <Button 
-                            className="w-full mt-2"
-                            onClick={() => {
-                              addToCart({
-                                productId: item.id,
-                                name: item.name,
-                                price: item.price,
-                                image: item.image,
-                                quantity: 1,
-                                options: {} // Add empty options object to satisfy CartItem interface
-                              })
-                              toast({
-                                title: "Added to cart",
-                                description: `${item.name} has been added to your cart`,
-                              })
-                            }}
-                          >
-                            Add to Cart
-                          </Button>
+                          <h3 className="font-medium text-sm line-clamp-2 mb-2">{item.name}</h3>
+                          <div className="flex items-center justify-between">
+                            <p className="font-bold text-green-600">{formatPrice(item.price)}</p>
+                            <Button size="sm" onClick={() => {
+                              addToCart({ productId: item.id, name: item.name, price: item.price, image: item.image, quantity: 1, options: {} })
+                              toast({ title: "Added to cart" })
+                            }}><ShoppingCart className="h-4 w-4" /></Button>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -868,482 +452,267 @@ export default function ProfilePage() {
           <TabsContent value="addresses">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Addresses</CardTitle>
-                <Button onClick={openAddAddressDialog}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Address
-                </Button>
+                <CardTitle className="flex items-center gap-2"><MapPin className="h-5 w-5" />Saved Addresses</CardTitle>
+                <Button onClick={openAddAddressDialog}><Plus className="h-4 w-4 mr-2" />Add Address</Button>
               </CardHeader>
               <CardContent>
                 {addresses.length === 0 ? (
-                  <div className="text-center py-8">
-                    <MapPin className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <div className="text-center py-12">
+                    <MapPin className="h-16 w-16 mx-auto text-gray-300 mb-4" />
                     <h3 className="text-lg font-semibold mb-2">No addresses saved</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Add an address to make checkout faster.
-                    </p>
-                    <Button onClick={openAddAddressDialog}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Address
-                    </Button>
+                    <p className="text-gray-500 mb-4">Add an address for faster checkout</p>
+                    <Button onClick={openAddAddressDialog}><Plus className="h-4 w-4 mr-2" />Add Address</Button>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {addresses.map((address) => (
-                      <div key={address.id} className="p-4 border rounded-lg">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <div className="flex items-center gap-2 mb-2">
-                              <Badge variant={address.type === "Home" ? "default" : address.type === "Work" ? "secondary" : "outline"}>
-                                {address.type}
-                              </Badge>
-                              {address.isDefault && (
-                                <Badge variant="outline">Default</Badge>
-                              )}
-                            </div>
-                            <h3 className="font-medium">{address.name}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              {address.address}, {address.city}, {address.postalCode}, {address.country}
-                            </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {addresses.map(addr => (
+                      <div key={addr.id} className={cn("p-4 rounded-xl border-2 transition-colors", addr.isDefault ? "border-green-500 bg-green-50" : "border-gray-200 hover:border-gray-300")}>
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <Badge variant={addr.type === "Home" ? "default" : "secondary"}>{addr.type}</Badge>
+                            {addr.isDefault && <Badge className="bg-green-600">Default</Badge>}
                           </div>
-                          <div className="flex gap-2">
-                            {!address.isDefault && (
-                              <Button variant="outline" size="sm" onClick={() => setStatusAsDefault(address.id)}>
-                                Set as Default
-                              </Button>
-                            )}
-                            <Button variant="outline" size="sm" onClick={() => openEditAddressDialog(address)}>
-                              Edit
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="sm" onClick={() => { setCurrentAddress(addr); setAddressForm(addr); setAddressDialogOpen(true) }}>
+                              <Edit className="h-4 w-4" />
                             </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => handleDeleteAddress(address.id)}
-                              disabled={address.isDefault}
-                            >
-                              Delete
+                            <Button variant="ghost" size="sm" onClick={() => handleDeleteAddress(addr.id)} disabled={addr.isDefault}>
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </div>
+                        <p className="font-medium">{addr.name}</p>
+                        <p className="text-sm text-gray-600">{addr.address}</p>
+                        <p className="text-sm text-gray-600">{addr.city}, {addr.state} {addr.postalCode}</p>
+                        <p className="text-sm text-gray-600">{addr.country}</p>
+                        {addr.phone && <p className="text-sm text-gray-500 mt-1">{addr.phone}</p>}
+                        {!addr.isDefault && (
+                          <Button variant="link" size="sm" className="mt-2 p-0 h-auto text-green-600" onClick={() => setDefaultAddress(addr.id)}>
+                            Set as default
+                          </Button>
+                        )}
                       </div>
                     ))}
                   </div>
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
 
-            {/* Address Dialog */}
-            <Dialog open={addressDialogOpen} onOpenChange={setAddressDialogOpen}>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>{currentAddress ? "Edit Address" : "Add Address"}</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div>
-                    <Label htmlFor="addressType">Address Type</Label>
-                    <RadioGroup 
-                      value={addressForm.type} 
-                      onValueChange={(value) => handleAddressChange("type", value)}
-                      className="flex space-x-4 mt-2"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="Home" id="home" />
-                        <Label htmlFor="home" className="flex items-center">
-                          <Home className="h-4 w-4 mr-2" />
-                          Home
-                        </Label>
+          {/* Security Tab */}
+          <TabsContent value="security">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader><CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5" />Account Security</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-green-100 rounded-lg"><Shield className="h-5 w-5 text-green-600" /></div>
+                      <div>
+                        <p className="font-medium">Password</p>
+                        <p className="text-sm text-gray-500">Last changed 3 months ago</p>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="Work" id="work" />
-                        <Label htmlFor="work" className="flex items-center">
-                          <Briefcase className="h-4 w-4 mr-2" />
-                          Work
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="Other" id="other" />
-                        <Label htmlFor="other" className="flex items-center">
-                          <Building className="h-4 w-4 mr-2" />
-                          Other
-                        </Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input 
-                      id="name"
-                      value={addressForm.name}
-                      onChange={(e) => handleAddressChange("name", e.target.value)}
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="address">Street Address</Label>
-                    <Input 
-                      id="address"
-                      value={addressForm.address}
-                      onChange={(e) => handleAddressChange("address", e.target.value)}
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="city">City</Label>
-                      <Input 
-                        id="city"
-                        value={addressForm.city}
-                        onChange={(e) => handleAddressChange("city", e.target.value)}
-                      />
                     </div>
-                    <div>
-                      <Label htmlFor="postalCode">Postal Code</Label>
-                      <Input 
-                        id="postalCode"
-                        value={addressForm.postalCode}
-                        onChange={(e) => handleAddressChange("postalCode", e.target.value)}
-                      />
+                    <Button variant="outline" onClick={() => setPasswordDialogOpen(true)}>Change</Button>
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <div className={cn("p-2 rounded-lg", twoFactorEnabled ? "bg-green-100" : "bg-gray-100")}>
+                        <Bell className={cn("h-5 w-5", twoFactorEnabled ? "text-green-600" : "text-gray-500")} />
+                      </div>
+                      <div>
+                        <p className="font-medium">Two-Factor Authentication</p>
+                        <p className="text-sm text-gray-500">{twoFactorEnabled ? "Enabled" : "Not enabled"}</p>
+                      </div>
+                    </div>
+                    <Button variant={twoFactorEnabled ? "destructive" : "default"} onClick={() => setTwoFactorDialogOpen(true)}>
+                      {twoFactorEnabled ? "Disable" : "Enable"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader><CardTitle className="flex items-center gap-2"><CreditCard className="h-5 w-5" />Login Activity</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                      <div className="flex items-center gap-3">
+                        <CheckCircle className="h-5 w-5 text-green-600" />
+                        <div>
+                          <p className="text-sm font-medium">Current Session</p>
+                          <p className="text-xs text-gray-500">Windows • Chrome</p>
+                        </div>
+                      </div>
+                      <Badge className="bg-green-100 text-green-700">Active</Badge>
                     </div>
                   </div>
-                  
-                  <div>
-                    <Label htmlFor="country">Country</Label>
-                    <Select 
-                      value={addressForm.country}
-                      onValueChange={(value) => handleAddressChange("country", value)}
-                    >
-                      <SelectTrigger id="country">
-                        <SelectValue placeholder="Select country" />
-                      </SelectTrigger>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Preferences Tab */}
+          <TabsContent value="preferences">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader><CardTitle>Notifications</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  {[
+                    { key: "orderUpdates", label: "Order Updates", desc: "Get notified about order status" },
+                    { key: "emailNotifications", label: "Email Notifications", desc: "Receive updates via email" },
+                    { key: "smsNotifications", label: "SMS Notifications", desc: "Receive updates via SMS" },
+                    { key: "marketingEmails", label: "Marketing Emails", desc: "Promotional offers and deals" },
+                    { key: "newsletter", label: "Newsletter", desc: "Weekly newsletter subscription" },
+                  ].map(item => (
+                    <div key={item.key} className="flex items-center justify-between">
+                      <div><p className="font-medium">{item.label}</p><p className="text-sm text-gray-500">{item.desc}</p></div>
+                      <Switch checked={preferences[item.key as keyof typeof preferences] as boolean}
+                        onCheckedChange={v => handlePreferenceChange(item.key, v)} />
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader><CardTitle>Language & Region</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  <div><Label>Language</Label>
+                    <Select value={preferences.language} onValueChange={v => handlePreferenceChange("language", v)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="United Kingdom">United Kingdom</SelectItem>
-                        <SelectItem value="United States">United States</SelectItem>
-                        <SelectItem value="Canada">Canada</SelectItem>
-                        <SelectItem value="Australia">Australia</SelectItem>
-                        <SelectItem value="Nigeria">Nigeria</SelectItem>
-                        <SelectItem value="Ghana">Ghana</SelectItem>
+                        <SelectItem value="en">English</SelectItem>
+                        <SelectItem value="fr">Français</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Switch 
-                      id="isDefault"
-                      checked={addressForm.isDefault}
-                      onCheckedChange={(checked) => handleAddressChange("isDefault", checked)}
-                      disabled={currentAddress?.isDefault} // Can't uncheck if it's already the default
-                    />
-                    <Label htmlFor="isDefault">Set as default address</Label>
+                  <div><Label>Currency</Label>
+                    <Select value={preferences.currency} onValueChange={v => handlePreferenceChange("currency", v)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="NGN">Nigerian Naira (₦)</SelectItem>
+                        <SelectItem value="USD">US Dollar ($)</SelectItem>
+                        <SelectItem value="GBP">British Pound (£)</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setAddressDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleSaveAddress}>
-                    {currentAddress ? "Update Address" : "Save Address"}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            {/* Password Change Dialog */}
-            <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
-              <DialogContent className="sm:max-w-[400px]">
-                <DialogHeader>
-                  <DialogTitle>Change Password</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div>
-                    <Label htmlFor="currentPassword">Current Password</Label>
-                    <Input
-                      id="currentPassword"
-                      type="password"
-                      value={passwordForm.currentPassword}
-                      onChange={(e) => handlePasswordChange("currentPassword", e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="newPassword">New Password</Label>
-                    <Input
-                      id="newPassword"
-                      type="password"
-                      value={passwordForm.newPassword}
-                      onChange={(e) => handlePasswordChange("newPassword", e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                    <Input
-                      id="confirmPassword"
-                      type="password"
-                      value={passwordForm.confirmPassword}
-                      onChange={(e) => handlePasswordChange("confirmPassword", e.target.value)}
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setPasswordDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleChangePassword}>
-                    Change Password
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            {/* Two-Factor Authentication Dialog */}
-            <Dialog open={twoFactorDialogOpen} onOpenChange={setTwoFactorDialogOpen}>
-              <DialogContent className="sm:max-w-[400px]">
-                <DialogHeader>
-                  <DialogTitle>Two-Factor Authentication</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="text-center">
-                    <Bell className="h-12 w-12 mx-auto text-blue-600 mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">
-                      {twoFactorEnabled ? "Disable 2FA" : "Enable 2FA"}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      {twoFactorEnabled
-                        ? "Two-factor authentication will be disabled for your account."
-                        : "Add an extra layer of security to your account by enabling two-factor authentication."
-                      }
-                    </p>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setTwoFactorDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleToggleTwoFactor}>
-                    {twoFactorEnabled ? "Disable 2FA" : "Enable 2FA"}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            {/* Payment Methods Dialog */}
-            <Dialog open={paymentMethodsDialogOpen} onOpenChange={setPaymentMethodsDialogOpen}>
-              <DialogContent className="sm:max-w-[500px]">
-                <DialogHeader>
-                  <DialogTitle>Payment Methods</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  {paymentMethods.length === 0 ? (
-                    <div className="text-center py-8">
-                      <CreditCard className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-semibold mb-2">No payment methods</h3>
-                      <p className="text-muted-foreground mb-4">
-                        Add a payment method to make checkout faster.
-                      </p>
-                      <Button>Add Payment Method</Button>
-                    </div>
-                  ) : (
-                    paymentMethods.map((method) => (
-                      <div key={method.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <CreditCard className="h-5 w-5 text-muted-foreground" />
-                          <div>
-                            <div className="font-medium">
-                              {method.brand} ending in {method.last4}
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              Expires {method.expiryMonth}/{method.expiryYear}
-                              {method.isDefault && " • Default"}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          {!method.isDefault && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleSetDefaultPaymentMethod(method.id)}
-                            >
-                              Set Default
-                            </Button>
-                          )}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeletePaymentMethod(method.id)}
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                  <Button className="w-full" variant="outline">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add New Payment Method
-                  </Button>
-                </div>
-                <DialogFooter>
-                  <Button onClick={() => setPaymentMethodsDialogOpen(false)}>
-                    Done
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* Wallet Tab */}
           <TabsContent value="wallet">
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <WalletIcon className="h-5 w-5" />
-                  My Wallet
-                </CardTitle>
-              </CardHeader>
+              <CardHeader><CardTitle className="flex items-center gap-2"><WalletIcon className="h-5 w-5" />My Wallet</CardTitle></CardHeader>
               <CardContent>
-                <div className="text-center py-8">
-                  <WalletIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <div className="text-center py-12">
+                  <div className="w-20 h-20 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <WalletIcon className="h-10 w-10 text-green-600" />
+                  </div>
                   <h3 className="text-lg font-semibold mb-2">Manage Your Wallet</h3>
-                  <p className="text-muted-foreground mb-4">
-                    View your wallet balance, add funds, and track transactions.
-                  </p>
+                  <p className="text-gray-500 mb-6 max-w-md mx-auto">View balance, add funds, and track all your transactions in one place</p>
                   <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                    <Button asChild>
-                      <Link to="/wallet">Go to Wallet</Link>
-                    </Button>
-                    <Button asChild variant="outline">
-                      <Link to="/kyc-verification">Verify Identity (KYC)</Link>
-                    </Button>
+                    <Button asChild><Link to="/wallet">Go to Wallet</Link></Button>
+                    <Button variant="outline" asChild><Link to="/kyc-verification">Verify Identity (KYC)</Link></Button>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
-
-          {/* Settings Tab */}
-          <TabsContent value="settings">
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Notification Preferences</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">Email Notifications</div>
-                      <div className="text-sm text-muted-foreground">Receive notifications via email</div>
-                    </div>
-                    <Switch
-                      checked={preferences.emailNotifications}
-                      onCheckedChange={(checked) => handlePreferenceChange("emailNotifications", checked)}
-                    />
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">SMS Notifications</div>
-                      <div className="text-sm text-muted-foreground">Receive notifications via SMS</div>
-                    </div>
-                    <Switch
-                      checked={preferences.smsNotifications}
-                      onCheckedChange={(checked) => handlePreferenceChange("smsNotifications", checked)}
-                    />
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">Order Updates</div>
-                      <div className="text-sm text-muted-foreground">Get notified about order status changes</div>
-                    </div>
-                    <Switch
-                      checked={preferences.orderUpdates}
-                      onCheckedChange={(checked) => handlePreferenceChange("orderUpdates", checked)}
-                    />
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">Marketing Emails</div>
-                      <div className="text-sm text-muted-foreground">Receive promotional offers and updates</div>
-                    </div>
-                    <Switch
-                      checked={preferences.marketingEmails}
-                      onCheckedChange={(checked) => handlePreferenceChange("marketingEmails", checked)}
-                    />
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">Newsletter</div>
-                      <div className="text-sm text-muted-foreground">Subscribe to our weekly newsletter</div>
-                    </div>
-                    <Switch
-                      checked={preferences.newsletter}
-                      onCheckedChange={(checked) => handlePreferenceChange("newsletter", checked)}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Language & Region</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="language">Language</Label>
-                    <Select
-                      value={preferences.language}
-                      onValueChange={(value) => handlePreferenceChange("language", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="en">English</SelectItem>
-                        <SelectItem value="fr">Français</SelectItem>
-                        <SelectItem value="es">Español</SelectItem>
-                        <SelectItem value="de">Deutsch</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="currency">Currency</Label>
-                    <Select
-                      value={preferences.currency}
-                      onValueChange={(value) => handlePreferenceChange("currency", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="GBP">British Pound (£)</SelectItem>
-                        <SelectItem value="USD">US Dollar ($)</SelectItem>
-                        <SelectItem value="EUR">Euro (€)</SelectItem>
-                        <SelectItem value="NGN">Nigerian Naira (₦)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Account Actions</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Button variant="outline" className="w-full justify-start">
-                    Download My Data
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start text-destructive hover:text-destructive">
-                    Delete Account
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
         </Tabs>
       </div>
+
+      {/* Address Dialog */}
+      <Dialog open={addressDialogOpen} onOpenChange={setAddressDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader><DialogTitle>{currentAddress ? "Edit Address" : "Add New Address"}</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label>Address Type</Label>
+              <RadioGroup value={addressForm.type} onValueChange={v => setAddressForm(p => ({ ...p, type: v }))} className="flex gap-4 mt-2">
+                {[{ v: "Home", icon: Home }, { v: "Work", icon: Briefcase }, { v: "Other", icon: Building }].map(t => (
+                  <div key={t.v} className="flex items-center space-x-2">
+                    <RadioGroupItem value={t.v} id={t.v.toLowerCase()} />
+                    <Label htmlFor={t.v.toLowerCase()} className="flex items-center gap-1"><t.icon className="h-4 w-4" />{t.v}</Label>
+                  </div>
+                ))}
+              </RadioGroup>
+            </div>
+            <div><Label>Full Name *</Label><Input value={addressForm.name} onChange={e => setAddressForm(p => ({ ...p, name: e.target.value }))} /></div>
+            <div><Label>Street Address *</Label><Input value={addressForm.address} onChange={e => setAddressForm(p => ({ ...p, address: e.target.value }))} /></div>
+            <div className="grid grid-cols-2 gap-4">
+              <div><Label>City *</Label><Input value={addressForm.city} onChange={e => setAddressForm(p => ({ ...p, city: e.target.value }))} /></div>
+              <div><Label>State</Label><Input value={addressForm.state} onChange={e => setAddressForm(p => ({ ...p, state: e.target.value }))} /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div><Label>Postal Code</Label><Input value={addressForm.postalCode} onChange={e => setAddressForm(p => ({ ...p, postalCode: e.target.value }))} /></div>
+              <div><Label>Country</Label>
+                <Select value={addressForm.country} onValueChange={v => setAddressForm(p => ({ ...p, country: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Nigeria">Nigeria</SelectItem>
+                    <SelectItem value="Ghana">Ghana</SelectItem>
+                    <SelectItem value="United Kingdom">United Kingdom</SelectItem>
+                    <SelectItem value="United States">United States</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div><Label>Phone</Label><Input value={addressForm.phone} onChange={e => setAddressForm(p => ({ ...p, phone: e.target.value }))} /></div>
+            <div className="flex items-center space-x-2">
+              <Switch checked={addressForm.isDefault} onCheckedChange={v => setAddressForm(p => ({ ...p, isDefault: v }))} />
+              <Label>Set as default address</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddressDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveAddress}>{currentAddress ? "Update" : "Save"} Address</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Password Dialog */}
+      <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader><DialogTitle>Change Password</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-4">
+            <div><Label>Current Password</Label>
+              <Input type="password" value={passwordForm.currentPassword} onChange={e => setPasswordForm(p => ({ ...p, currentPassword: e.target.value }))} />
+            </div>
+            <div><Label>New Password</Label>
+              <Input type="password" value={passwordForm.newPassword} onChange={e => setPasswordForm(p => ({ ...p, newPassword: e.target.value }))} />
+            </div>
+            <div><Label>Confirm New Password</Label>
+              <Input type="password" value={passwordForm.confirmPassword} onChange={e => setPasswordForm(p => ({ ...p, confirmPassword: e.target.value }))} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPasswordDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleChangePassword}>Change Password</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 2FA Dialog */}
+      <Dialog open={twoFactorDialogOpen} onOpenChange={setTwoFactorDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader><DialogTitle>Two-Factor Authentication</DialogTitle></DialogHeader>
+          <div className="py-6 text-center">
+            <div className={cn("w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4", twoFactorEnabled ? "bg-red-100" : "bg-green-100")}>
+              <Shield className={cn("h-8 w-8", twoFactorEnabled ? "text-red-600" : "text-green-600")} />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">{twoFactorEnabled ? "Disable 2FA?" : "Enable 2FA"}</h3>
+            <p className="text-sm text-gray-500">
+              {twoFactorEnabled ? "This will make your account less secure." : "Add an extra layer of security to your account."}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTwoFactorDialogOpen(false)}>Cancel</Button>
+            <Button variant={twoFactorEnabled ? "destructive" : "default"} onClick={handleToggleTwoFactor}>
+              {twoFactorEnabled ? "Disable 2FA" : "Enable 2FA"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
