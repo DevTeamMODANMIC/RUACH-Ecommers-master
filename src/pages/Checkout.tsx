@@ -24,7 +24,8 @@ import {
   BreadcrumbSeparator,
 } from "../components/ui/breadcrumb"
 import { createOrder } from "../lib/firebase-orders"
-import { PaystackButton } from "react-paystack"
+// import { PaystackButton } from "react-paystack"
+import { Copy } from "lucide-react"
 
 
 // Nigerian states for shipping
@@ -89,6 +90,18 @@ export default function CheckoutPage() {
       }))
     }
   }, [user])
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (user === null) {
+      toast({
+        title: "Please sign in",
+        description: "You need to be signed in to checkout.",
+        variant: "destructive",
+      })
+      navigate("/login?redirect=/checkout")
+    }
+  }, [user, navigate, toast])
   const [billingInfo, setBillingInfo] = useState({
     firstName: "",
     lastName: "",
@@ -454,6 +467,34 @@ export default function CheckoutPage() {
     }
   };
 
+  // Show loading while checking auth
+  if (user === undefined) {
+    return (
+      <div className="min-h-screen py-8">
+        <div className="container mx-auto px-4">
+          <div className="text-center py-16">
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Redirect handled by useEffect, but show message while redirecting
+  if (!user) {
+    return (
+      <div className="min-h-screen py-8">
+        <div className="container mx-auto px-4">
+          <div className="text-center py-16">
+            <h1 className="text-3xl font-bold mb-4">Please Sign In</h1>
+            <p className="text-muted-foreground mb-8">You need to be signed in to checkout.</p>
+            <Button onClick={() => navigate("/login?redirect=/checkout")}>Sign In</Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (items.length === 0) {
     return (
       <div className="min-h-screen py-8">
@@ -471,6 +512,19 @@ export default function CheckoutPage() {
   return (
     <div className="min-h-screen py-8">
       <div className="container mx-auto px-4">
+        {/* Platform Update Notice */}
+        <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
+          <div className="text-amber-600 mt-0.5">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div>
+            <p className="font-semibold text-amber-800">Platform Under Development</p>
+            <p className="text-sm text-amber-700">This platform is still being updated. Some features may change. Thank you for your patience!</p>
+          </div>
+        </div>
+
         <Breadcrumb className="mb-6">
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -867,6 +921,55 @@ export default function CheckoutPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Bank Transfer Details */}
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <h3 className="font-semibold text-green-800 mb-3">Bank Transfer Details</h3>
+                    <p className="text-sm text-green-700 mb-4">
+                      Please transfer <span className="font-bold">{formatPrice(total)}</span> to the account below:
+                    </p>
+                    
+                    <div className="space-y-3 bg-white rounded-lg p-4 border border-green-100">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Bank Name:</span>
+                        <span className="font-semibold">Access Bank</span>
+                      </div>
+                      <Separator />
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Account Name:</span>
+                        <span className="font-semibold">YOUR ACCOUNT NAME</span>
+                      </div>
+                      <Separator />
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Account Number:</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold font-mono">0123456789</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={() => {
+                              navigator.clipboard.writeText("0123456789")
+                              toast({
+                                title: "Copied!",
+                                description: "Account number copied to clipboard",
+                              })
+                            }}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-sm text-yellow-800">
+                        <strong>Important:</strong> After making the transfer, click "I've Made Payment" below. 
+                        Your order will be confirmed once we verify your payment.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Commented out Paystack payment
                   <div>
                     <Label className="text-base font-semibold">Payment Method</Label>
                     <RadioGroup
@@ -891,7 +994,7 @@ export default function CheckoutPage() {
                       <PaystackButton
                         className="w-full bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition"
                         email={shippingInfo.email}
-                        amount={total * 100} // kobo
+                        amount={total * 100}
                         publicKey={import.meta.env.VITE_PAYSTACK_PUBLIC_KEY}
                         text={isProcessing ? "Processing..." : `Pay ${formatPrice(total)}`}
                         metadata={{
@@ -904,7 +1007,6 @@ export default function CheckoutPage() {
                           ],
                         }}
                         onSuccess={async (ref) => {
-                          // Fix: Extract the reference string instead of passing the entire event object
                           await handlePlaceOrder(ref.reference);
                         }}
                         onClose={() => {
@@ -918,6 +1020,7 @@ export default function CheckoutPage() {
                       />
                     </div>
                   )}
+                  */}
                 </CardContent>
               </Card>
             )}
@@ -936,13 +1039,12 @@ export default function CheckoutPage() {
                   Continue
                 </Button>
               ) : (
-                // Fix: Prevent direct calling with event parameter by using an arrow function
                 <Button 
                   onClick={() => handlePlaceOrder()} 
-                  disabled={isProcessing ? false : true} 
+                  disabled={isProcessing} 
                   className="bg-green-600 hover:bg-green-700"
                 >
-                  {isProcessing ? "Processing..." : `Place Order - ${formatPrice(total)}`}
+                  {isProcessing ? "Processing..." : "I've Made Payment"}
                 </Button>
               )}
             </div>
